@@ -1,4 +1,5 @@
 import { Mail, MapPin, Phone } from "lucide-react";
+import logoIkadi from "@/assets/logo-ikadi.png";
 
 const FooterSection = () => {
   return (
@@ -7,9 +8,7 @@ const FooterSection = () => {
         <div className="grid md:grid-cols-3 gap-10 text-primary-foreground/80">
           {/* Brand */}
           <div>
-            <h3 className="font-display text-xl font-bold text-primary-foreground mb-4">
-              PW IKADI <span className="text-gold text-sm font-sans">Jawa Timur</span>
-            </h3>
+            <img src={logoIkadi} alt="Logo IKADI Jawa Timur" className="h-12 brightness-0 invert mb-4" />
             <p className="text-sm leading-relaxed text-primary-foreground/60">
               Pengurus Wilayah Ikatan Da'i Indonesia Jawa Timur. Bersama membangun dakwah yang profesional, hangat, dan berdampak.
             </p>
