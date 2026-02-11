@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoIkadi from "@/assets/logo-ikadi.png";
 
 const navLinks = [
   { label: "Tentang", href: "#tentang" },
@@ -16,8 +17,8 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
-        <a href="#" className="font-display text-xl font-bold text-primary">
-          PW IKADI <span className="text-gold text-sm font-sans font-normal">Jawa Timur</span>
+        <a href="#" className="flex items-center">
+          <img src={logoIkadi} alt="Logo IKADI Jawa Timur" className="h-10" />
         </a>
 
         {/* Desktop */}
