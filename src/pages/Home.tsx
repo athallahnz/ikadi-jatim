@@ -9,24 +9,26 @@ import ArticlesSection from "@/components/ArticlesSection";
 import StatsSection from "@/components/StatsSection";
 import CollaborationSection from "@/components/CollaborationSection";
 import FooterSection from "@/components/FooterSection";
+import GallerySection from "@/components/GallerySection";
 
-const Index = () => {
+const Home = () => {
   useScrollAnimation();
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      {/* <Navbar /> */}
       <HeroSection />
+      <StatsSection />
       <AboutSection />
       <WhySection />
       <ProgramsSection />
       <EventsSection />
       <ArticlesSection />
-      <StatsSection />
+      <GallerySection />
       <CollaborationSection />
-      <FooterSection />
+      {/* <FooterSection /> */}
     </div>
   );
 };
 
-export default Index;
+export default Home;

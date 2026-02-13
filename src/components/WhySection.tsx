@@ -25,27 +25,47 @@ const points = [
 
 const WhySection = () => {
   return (
-    <section className="py-24 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16 animate-on-scroll">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+    <section className="py-20 md:py-24 lg:py-28 bg-background">
+      <div className="container mx-auto px-6">
+        {/* HEADER */}
+        <div className="text-center mb-14 md:mb-16 lg:mb-20 animate-on-scroll">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
             Mengapa Dakwah Perlu Profesional?
           </h2>
           <div className="gold-divider mx-auto" />
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-5xl mx-auto">
+        {/* GRID */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 lg:gap-12 max-w-6xl xl:max-w-7xl mx-auto">
           {points.map((point, i) => (
             <div
               key={point.title}
               className="animate-on-scroll text-center group"
               style={{ transitionDelay: `${i * 0.1}s` }}
             >
-              <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <point.icon className="h-7 w-7 text-primary group-hover:text-primary-foreground transition-colors" />
+              {/* ICON */}
+              <div
+                className="
+                  w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20
+                  rounded-2xl bg-secondary
+                  flex items-center justify-center
+                  mx-auto mb-4 md:mb-5
+                  group-hover:bg-primary group-hover:text-primary-foreground
+                  transition-colors
+                "
+              >
+                <point.icon className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary group-hover:text-primary-foreground transition-colors" />
               </div>
-              <h3 className="font-display font-semibold text-foreground mb-2">{point.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{point.desc}</p>
+
+              {/* TITLE */}
+              <h3 className="font-display font-semibold text-foreground mb-2 text-base md:text-lg lg:text-xl">
+                {point.title}
+              </h3>
+
+              {/* DESC */}
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                {point.desc}
+              </p>
             </div>
           ))}
         </div>

@@ -1,59 +1,106 @@
-import { BookOpen, Building2, GraduationCap, HeartHandshake, Mic2 } from "lucide-react";
+import {
+  BookOpen,
+  Building2,
+  GraduationCap,
+  HeartHandshake,
+  Mic2,
+} from "lucide-react";
 
 const programs = [
   {
-    icon: GraduationCap,
-    title: "Pembinaan Da'i",
-    desc: "Program pembinaan berkelanjutan untuk meningkatkan kapasitas da'i dalam menyampaikan dakwah yang relevan dan menyejukkan.",
-  },
-  {
-    icon: Building2,
-    title: "Dakwah Masjid & Komunitas",
-    desc: "Menghadirkan da'i berkualitas di masjid-masjid dan komunitas untuk membangun pemahaman Islam yang moderat.",
-  },
-  {
-    icon: Mic2,
-    title: "Pelatihan & Workshop",
-    desc: "Workshop public speaking, konten digital, dan manajemen dakwah untuk para da'i muda dan relawan.",
-  },
-  {
     icon: HeartHandshake,
-    title: "Kolaborasi Sosial",
-    desc: "Bersinergi dengan lembaga sosial dan pemerintah untuk program pemberdayaan masyarakat berbasis dakwah.",
+    title: "Penguatan Ukhuwah & Silaturahim Da'i",
+    desc: "Meningkatkan silaturahim, ta’awun (kerja sama), dan ukhuwah Islamiyah dalam memperkuat sinergi dakwah di berbagai wilayah.",
   },
   {
     icon: BookOpen,
-    title: "Penyediaan Materi Dakwah",
-    desc: "Menyusun dan mendistribusikan materi khutbah, kajian, dan konten dakwah digital yang terverifikasi.",
+    title: "Sosialisasi Nilai-Nilai Islam",
+    desc: "Mensosialisasikan sistem kehidupan bermasyarakat dan bernegara yang selaras dengan nilai-nilai Islam yang moderat dan rahmatan lil ‘alamin.",
+  },
+  {
+    icon: GraduationCap,
+    title: "Sertifikasi & Pengembangan Kompetensi Da'i",
+    desc: "Melaksanakan sertifikasi dan pembinaan berkelanjutan bagi da’i agar memiliki wawasan kebangsaan dan keumatan dalam berdakwah.",
+  },
+  {
+    icon: Building2,
+    title: "Kegiatan Sosial & Kemasyarakatan",
+    desc: "Menginisiasi kegiatan di bidang sosial, budaya, pendidikan, ekonomi, dan kemasyarakatan sebagai wujud dakwah yang berdampak.",
+  },
+  {
+    icon: Mic2,
+    title: "Kerja Sama Lintas Sektoral",
+    desc: "Membangun kolaborasi strategis dengan pemerintah, organisasi, dan berbagai komponen bangsa di dalam maupun luar negeri.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Menjaga Kerukunan & Perdamaian",
+    desc: "Bersama pemerintah dan elemen bangsa, turut memelihara kerukunan umat beragama serta perdamaian dunia sesuai amanat UUD 1945.",
   },
 ];
 
 const ProgramsSection = () => {
   return (
-    <section id="program" className="py-24 bg-cream islamic-pattern">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16 animate-on-scroll">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+    <section
+      id="program"
+      className="py-20 md:py-24 lg:py-28 bg-cream islamic-pattern"
+    >
+      <div className="container mx-auto px-6">
+        {/* HEADER */}
+        <div className="text-center mb-14 md:mb-16 lg:mb-20 animate-on-scroll">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
             Program Unggulan
           </h2>
+
           <div className="gold-divider mx-auto mb-4" />
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Berbagai program strategis yang kami jalankan untuk memajukan dakwah di Jawa Timur.
+
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            Program-program terstruktur yang dirancang untuk menjawab tantangan
+            dakwah masa kini dan memperkuat peran da’i di tengah masyarakat.
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {/* GRID */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-6xl xl:max-w-7xl mx-auto">
           {programs.map((program, i) => (
             <div
               key={program.title}
-              className="animate-on-scroll bg-card rounded-xl p-6 border border-border hover:border-gold/30 hover:shadow-lg transition-all group"
+              className="
+                animate-on-scroll
+                bg-card rounded-2xl
+                p-6 md:p-7 lg:p-8
+                border border-border
+                hover:border-gold/30 hover:shadow-xl
+                hover:-translate-y-1
+                transition-all duration-300
+                group
+              "
               style={{ transitionDelay: `${i * 0.08}s` }}
             >
-              <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mb-4 group-hover:bg-primary transition-colors">
-                <program.icon className="h-6 w-6 text-primary group-hover:text-primary-foreground transition-colors" />
+              {/* ICON */}
+              <div
+                className="
+                  w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16
+                  rounded-xl
+                  bg-secondary
+                  flex items-center justify-center
+                  mb-4 md:mb-5
+                  group-hover:bg-primary
+                  transition-colors
+                "
+              >
+                <program.icon className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary group-hover:text-primary-foreground transition-colors" />
               </div>
-              <h3 className="font-display font-semibold text-foreground mb-2">{program.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{program.desc}</p>
+
+              {/* TITLE */}
+              <h3 className="font-display font-semibold text-foreground mb-2 text-base md:text-lg lg:text-xl leading-snug">
+                {program.title}
+              </h3>
+
+              {/* DESC */}
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                {program.desc}
+              </p>
             </div>
           ))}
         </div>
