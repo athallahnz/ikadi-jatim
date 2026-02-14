@@ -1,154 +1,239 @@
 import { useParams, Link } from "react-router-dom";
-import { kabarData } from "@/data/kabar";
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+
+/* ================= TYPES ================= */
+
+type KabarItem = {
+  id: string;
+  title: string;
+  content: string;
+  cover: string | null;
+  date: string | null;
+  display_date: string | null;
+  slug: string;
+  scope: string;
+  daerah: string | null;
+  daerah_slug: string | null;
+  publish_at: string | null;
+  author_id: string;
+  admins?: {
+    name: string | null;
+  }[]; // admins hanya berisi nama
+};
+
+type RelatedItem = {
+  id: string;
+  title: string;
+  cover: string | null;
+  display_date: string | null;
+  slug: string;
+  scope: string;
+  daerah: string | null;
+  daerah_slug: string | null;
+};
+
+/* ================= COMPONENT ================= */
 
 const KabarDetail = () => {
   const { scope, daerah, slug } = useParams();
+  const [artikel, setArtikel] = useState<KabarItem | null>(null);
+  const [related, setRelated] = useState<RelatedItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const artikel = kabarData.find((k) => {
-    if (scope === "daerah") {
-      return k.scope === "daerah" && k.daerahSlug === daerah && k.slug === slug;
+  const loadData = useCallback(async () => {
+    if (!slug) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("events")
+        .select(
+          `
+          id, title, content, cover, date, display_date,
+          slug, scope, daerah, daerah_slug, publish_at, author_id,
+          admins!events_author_id_fkey(name)
+        `,
+        )
+        .eq("slug", slug)
+        .eq("published", true)
+        .single();
+
+      if (error) throw error;
+      setArtikel(data);
+
+      /* ===== FETCH RELATED ===== */
+      let relQuery = supabase
+        .from("events")
+        .select("id,title,cover,display_date,slug,scope,daerah,daerah_slug")
+        .eq("published", true)
+        .neq("id", data.id)
+        .eq("scope", data.scope)
+        .order("publish_at", { ascending: false })
+        .limit(3);
+
+      if (data.scope === "daerah" && data.daerah_slug) {
+        relQuery = relQuery.eq("daerah_slug", data.daerah_slug);
+      }
+
+      const { data: rel } = await relQuery;
+      setRelated(rel || []);
+    } catch (err) {
+      console.error("Error loading kabar:", err);
+    } finally {
+      setLoading(false);
     }
-    return k.scope === "jatim" && k.slug === slug;
-  });
+  }, [slug]);
 
-  if (!artikel) {
+  useEffect(() => {
+    loadData();
+    // Scroll ke atas setiap kali ganti berita
+    window.scrollTo(0, 0);
+  }, [loadData]);
+
+  if (loading) {
     return (
-      <div className="pt-32 pb-24 text-center">
-        <p>Artikel tidak ditemukan</p>
+      <div className="pt-40 pb-24 text-center animate-pulse">
+        <div className="h-8 w-48 bg-slate-200 mx-auto rounded mb-4" />
+        <p className="text-muted-foreground">Memuat Berita...</p>
       </div>
     );
   }
 
-  const related = kabarData
-    .filter(
-      (k) =>
-        k.id !== artikel.id &&
-        k.scope === artikel.scope &&
-        (artikel.scope !== "daerah" || k.daerahSlug === artikel.daerahSlug),
-    )
-    .slice(0, 3);
+  if (!artikel) {
+    return (
+      <div className="pt-40 pb-24 text-center">
+        <h2 className="text-2xl font-bold mb-4">Berita Tidak Ditemukan</h2>
+        <Button asChild variant="outline">
+          <Link to="/kabar/jatim">Kembali ke Kabar</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <article className="pt-32 pb-24 bg-background">
       <div className="container mx-auto px-6 max-w-3xl">
-        {/* BREADCRUMB */}
-        <div className="text-sm text-muted-foreground mb-4">
-          <span>Kabar</span>
-          {" / "}
-          <span className="capitalize">{scope}</span>
+        {/* ===== BREADCRUMB ===== */}
+        <nav className="text-sm text-muted-foreground mb-6 flex items-center gap-2">
+          <Link to="/" className="hover:text-primary transition">
+            Beranda
+          </Link>
+          <span>/</span>
+          <Link
+            to={`/kabar/${scope}`}
+            className="capitalize hover:text-primary transition"
+          >
+            {scope}
+          </Link>
           {artikel.scope === "daerah" && (
             <>
-              {" / "}
-              <span>{artikel.daerah}</span>
+              <span>/</span>
+              <span className="text-foreground font-medium">
+                {artikel.daerah}
+              </span>
+            </>
+          )}
+        </nav>
+
+        {/* ===== COVER ===== */}
+        {artikel.cover && (
+          <div className="relative group overflow-hidden rounded-2xl mb-8">
+            <img
+              src={artikel.cover}
+              alt={artikel.title}
+              className="w-full h-[300px] md:h-[450px] object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+          <time>
+            {artikel.publish_at &&
+              new Date(artikel.publish_at).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+          </time>
+          {artikel.admins && artikel.admins.length > 0 && (
+            <>
+              <span className="w-1 h-1 bg-slate-300 rounded-full" />
+              <span>
+                oleh{" "}
+                <span className="text-foreground font-medium">
+                  {artikel.admins[0].name}
+                </span>
+              </span>
             </>
           )}
         </div>
 
-        {/* COVER */}
-        <img
-          src={artikel.cover}
-          alt={artikel.title}
-          className="w-full h-80 object-cover rounded-xl mb-8"
-        />
-
-        {/* META */}
-        <p className="text-sm text-muted-foreground mb-2">
-          {new Date(artikel.date).toLocaleDateString("id-ID", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })}
-        </p>
-
-        {/* TITLE */}
-        <h1 className="text-3xl md:text-4xl font-display font-bold mb-6">
+        {/* ===== TITLE ===== */}
+        <h1 className="text-3xl md:text-5xl font-display font-bold mb-8 leading-tight">
           {artikel.title}
         </h1>
 
-        {/* DAERAH */}
-        {artikel.scope === "daerah" && (
-          <p className="text-sm text-muted-foreground mb-6">
-            PD IKADI {artikel.daerah}
-          </p>
-        )}
-
-        {/* CONTENT */}
+        {/* ===== CONTENT ===== */}
         <div
-          className="
-            prose prose-neutral max-w-none
-            prose-p:leading-relaxed
-            prose-img:rounded-xl
-            prose-img:shadow-md
-            prose-blockquote:border-l-4
-            prose-blockquote:border-primary
-            prose-blockquote:pl-4
-            prose-blockquote:italic
-            prose-li:marker:text-primary
-          "
+          className="prose prose-neutral max-w-none 
+          prose-headings:font-display prose-headings:font-bold
+          prose-p:text-slate-700 prose-p:leading-relaxed prose-p:text-lg
+          prose-img:rounded-2xl prose-img:shadow-xl
+          prose-blockquote:border-l-4 prose-blockquote:border-emerald-600 prose-blockquote:bg-emerald-50 prose-blockquote:py-2 prose-blockquote:pr-4
+          prose-li:marker:text-emerald-600"
           dangerouslySetInnerHTML={{ __html: artikel.content }}
         />
 
-        {/* RELATED */}
-        {/* RELATED */}
+        {/* ===== RELATED ===== */}
         {related.length > 0 && (
-          <div className="mt-16">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-display font-semibold">
+          <div className="mt-20 pt-10 border-t border-border">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-2xl font-display font-bold">
                 Berita Terkait
               </h3>
-
-              {/* Lihat semua */}
               <Link
                 to={
-                  artikel.scope === "daerah" ? `/kabar/daerah` : `/kabar/jatim`
+                  artikel.scope === "daerah" ? "/kabar/daerah" : "/kabar/jatim"
                 }
-                className="text-sm text-primary font-medium hover:underline"
+                className="text-sm text-emerald-600 font-bold hover:underline"
               >
-                Lihat semua
+                Lihat semua →
               </Link>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-8">
               {related.map((item) => (
-                <div
+                <Link
                   key={item.id}
-                  className="rounded-xl overflow-hidden border border-border bg-card shadow-sm hover:shadow-md transition group"
+                  to={
+                    item.scope === "daerah"
+                      ? `/kabar/daerah/${item.daerah_slug}/${item.slug}`
+                      : `/kabar/jatim/${item.slug}`
+                  }
+                  className="group flex flex-col"
                 >
-                  <img
-                    src={item.cover}
-                    alt={item.title}
-                    className="h-40 w-full object-cover group-hover:scale-105 transition"
-                  />
-
-                  <div className="p-4">
-                    <p className="text-xs text-muted-foreground mb-1">
-                      {item.displayDate}
-                    </p>
-
-                    <p className="text-sm font-semibold line-clamp-2 mb-4">
-                      {item.title}
-                    </p>
-
-                    {/* BUTTON */}
-                    <Button
-                      asChild
-                      size="sm"
-                      variant="outline"
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition"
-                    >
-                      <Link
-                        to={
-                          item.scope === "daerah"
-                            ? `/kabar/daerah/${item.daerahSlug}/${item.slug}`
-                            : `/kabar/jatim/${item.slug}`
-                        }
-                      >
-                        Baca Selengkapnya
-                      </Link>
-                    </Button>
+                  <div className="relative h-40 w-full overflow-hidden rounded-xl mb-3">
+                    {item.cover ? (
+                      <img
+                        src={item.cover}
+                        alt={item.title}
+                        className="h-full w-full object-cover group-hover:scale-110 transition duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center text-xs text-slate-400">
+                        No Image
+                      </div>
+                    )}
                   </div>
-                </div>
+                  <p className="text-[10px] uppercase tracking-wider text-emerald-600 font-bold mb-1">
+                    {item.display_date}
+                  </p>
+                  <h4 className="text-sm font-bold leading-snug line-clamp-2 group-hover:text-emerald-600 transition">
+                    {item.title}
+                  </h4>
+                </Link>
               ))}
             </div>
           </div>

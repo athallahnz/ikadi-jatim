@@ -31,8 +31,8 @@ const navLinks = [
   {
     label: "Kajian",
     children: [
-      { label: "Mutiara Al Qur'an", to: "/kajian/quran" },
-      { label: "Mutiara Hadits", to: "/kajian/hadits" },
+      { label: "Mutiara Al Qur'an", to: "/kajian/mutiara-al-quran" },
+      { label: "Mutiara Hadits", to: "/kajian/mutiara-hadits" },
       { label: "Hikmah", to: "/kajian/hikmah" },
       { label: "Inspirasi", to: "/kajian/inspirasi" },
       { label: "Taujih", to: "/kajian/taujih" },

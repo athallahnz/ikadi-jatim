@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { kabarData, KabarItem } from "@/data/kabar";
+import { supabase } from "@/lib/supabase";
 
 type Props = {
   scope?: string;
@@ -10,25 +10,46 @@ type Props = {
 
 type TimeFilter = "all" | "today" | "week" | "month";
 
+type EventItem = {
+  id: string;
+  title: string;
+  excerpt: string | null;
+  cover: string | null;
+  date: string | null;
+  display_date: string | null;
+  slug: string;
+  scope: string;
+  daerah: string | null;
+  daerah_slug: string | null;
+};
+
 const EventsSection = ({ scope }: Props) => {
-  /* ================= SCOPE FILTER ================= */
-  const scopedEvents =
-    scope === "daerah"
-      ? kabarData.filter((k) => k.scope === "daerah")
-      : scope === "jatim"
-        ? kabarData.filter((k) => k.scope === "jatim")
-        : kabarData;
-
-  const title =
-    scope === "daerah"
-      ? "Kabar IKADI Daerah"
-      : scope === "jatim"
-        ? "Kabar IKADI Jawa Timur"
-        : "Agenda & Kegiatan IKADI";
-
-  /* ================= TIME FILTER ================= */
+  const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
+  /* ================= FETCH SUPABASE ================= */
+  useEffect(() => {
+    const load = async () => {
+      let query = supabase
+        .from("events")
+        .select(
+          "id,title,excerpt,cover,date,display_date,slug,scope,daerah,daerah_slug,publish_at",
+        )
+        .eq("published", true)
+        .order("publish_at", { ascending: false });
+
+      if (scope === "jatim") query = query.eq("scope", "jatim");
+      if (scope === "daerah") query = query.eq("scope", "daerah");
+
+      const { data } = await query;
+
+      setAllEvents((data as EventItem[]) || []);
+    };
+
+    load();
+  }, [scope]);
+
+  /* ================= TIME FILTER ================= */
   const filterLabel =
     timeFilter === "today"
       ? "hari ini"
@@ -40,8 +61,9 @@ const EventsSection = ({ scope }: Props) => {
 
   const now = new Date();
 
-  const events = scopedEvents.filter((e) => {
+  const events = allEvents.filter((e) => {
     if (timeFilter === "all") return true;
+    if (!e.date) return false;
 
     const eventDate = new Date(e.date);
 
@@ -65,16 +87,21 @@ const EventsSection = ({ scope }: Props) => {
     return true;
   });
 
-  /* ================= CAROUSEL ================= */
+  const title =
+    scope === "daerah"
+      ? "Kabar IKADI Daerah"
+      : scope === "jatim"
+        ? "Kabar IKADI Jawa Timur"
+        : "Agenda & Kegiatan IKADI";
+
+  /* ================= CAROUSEL (UNCHANGED) ================= */
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(3);
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
-  useEffect(() => {
-    setIndex(0);
-  }, [scope, timeFilter]);
+  useEffect(() => setIndex(0), [scope, timeFilter]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -96,29 +123,22 @@ const EventsSection = ({ scope }: Props) => {
   }, [visible, events.length]);
 
   useEffect(() => {
-    if (index > events.length - visible) {
-      setIndex(0);
-    }
+    if (index > events.length - visible) setIndex(0);
   }, [index, events.length, visible]);
 
-  /* ================= DRAG ================= */
   const handleStart = (x: number) => {
     setDragStart(x);
     setIsDragging(true);
   };
 
   const handleMove = (x: number) => {
-    if (dragStart !== null) {
-      setDragOffset(x - dragStart);
-    }
+    if (dragStart !== null) setDragOffset(x - dragStart);
   };
 
   const handleEnd = () => {
-    if (dragOffset > 100 && index > 0) {
-      setIndex((prev) => prev - 1);
-    } else if (dragOffset < -100 && index < events.length - visible) {
-      setIndex((prev) => prev + 1);
-    }
+    if (dragOffset > 100 && index > 0) setIndex((p) => p - 1);
+    else if (dragOffset < -100 && index < events.length - visible)
+      setIndex((p) => p + 1);
 
     setDragStart(null);
     setDragOffset(0);
@@ -128,10 +148,10 @@ const EventsSection = ({ scope }: Props) => {
   const cardWidth = 100 / visible;
   const translate = -index * cardWidth + (dragOffset / window.innerWidth) * 100;
 
+  /* ================= RENDER (UNCHANGED) ================= */
   return (
     <section className="py-14 bg-background">
       <div className="container mx-auto px-4">
-        {/* HEADER */}
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6">
             {title}
@@ -139,7 +159,6 @@ const EventsSection = ({ scope }: Props) => {
 
           <div className="gold-divider mx-auto" />
 
-          {/* FILTER */}
           <div className="flex flex-wrap justify-center gap-2 my-6">
             {[
               { key: "all", label: "Semua" },
@@ -160,10 +179,8 @@ const EventsSection = ({ scope }: Props) => {
               </button>
             ))}
           </div>
-
         </div>
 
-        {/* EMPTY */}
         {events.length === 0 ? (
           <div className="text-center py-24">
             <div className="inline-flex flex-col items-center gap-3 text-muted-foreground">
@@ -186,16 +203,17 @@ const EventsSection = ({ scope }: Props) => {
               onTouchMove={(e) => handleMove(e.touches[0].clientX)}
               onTouchEnd={handleEnd}
             >
-              {events.map((event, i) => (
+              {events.map((event) => (
                 <div
                   key={event.id}
                   className="flex-shrink-0 px-4 my-4"
                   style={{ width: `${cardWidth}%` }}
                 >
-                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
+                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
+                    {/* IMAGE */}
                     <div className="relative h-56 overflow-hidden group">
                       <img
-                        src={event.cover}
+                        src={event.cover || ""}
                         alt={event.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
@@ -215,31 +233,38 @@ const EventsSection = ({ scope }: Props) => {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     </div>
 
-                    <div className="p-6">
+                    {/* CONTENT */}
+                    <div className="p-6 flex flex-col flex-1">
+                      {/* DATE */}
                       <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
                         <CalendarDays className="h-4 w-4" />
-                        {event.displayDate}
+                        {event.display_date}
                       </div>
 
-                      <h3 className="font-display font-semibold mb-2">
+                      {/* TITLE */}
+                      <h3 className="font-display font-semibold mb-2 line-clamp-2">
                         {event.title}
                       </h3>
 
-                      <p className="text-sm text-muted-foreground mb-4">
+                      {/* EXCERPT */}
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
                         {event.excerpt}
                       </p>
 
-                      <Button asChild variant="outline" size="sm">
-                        <Link
-                          to={
-                            event.scope === "daerah"
-                              ? `/kabar/daerah/${event.daerahSlug}/${event.slug}`
-                              : `/kabar/jatim/${event.slug}`
-                          }
-                        >
-                          Lihat Detail
-                        </Link>
-                      </Button>
+                      {/* BUTTON — PUSH BOTTOM */}
+                      <div className="mt-auto">
+                        <Button asChild variant="outline" size="sm">
+                          <Link
+                            to={
+                              event.scope === "daerah"
+                                ? `/kabar/daerah/${event.daerah_slug}/${event.slug}`
+                                : `/kabar/jatim/${event.slug}`
+                            }
+                          >
+                            Lihat Detail
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
