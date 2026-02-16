@@ -159,16 +159,16 @@ export default function EventForm({ onSaved, event }: Props) {
       });
 
       // ✅ RESET FORM FIELD DISINI
-    if (!event) { 
-      // Jika mode "Tambah Baru", kosongkan semua field
-      setTitle("");
-      setContent("");
-      setCoverFile(null);
-      setExistingCoverUrl(null);
-      setPublished(false);
-      setPublishAt("");
-      setErrors({}); // Bersihkan tanda merah error
-    }
+      if (!event) {
+        // Jika mode "Tambah Baru", kosongkan semua field
+        setTitle("");
+        setContent("");
+        setCoverFile(null);
+        setExistingCoverUrl(null);
+        setPublished(false);
+        setPublishAt("");
+        setErrors({}); // Bersihkan tanda merah error
+      }
 
       onSaved();
     } catch (error: unknown) {
@@ -197,6 +197,9 @@ export default function EventForm({ onSaved, event }: Props) {
 
       {/* TITLE */}
       <div className="space-y-1">
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          Judul Event
+        </label>
         <input
           className={`w-full border p-2 rounded transition-colors ${errors.title ? "border-red-500 bg-red-50" : "border-border"}`}
           placeholder="Judul event"
@@ -215,6 +218,9 @@ export default function EventForm({ onSaved, event }: Props) {
 
       {/* LOCATION */}
       <div className="space-y-1">
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          Lokasi Event
+        </label>
         <input
           className={`w-full border p-2 rounded transition-colors ${errors.location ? "border-red-500 bg-red-50" : "border-border"}`}
           placeholder="Lokasi (Gedung, Kota, atau Link Zoom)"
@@ -232,18 +238,23 @@ export default function EventForm({ onSaved, event }: Props) {
         )}
       </div>
 
-      {/* EXCERPT */}
-      <textarea
-        className="w-full border p-2 rounded min-h-[80px]"
-        placeholder="Ringkasan singkat event..."
-        value={excerpt}
-        onChange={(e) => setExcerpt(e.target.value)}
-      />
+      <div className="space-y-1">
+        {/* EXCERPT */}
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          RINGKASAN SINGKAT
+        </label>
+        <textarea
+          className="w-full border p-2 rounded min-h-[80px]"
+          placeholder="Ringkasan singkat event..."
+          value={excerpt}
+          onChange={(e) => setExcerpt(e.target.value)}
+        />
+      </div>
 
       {/* DATE SECTION */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-xs font-bold text-slate-600 uppercase ml-1">
             Tanggal Pelaksanaan
           </label>
           <input
@@ -263,7 +274,7 @@ export default function EventForm({ onSaved, event }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-xs font-bold text-slate-600 uppercase ml-1">
             Display Date (Otomatis)
           </label>
           <input

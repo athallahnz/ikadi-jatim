@@ -1,53 +1,83 @@
-import {
-  BookOpen,
-  Building2,
-  GraduationCap,
-  HeartHandshake,
-  Mic2,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import * as LucideIcons from "lucide-react";
+import { HelpCircle, LucideProps } from "lucide-react";
 
-const programs = [
-  {
-    icon: HeartHandshake,
-    title: "Penguatan Ukhuwah & Silaturahim Da'i",
-    desc: "Meningkatkan silaturahim, ta’awun (kerja sama), dan ukhuwah Islamiyah dalam memperkuat sinergi dakwah di berbagai wilayah.",
-  },
-  {
-    icon: BookOpen,
-    title: "Sosialisasi Nilai-Nilai Islam",
-    desc: "Mensosialisasikan sistem kehidupan bermasyarakat dan bernegara yang selaras dengan nilai-nilai Islam yang moderat dan rahmatan lil ‘alamin.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Sertifikasi & Pengembangan Kompetensi Da'i",
-    desc: "Melaksanakan sertifikasi dan pembinaan berkelanjutan bagi da’i agar memiliki wawasan kebangsaan dan keumatan dalam berdakwah.",
-  },
-  {
-    icon: Building2,
-    title: "Kegiatan Sosial & Kemasyarakatan",
-    desc: "Menginisiasi kegiatan di bidang sosial, budaya, pendidikan, ekonomi, dan kemasyarakatan sebagai wujud dakwah yang berdampak.",
-  },
-  {
-    icon: Mic2,
-    title: "Kerja Sama Lintas Sektoral",
-    desc: "Membangun kolaborasi strategis dengan pemerintah, organisasi, dan berbagai komponen bangsa di dalam maupun luar negeri.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Menjaga Kerukunan & Perdamaian",
-    desc: "Bersama pemerintah dan elemen bangsa, turut memelihara kerukunan umat beragama serta perdamaian dunia sesuai amanat UUD 1945.",
-  },
-];
+/* ================= TYPES ================= */
+type Program = {
+  id: string;
+  title: string;
+  description: string;
+  icon: string | null;
+  order_num: number;
+};
 
+type LucideIconComponent = React.ForwardRefExoticComponent<
+  LucideProps & React.RefAttributes<SVGSVGElement>
+>;
+
+const IconsRecord = LucideIcons as unknown as Record<
+  string,
+  LucideIconComponent
+>;
+
+/* ================= SUB-COMPONENT: DYNAMIC ICON ================= */
+const DynamicIcon = ({
+  name,
+  className,
+}: {
+  name: string | null;
+  className?: string;
+}) => {
+  if (!name) return <HelpCircle className={className} />;
+  const IconComponent = IconsRecord[name];
+  if (
+    IconComponent &&
+    (typeof IconComponent === "function" || typeof IconComponent === "object")
+  ) {
+    return <IconComponent className={className} />;
+  }
+  return <HelpCircle className={className} />;
+};
+
+/* ================= MAIN COMPONENT ================= */
 const ProgramsSection = () => {
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPrograms = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("programs")
+          .select("*")
+          .order("order_num", { ascending: true });
+
+        if (error) throw error;
+        setPrograms(data || []);
+      } catch (err) {
+        console.error("Error loading programs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrograms();
+  }, []);
+
+  // Jika masih loading, kita beri placeholder agar layout tidak loncat
+  if (loading)
+    return <div className="py-20 bg-cream text-center">Memuat Program...</div>;
+
   return (
     <section
       id="program"
-      className="py-20 md:py-24 lg:py-28 bg-cream islamic-pattern"
+      className="py-20 md:py-24 lg:py-28 bg-cream islamic-pattern relative"
     >
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-6 relative z-10">
         {/* HEADER */}
-        <div className="text-center mb-14 md:mb-16 lg:mb-20 animate-on-scroll">
+        <div className="text-center mb-14 md:mb-16 lg:mb-20">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-4">
             Program Unggulan
           </h2>
@@ -64,9 +94,8 @@ const ProgramsSection = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-6xl xl:max-w-7xl mx-auto">
           {programs.map((program, i) => (
             <div
-              key={program.title}
+              key={program.id}
               className="
-                animate-on-scroll
                 bg-card rounded-2xl
                 p-6 md:p-7 lg:p-8
                 border border-border
@@ -75,7 +104,11 @@ const ProgramsSection = () => {
                 transition-all duration-300
                 group
               "
-              style={{ transitionDelay: `${i * 0.08}s` }}
+              // Kita ganti animasi otomatis dengan transisi masuk manual agar data dinamis tetap terlihat
+              style={{
+                animation: `fadeInUp 0.5s ease-out forwards ${i * 0.1}s`,
+                opacity: 0,
+              }}
             >
               {/* ICON */}
               <div
@@ -89,7 +122,10 @@ const ProgramsSection = () => {
                   transition-colors
                 "
               >
-                <program.icon className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary group-hover:text-primary-foreground transition-colors" />
+                <DynamicIcon
+                  name={program.icon}
+                  className="h-6 w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 text-primary group-hover:text-primary-foreground transition-colors"
+                />
               </div>
 
               {/* TITLE */}
@@ -98,13 +134,29 @@ const ProgramsSection = () => {
               </h3>
 
               {/* DESC */}
-              <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                {program.desc}
-              </p>
+              <div
+                className="text-sm md:text-base text-muted-foreground leading-relaxed prose prose-slate prose-sm max-w-none 
+                           prose-p:leading-relaxed prose-p:m-0"
+                dangerouslySetInnerHTML={{ __html: program.description }}
+              />
             </div>
           ))}
         </div>
       </div>
+
+      {/* CSS internal untuk handle animasi manual agar tidak bentrok dengan library */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 };

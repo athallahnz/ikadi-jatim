@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -33,21 +33,30 @@ type Props = {
 };
 
 export default function RichEditor({ value, onChange, className }: Props) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
+  // GUNAKAN useMemo AGAR EKSTENSI TETAP UNIK DAN STABIL
+  const extensions = useMemo(
+    () => [
+      StarterKit.configure({
+        // StarterKit sudah membawa history, heading, dll.
+      }),
       Underline,
       Image,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-emerald-600 underline cursor-pointer",
+          class: "text-emerald-600 underline cursor-pointer font-medium",
         },
+        validate: (url) => !!url,
       }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
     ],
+    [],
+  );
+
+  const editor = useEditor({
+    extensions,
     content: value || "",
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -55,14 +64,18 @@ export default function RichEditor({ value, onChange, className }: Props) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose lg:prose-lg xl:prose-2xl focus:outline-none min-h-[300px] max-w-none p-4",
+          "prose prose-sm focus:outline-none min-h-[300px] p-4 max-w-none prose-emerald",
       },
     },
+    // Pastikan editor dihancurkan saat unmount (membantu Strict Mode)
+    immediatelyRender: false,
   });
 
+  // Sinkronisasi value dari luar
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
-      editor.commands.setContent(value || "");
+      // Ganti 'false' dengan objek { emitUpdate: false }
+      editor.commands.setContent(value || "", { emitUpdate: false });
     }
   }, [value, editor]);
 
@@ -86,11 +99,10 @@ export default function RichEditor({ value, onChange, className }: Props) {
 
   return (
     <div
-      className={`border rounded-lg overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all ${className || ""}`}
+      className={`border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all ${className || ""}`}
     >
       {/* TOOLBAR */}
-      <div className="flex flex-wrap gap-1 border-b p-2 bg-slate-50 sticky top-0 z-10">
-        {/* TEXT TYPES */}
+      <div className="flex flex-wrap gap-0.5 border-b p-1.5 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
         <ToolbarButton
           onClick={() => editor.chain().focus().setParagraph().run()}
           active={editor.isActive("paragraph")}
@@ -126,9 +138,8 @@ export default function RichEditor({ value, onChange, className }: Props) {
           <Heading3 size={16} />
         </ToolbarButton>
 
-        <div className="w-[1px] h-6 bg-slate-300 mx-1 self-center" />
+        <Divider />
 
-        {/* ALIGNMENT */}
         <ToolbarButton
           onClick={() => editor.chain().focus().setTextAlign("left").run()}
           active={editor.isActive({ textAlign: "left" })}
@@ -158,9 +169,8 @@ export default function RichEditor({ value, onChange, className }: Props) {
           <AlignJustify size={16} />
         </ToolbarButton>
 
-        <div className="w-[1px] h-6 bg-slate-300 mx-1 self-center" />
+        <Divider />
 
-        {/* BASIC FORMATTING */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive("bold")}
@@ -183,9 +193,8 @@ export default function RichEditor({ value, onChange, className }: Props) {
           <UnderlineIcon size={16} />
         </ToolbarButton>
 
-        <div className="w-[1px] h-6 bg-slate-300 mx-1 self-center" />
+        <Divider />
 
-        {/* LISTS & QUOTES */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive("bulletList")}
@@ -208,9 +217,8 @@ export default function RichEditor({ value, onChange, className }: Props) {
           <Quote size={16} />
         </ToolbarButton>
 
-        <div className="w-[1px] h-6 bg-slate-300 mx-1 self-center" />
+        <Divider />
 
-        {/* INSERT */}
         <ToolbarButton
           onClick={setLink}
           active={editor.isActive("link")}
@@ -224,7 +232,6 @@ export default function RichEditor({ value, onChange, className }: Props) {
 
         <div className="flex-1" />
 
-        {/* HISTORY */}
         <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           title="Undo"
@@ -244,6 +251,10 @@ export default function RichEditor({ value, onChange, className }: Props) {
   );
 }
 
+function Divider() {
+  return <div className="w-[1px] h-5 bg-slate-300 mx-1.5 self-center" />;
+}
+
 function ToolbarButton({
   onClick,
   active,
@@ -260,8 +271,8 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded-md transition-all hover:bg-emerald-100 hover:text-emerald-700 ${
-        active ? "bg-emerald-200 text-emerald-800 font-bold" : "text-slate-600"
+      className={`p-2 rounded-lg transition-all hover:bg-emerald-100 hover:text-emerald-700 ${
+        active ? "bg-emerald-100 text-emerald-700 shadow-sm" : "text-slate-500"
       }`}
     >
       {children}

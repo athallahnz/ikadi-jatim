@@ -211,13 +211,29 @@ const EventsSection = ({ scope }: Props) => {
                 >
                   <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
                     {/* IMAGE */}
-                    <div className="relative h-56 overflow-hidden group">
-                      <img
-                        src={event.cover || ""}
-                        alt={event.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      />
+                    <div className="relative h-56 overflow-hidden group bg-muted">
+                      {event.cover ? (
+                        <img
+                          src={event.cover}
+                          alt={event.title}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          // Tambahan: handle jika URL ada tapi link mati (404)
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "https://placehold.co/600x400?text=No+Image";
+                          }}
+                        />
+                      ) : (
+                        // Tampilan Placeholder jika data cover memang null/kosong
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground">
+                          <CalendarDays className="h-12 w-12 opacity-20 mb-2" />
+                          <span className="text-xs opacity-50">
+                            Gambar tidak tersedia
+                          </span>
+                        </div>
+                      )}
 
+                      {/* Label Overlay */}
                       <div className="absolute top-3 left-3 z-10">
                         {event.scope === "jatim" ? (
                           <span className="bg-gold text-foreground text-sm px-3 py-1 rounded-full font-semibold shadow">

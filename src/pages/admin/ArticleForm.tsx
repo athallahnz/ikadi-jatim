@@ -200,6 +200,9 @@ export default function ArticleForm({ onSaved, article }: Props) {
 
       {/* CATEGORY */}
       <div className="space-y-1">
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          Pilih Kategori
+        </label>
         <select
           className={`w-full border p-2 rounded transition-colors ${errors.categoryId ? "border-red-500 bg-red-50 text-red-900" : "border-border"}`}
           value={categoryId}
@@ -225,6 +228,9 @@ export default function ArticleForm({ onSaved, article }: Props) {
 
       {/* TITLE */}
       <div className="space-y-1">
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          Judul Article
+        </label>
         <input
           className={`w-full border p-2 rounded transition-colors ${errors.title ? "border-red-500 bg-red-50" : "border-border"}`}
           placeholder="Judul artikel"
@@ -265,7 +271,7 @@ export default function ArticleForm({ onSaved, article }: Props) {
 
       {/* COVER */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-emerald-800 ml-1">
+        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
           Cover Artikel
         </label>
         <div

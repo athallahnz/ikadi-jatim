@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
+/* ================= TYPES ================= */
+interface StatRow {
+  id: string;
+  label: string;
+  value: string;
+  order_num: number;
+}
+
+/* ================= COMPONENT COUNTER ================= */
 const Counter = ({
   end,
   duration = 2000,
@@ -8,36 +18,24 @@ const Counter = ({
   duration?: number;
 }) => {
   const [count, setCount] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const element = ref.current;
-
-    if (!element) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
+        if (entry.isIntersecting) setIsVisible(true);
       },
-      { threshold: 0.5 },
+      { threshold: 0.1 },
     );
-
-    observer.observe(element);
-
-    return () => {
-      observer.unobserve(element);
-    };
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
     if (!isVisible) return;
-
     let start = 0;
     const increment = end / (duration / 16);
-
     const animate = () => {
       start += increment;
       if (start >= end) {
@@ -47,38 +45,89 @@ const Counter = ({
       setCount(Math.floor(start));
       requestAnimationFrame(animate);
     };
-
     requestAnimationFrame(animate);
   }, [isVisible, end, duration]);
 
   return <span ref={ref}>{count}</span>;
 };
 
-const stats = [
-  { value: 38, label: "DPD di Jawa Timur", suffix: "" },
-  { value: 1200, label: "Da'i Aktif", suffix: "+" },
-  { value: 2002, label: "Berdiri Sejak", suffix: "" },
-  { value: 50, label: "Program Tahunan", suffix: "+" },
-];
-
+/* ================= MAIN SECTION ================= */
 const StatsSection = () => {
+  // Ganti 'any[]' menjadi 'StatRow[]' untuk memperbaiki error ESLint
+  const [stats, setStats] = useState<StatRow[]>([]);
+  const [hasAppeared, setHasAppeared] = useState(false);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from("stats")
+        .select("*")
+        .order("order_num", { ascending: true });
+
+      if (!error && data) {
+        setStats(data as StatRow[]);
+      }
+    };
+    fetchStats();
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setHasAppeared(true);
+      },
+      { threshold: 0.2 },
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const parseValue = (val: string) => {
+    // Mengambil hanya angka (untuk dihitung)
+    const num = parseInt(val.replace(/[^0-9]/g, "")) || 0;
+    // Mengambil karakter selain angka (sebagai suffix)
+    const suffix = val.replace(/[0-9]/g, "");
+    return { num, suffix };
+  };
+
   return (
-    <section className="py-20 bg-emerald-dark islamic-pattern-dark relative -mt-20">
+    <section
+      ref={sectionRef}
+      className="py-20 bg-emerald-dark islamic-pattern-dark relative -mt-20 overflow-hidden"
+    >
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-          {stats.map((stat, i) => (
-            <div
-              key={stat.label}
-              className="text-center"
-              style={{ transitionDelay: `${i * 0.1}s` }}
-            >
-              <p className="text-3xl md:text-5xl font-display font-bold text-primary-foreground mb-2">
-                <Counter end={stat.value} />
-                {stat.suffix}
-              </p>
-              <p className="text-sm text-primary-foreground/70">{stat.label}</p>
-            </div>
-          ))}
+          {stats.map((stat, i) => {
+            const { num, suffix } = parseValue(stat.value);
+
+            return (
+              <div
+                key={stat.id}
+                className={`text-center transform transition-all duration-1000 ease-out ${
+                  hasAppeared
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-10"
+                }`}
+                style={{ transitionDelay: `${i * 150}ms` }}
+              >
+                <p className="text-5xl md:text-6xl font-display font-bold text-white mb-2 flex items-center justify-center">
+                  {/* Angka yang beranimasi */}
+                  <Counter end={num} />
+
+                  {/* Suffix yang muncul statis (atau beri animasi fade) */}
+                  {suffix && (
+                    <span className="text-gold text-2xl md:text-4xl ml-1 self-start mt-1">
+                      {suffix}
+                    </span>
+                  )}
+                </p>
+
+                <p className="text-[10px] md:text-xs mt-5 font-bold uppercase tracking-[0.2em] text-white/60">
+                  {stat.label}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
