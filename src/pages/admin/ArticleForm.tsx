@@ -50,7 +50,9 @@ export default function ArticleForm({ onSaved, article }: Props) {
       setCategories((data as Category[]) || []);
     };
 
-    fetchCategories();
+    const reload = () => fetchCategories();
+    window.addEventListener("category-updated", reload);
+    return () => window.removeEventListener("category-updated", reload);
   }, []);
 
   /* ================= PREFILL EDIT ================= */

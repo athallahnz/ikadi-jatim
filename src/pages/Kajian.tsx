@@ -24,7 +24,7 @@ const PAGE_SIZE = 6;
 
 export default function Kajian() {
   const { categorySlug } = useParams();
-
+  
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");

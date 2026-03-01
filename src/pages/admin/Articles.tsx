@@ -5,6 +5,7 @@ import ArticleForm from "./ArticleForm";
 import { useAdmin } from "@/hooks/useAdmin";
 import Swal from "sweetalert2";
 import ArticlesDataTable from "./ArticlesDataTable";
+import CategoryModals from "./CategoryModals";
 
 type Article = {
   id: string;
@@ -21,6 +22,8 @@ type Article = {
 
 export default function Articles() {
   const { admin } = useAdmin();
+
+  const [openCategoryModal, setOpenCategoryModal] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [editing, setEditing] = useState<Article | null>(null);
   const [isLoading, setIsLoading] = useState(true); // ✅ true awal
@@ -144,13 +147,21 @@ export default function Articles() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-display text-emerald-dark">
-            Kajian & Artikel
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Kelola Data Kajin / Artikel untuk publish ke Pubilc.
-          </p>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-2xl font-display text-emerald-dark">
+              Kajian & Artikel
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Kelola Data Kajin / Artikel untuk publish ke Pubilc.
+            </p>
+          </div>
+          <button
+            onClick={() => setOpenCategoryModal(true)}
+            className="px-3 py-2 rounded-lg bg-emerald-700 text-white text-sm hover:bg-emerald-800"
+          >
+            + Kategori
+          </button>
         </div>
 
         <div className="bg-white border border-border rounded-xl p-5 shadow-sm">
@@ -173,6 +184,14 @@ export default function Articles() {
           onTogglePublish={handleTogglePublish}
         />
       </div>
+      <CategoryModals
+        open={openCategoryModal}
+        onClose={() => setOpenCategoryModal(false)}
+        onCreated={() => {
+          // optional: trigger refresh form kategori
+          window.dispatchEvent(new Event("category-updated"));
+        }}
+      />
     </AdminLayout>
   );
 }

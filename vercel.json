@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/kajian/:category/:slug",
+      "destination": "/api/og/kajian?slug=:slug"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
