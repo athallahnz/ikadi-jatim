@@ -8,6 +8,7 @@ type Props = {
 
 export default function AdminLayout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -15,10 +16,17 @@ export default function AdminLayout({ children }: Props) {
       <AdminSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        onCollapseChange={setCollapsed}
       />
 
       {/* MAIN AREA */}
-      <div className="md:pl-64 flex flex-col min-h-screen">
+      <div
+        className={`
+          flex flex-col min-h-screen
+          transition-all duration-300
+          ${collapsed ? "md:pl-20" : "md:pl-64"}
+        `}
+      >
         <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
 
         <main className="flex-1 p-4 md:p-6">

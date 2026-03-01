@@ -11,6 +11,7 @@ import {
   Info,
   HelpCircle,
   LucideProps,
+  Pencil,
 } from "lucide-react";
 
 // Import Drag and Drop components
@@ -249,7 +250,6 @@ export default function Programs() {
 
                             <div className="flex gap-2 shrink-0">
                               <button
-                                className="flex items-center gap-1.5 text-xs px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-amber-50 hover:text-amber-700 transition-all font-bold"
                                 onClick={() => {
                                   setEditing(p);
                                   window.scrollTo({
@@ -257,14 +257,17 @@ export default function Programs() {
                                     behavior: "smooth",
                                   });
                                 }}
+                                className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
+                                title="Edit"
                               >
-                                <Edit3 size={14} /> Edit
+                                <Pencil size={16} />
                               </button>
                               <button
-                                className="flex items-center gap-1.5 text-xs px-4 py-2 bg-white border border-slate-200 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-600 transition-all font-bold"
                                 onClick={() => handleDelete(p.id)}
+                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
+                                title="Hapus"
                               >
-                                <Trash2 size={14} /> Hapus
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </div>

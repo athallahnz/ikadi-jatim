@@ -25,13 +25,17 @@ import NotFound from "@/pages/NotFound";
 // ADMIN PAGES & ROUTES
 import Login from "@/pages/admin/Login";
 import AdminRoutes from "./pages/admin/AdminRoutes";
+import RunningTextBar from "./components/RunningTextBar";
+import MoonCursor from "./components/ui/MoonCursor";
 
 // 1. Definisikan PublicLayout di luar atau di atas App agar rapi
 function PublicLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
+      <RunningTextBar />
       <main className="flex-1">
+        <MoonCursor />
         <SeasonBadge />
         <ScrollToTop />
         <Routes>

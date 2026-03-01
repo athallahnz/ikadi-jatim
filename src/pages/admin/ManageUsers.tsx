@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
 import CreateUser from "./CreateUser";
@@ -20,6 +20,7 @@ type UserAdmin = {
 export default function ManageUsers() {
   const [users, setUsers] = useState<UserAdmin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   // State untuk Modal Create
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,6 +28,20 @@ export default function ManageUsers() {
   // ✅ State untuk Modal Edit
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAdmin | null>(null);
+
+  const filteredUsers = useMemo(() => {
+    if (!search) return users;
+
+    const q = search.toLowerCase();
+
+    return users.filter((u) => {
+      return (
+        u.name.toLowerCase().includes(q) ||
+        (u.brand_name || "").toLowerCase().includes(q) ||
+        (u.daerah || "").toLowerCase().includes(q)
+      );
+    });
+  }, [users, search]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -110,6 +125,16 @@ export default function ManageUsers() {
       </div>
 
       <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+        {/* SEARCH BAR */}
+        <div className="p-4 border-b bg-muted/30">
+          <input
+            placeholder="Cari admin..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="px-3 py-2 border rounded-lg text-sm w-full max-w-xs"
+          />
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-emerald-900 uppercase bg-emerald-50/50 border-b">
@@ -120,27 +145,46 @@ export default function ManageUsers() {
                 <th className="px-6 py-4 font-semibold text-right">Aksi</th>
               </tr>
             </thead>
+
             <tbody>
-              {loading ? (
+              {/* ================= LOADING ================= */}
+              {loading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b animate-pulse">
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-muted rounded w-40 mb-2" />
+                      <div className="h-3 bg-muted rounded w-24" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-muted rounded w-16" />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-muted rounded w-32" />
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <div className="h-7 w-7 bg-muted rounded" />
+                        <div className="h-7 w-7 bg-muted rounded" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+              {/* ================= EMPTY ================= */}
+              {!loading && filteredUsers.length === 0 && (
                 <tr>
                   <td
                     colSpan={4}
-                    className="text-center py-10 text-muted-foreground"
+                    className="text-center py-12 text-muted-foreground"
                   >
-                    Memuat data...
+                    Tidak ada admin ditemukan
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="text-center py-10 text-muted-foreground"
-                  >
-                    Belum ada data admin.
-                  </td>
-                </tr>
-              ) : (
-                users.map((u) => (
+              )}
+
+              {/* ================= DATA ================= */}
+              {!loading &&
+                filteredUsers.map((u) => (
                   <tr
                     key={u.id}
                     className="border-b last:border-0 hover:bg-muted/30"
@@ -153,6 +197,7 @@ export default function ManageUsers() {
                         </span>
                       )}
                     </td>
+
                     <td className="px-6 py-4 capitalize">
                       <span
                         className={`px-2.5 py-1 rounded text-xs font-medium ${
@@ -164,6 +209,7 @@ export default function ManageUsers() {
                         {u.role}
                       </span>
                     </td>
+
                     <td className="px-6 py-4">
                       {u.scope === "jatim" ? (
                         <span className="text-emerald-700 font-semibold">
@@ -175,28 +221,26 @@ export default function ManageUsers() {
                         </span>
                       )}
                     </td>
+
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        {/* ✅ Tombol Edit sekarang memanggil fungsi handleEditClick */}
                         <button
                           onClick={() => handleEditClick(u)}
                           className="p-1.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 transition"
-                          title="Edit Profil"
                         >
                           <Edit size={16} />
                         </button>
+
                         <button
                           onClick={() => handleDelete(u.id, u.name)}
                           className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
-                          title="Hapus"
                         >
                           <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
                   </tr>
-                ))
-              )}
+                ))}
             </tbody>
           </table>
         </div>

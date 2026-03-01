@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 type Props = {
   scope?: string;
+  compactTitle?: boolean; // ✅ tambahkan ini
 };
 
 type TimeFilter = "all" | "today" | "week" | "month";
@@ -23,7 +24,7 @@ type EventItem = {
   daerah_slug: string | null;
 };
 
-const EventsSection = ({ scope }: Props) => {
+const EventsSection = ({ scope, compactTitle }: Props) => {
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
@@ -153,7 +154,14 @@ const EventsSection = ({ scope }: Props) => {
     <section className="py-14 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6">
+          <h2
+            className={`font-display font-bold text-foreground mb-6 ${
+              compactTitle
+                ? "text-3xl md:text-4xl mb-2"
+                : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2"
+            }`}
+          >
+            {" "}
             {title}
           </h2>
 

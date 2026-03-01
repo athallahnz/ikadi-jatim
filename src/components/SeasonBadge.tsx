@@ -1,50 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-
-type SeasonConfig = {
-  name: string;
-  hijriYear: string;
-  startDate: Date;
-  icon: string;
-  beforeLabel: (days: number) => string;
-  activeLabel: string;
-};
-
-const seasonConfig: SeasonConfig = {
-  name: "Ramadhan",
-  hijriYear: "1447 H",
-  startDate: new Date("2026-02-17T18:00:00+07:00"),
-  icon: "🌙",
-  beforeLabel: (days) => `H-${days} Ramadhan 1447 H`,
-  activeLabel: "Marhaban Ya Ramadhan 1447 H",
-};
+import { useIslamicCalendar } from "@/hooks/useIslamicCalendar";
+import HijriCalendar from "@/components/HijriCalendar";
 
 const SeasonBadge = () => {
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
-  const [isActive, setIsActive] = useState(false);
+  const islamic = useIslamicCalendar();
+
   const [expanded, setExpanded] = useState(false);
+  const [showHoverCal, setShowHoverCal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const calculate = () => {
-      const now = new Date();
-      const diff = seasonConfig.startDate.getTime() - now.getTime();
-      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const label = `${islamic.badge.text} • ${islamic.year} H`;
+  const icon = islamic.badge.icon;
 
-      if (days <= 0) {
-        setIsActive(true);
-        setDaysLeft(null);
-      } else {
-        setIsActive(false);
-        setDaysLeft(days);
-      }
-    };
-
-    calculate();
-    const interval = setInterval(calculate, 1000 * 60 * 60);
-    return () => clearInterval(interval);
-  }, []);
-
-  // close when click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -55,25 +24,32 @@ const SeasonBadge = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const label = isActive
-    ? seasonConfig.activeLabel
-    : daysLeft !== null
-      ? seasonConfig.beforeLabel(daysLeft)
-      : "";
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowModal(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
 
   return (
     <>
-      {/* DESKTOP */}
+      {/* DESKTOP BADGE */}
       <div
+        ref={ref}
+        onMouseEnter={() => setShowHoverCal(true)}
+        onMouseLeave={() => setShowHoverCal(false)}
+        onClick={() => setShowModal(true)}
         className="
           hidden sm:flex
           fixed top-32 right-6 z-50
-          px-5 py-3 rounded-xl
+          px-5 py-3 mt-6 rounded-xl
           bg-background/10 backdrop-blur-xl
           border border-gold/40
           shadow-[0_0_25px_rgba(212,175,55,0.28)]
           transition-all duration-500
           hover:scale-105
+          cursor-pointer
         "
       >
         <div className="flex items-center gap-3">
@@ -83,18 +59,43 @@ const SeasonBadge = () => {
           </div>
 
           <p className="text-sm font-semibold text-gold whitespace-nowrap">
-            {seasonConfig.icon} {label}
+            {icon} {label}
           </p>
         </div>
       </div>
 
-      {/* MOBILE EXPANDABLE */}
+      {/* HOVER PREVIEW */}
+      {showHoverCal && (
+        <div className="hidden sm:block fixed top-44 right-6 z-40 pointer-events-none">
+          <div className="relative inline-flex flex-col items-end">
+            {/* BUBBLE */}
+            <div
+              className="
+      px-3 py-2 mt-8
+      text-xs font-medium
+      text-gold
+      bg-white/80
+      backdrop-blur-xl
+      border border-black/10
+      rounded-xl
+      shadow-[0_10px_20px_rgba(0,0,0,0.10)]
+      whitespace-nowrap
+      animate-in fade-in zoom-in-95 duration-200
+    "
+            >
+              Click for more calendar
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE BADGE */}
       <div
         ref={ref}
         className={`
           sm:hidden
           fixed top-24 right-4 z-50
-          flex items-center
+          flex items-center mt-6
           rounded-full
           bg-background/20 backdrop-blur-xl
           border border-gold/40
@@ -103,10 +104,12 @@ const SeasonBadge = () => {
           overflow-hidden
           ${expanded ? "pl-3 pr-4 py-2 gap-2" : "w-12 h-12 justify-center"}
         `}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => {
+          setExpanded((v) => !v);
+          setShowModal(true);
+        }}
       >
-        <span className="text-xl">{seasonConfig.icon}</span>
-
+        <span className="text-xl">{icon}</span>
         <span
           className={`
             text-xs font-semibold text-gold whitespace-nowrap
@@ -117,6 +120,19 @@ const SeasonBadge = () => {
           {label}
         </span>
       </div>
+
+      {/* MODAL CALENDAR */}
+      {showModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-md"
+            onClick={() => setShowModal(false)}
+          />
+          <div className="relative z-10 w-[92vw] max-w-2xl">
+            <HijriCalendar large />
+          </div>
+        </div>
+      )}
     </>
   );
 };

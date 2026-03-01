@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import {
+  FacebookIcon,
+  InstagramIcon,
+  YoutubeIcon,
+  TwitchIcon,
+  Music3,
+} from "lucide-react";
+
+/* ================= TYPES ================= */
 
 type Category = {
   id?: string;
@@ -42,13 +51,47 @@ type RelatedArticle = {
   category: Category | null;
 };
 
+type Social = {
+  id: string;
+  platform: string;
+  url: string;
+  order_num: number;
+};
+
+type SettingsMap = Record<string, string>;
+
+/* ================= ICON RENDER ================= */
+
+function renderIcon(platform: string) {
+  switch (platform.toLowerCase()) {
+    case "facebook":
+      return <FacebookIcon />;
+    case "instagram":
+      return <InstagramIcon />;
+    case "youtube":
+      return <YoutubeIcon />;
+    case "twitter":
+    case "x":
+      return <TwitchIcon />;
+    case "tiktok":
+      return <Music3 />;
+    default:
+      return null;
+  }
+}
+
+/* ================= COMPONENT ================= */
+
 export default function KajianDetail() {
   const { slug } = useParams();
 
   const [article, setArticle] = useState<Article | null>(null);
   const [related, setRelated] = useState<RelatedArticle[]>([]);
+  const [socials, setSocials] = useState<Social[]>([]);
+  const [settings, setSettings] = useState<SettingsMap>({});
 
-  // ================= FETCH ARTICLE =================
+  /* ================= FETCH ARTICLE ================= */
+
   useEffect(() => {
     const fetchArticle = async () => {
       if (!slug) return;
@@ -92,7 +135,8 @@ export default function KajianDetail() {
     fetchArticle();
   }, [slug]);
 
-  // ================= FETCH RELATED =================
+  /* ================= FETCH RELATED ================= */
+
   useEffect(() => {
     const fetchRelated = async () => {
       if (!article?.category?.slug) return;
@@ -143,14 +187,45 @@ export default function KajianDetail() {
     fetchRelated();
   }, [article, slug]);
 
+  /* ================= FETCH GLOBAL (SOCIAL + SETTINGS) ================= */
+
+  useEffect(() => {
+    const fetchGlobal = async () => {
+      const { data: socialData } = await supabase
+        .from("social_links")
+        .select("*")
+        .order("order_num", { ascending: true });
+
+      if (socialData) setSocials(socialData);
+
+      const { data: settingData } = await supabase
+        .from("settings")
+        .select("key, value");
+
+      if (settingData) {
+        const map = settingData.reduce<Record<string, string>>((acc, curr) => {
+          acc[curr.key] = curr.value;
+          return acc;
+        }, {});
+        setSettings(map);
+      }
+    };
+
+    fetchGlobal();
+  }, []);
+
+  /* ================= LOADING ================= */
+
   if (!article)
     return <div className="container mx-auto py-10">Loading...</div>;
+
+  /* ================= RENDER ================= */
 
   return (
     <section className="pt-24 pb-24 bg-cream islamic-pattern">
       <div className="container mx-auto py-12">
-        <div className="grid lg:grid-cols-[1fr_320px] gap-12">
-          {/* MAIN */}
+        <div className="grid lg:grid-cols-[1fr_400px] gap-16">
+          {/* ================= MAIN ================= */}
           <div className="max-w-3xl">
             {/* BREADCRUMB */}
             <div className="text-sm text-muted-foreground mb-4">
@@ -203,10 +278,11 @@ export default function KajianDetail() {
             />
           </div>
 
-          {/* SIDEBAR */}
-          <aside className="space-y-6">
-            <div className="bg-white rounded-2xl border p-5">
-              <div className="font-display font-semibold mb-4">
+          {/* ================= SIDEBAR ================= */}
+          <aside className="space-y-8">
+            {/* RELATED */}
+            <div className="bg-white rounded-2xl border p-6">
+              <div className="font-display font-semibold text-lg mb-5">
                 Kajian Terkait
               </div>
 
@@ -215,29 +291,29 @@ export default function KajianDetail() {
                   Tidak ada kajian terkait
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {related.map((r) => (
                     <Link
                       key={r.id}
                       to={`/kajian/${r.category?.slug}/${r.slug}`}
-                      className="flex gap-3 group"
+                      className="flex gap-4 group"
                     >
                       {r.cover_url ? (
                         <img
                           src={r.cover_url}
-                          className="w-20 h-16 object-cover rounded-lg"
+                          className="w-24 h-20 object-cover rounded-xl"
                         />
                       ) : (
-                        <div className="w-20 h-16 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-display text-center px-1">
+                        <div className="w-24 h-20 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-display text-center px-2">
                           Kajian
                         </div>
                       )}
 
                       <div className="flex-1">
-                        <div className="text-sm font-medium leading-snug group-hover:text-emerald-700 transition line-clamp-2">
+                        <div className="text-sm font-semibold leading-snug group-hover:text-emerald-700 transition line-clamp-2">
                           {r.title}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground mt-2">
                           {new Date(r.created_at).toLocaleDateString()}
                         </div>
                       </div>
@@ -245,6 +321,32 @@ export default function KajianDetail() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* SOCIAL */}
+            <div className="bg-emerald-900 text-white rounded-2xl p-6">
+              <h4 className="font-display font-semibold text-lg mb-4">
+                Media Sosial
+              </h4>
+
+              <div className="flex gap-4 text-2xl">
+                {socials.map((social) => (
+                  <a
+                    key={social.id}
+                    href={social.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-gold transition"
+                    title={social.platform}
+                  >
+                    {renderIcon(social.platform)}
+                  </a>
+                ))}
+              </div>
+
+              <p className="mt-6 text-xs font-bold text-gold uppercase tracking-widest">
+                {settings.site_title}
+              </p>
             </div>
           </aside>
         </div>

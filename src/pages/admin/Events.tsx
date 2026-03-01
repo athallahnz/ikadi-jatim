@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import EventForm from "./EventForm";
 import { useAdmin } from "@/hooks/useAdmin";
 import Swal from "sweetalert2"; // ✅ Import SweetAlert
+import EventsDataTable from "./EventsDataTable";
 
 type Event = {
   id: string;
@@ -23,8 +24,11 @@ export default function Events() {
   const { admin } = useAdmin();
   const [events, setEvents] = useState<Event[]>([]);
   const [editing, setEditing] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchEvents = useCallback(async () => {
+    setIsLoading(true);
+
     let query = supabase
       .from("events")
       .select("*")
@@ -34,8 +38,15 @@ export default function Events() {
       query = query.eq("daerah_slug", admin.daerah_slug);
     }
 
-    const { data } = await query;
-    setEvents((data as Event[]) || []);
+    const { data, error } = await query;
+
+    if (!error) {
+      setEvents((data as Event[]) || []);
+    } else {
+      console.error(error);
+    }
+
+    setIsLoading(false);
   }, [admin]);
 
   useEffect(() => {
@@ -153,70 +164,13 @@ export default function Events() {
       </div>
 
       <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
-        {events.map((e) => (
-          <div
-            key={e.id}
-            className="flex items-center justify-between gap-4 p-4 border-b last:border-0 hover:bg-muted/30 transition"
-          >
-            {/* LEFT */}
-            <div className="flex items-center gap-3">
-              {e.cover && (
-                <img src={e.cover} className="w-16 h-12 object-cover rounded" />
-              )}
-
-              <div>
-                <div className="flex items-center gap-2 text-xs mb-1">
-                  <span
-                    className={`px-2 py-0.5 rounded ${
-                      e.published
-                        ? "bg-green-100 text-green-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {e.published ? "Published" : "Draft"}
-                  </span>
-                </div>
-
-                <div className="font-medium text-emerald-dark">{e.title}</div>
-
-                <div className="text-xs text-muted-foreground">
-                  {e.display_date ||
-                    new Date(e.publish_at || e.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            </div>
-
-            {/* ACTIONS */}
-            <div className="flex gap-2">
-              <button
-                className="text-xs px-3 py-1 bg-emerald-100 text-emerald-800 rounded hover:bg-emerald-200 transition"
-                onClick={() => handleTogglePublish(e)} // ✅ Panggil fungsi baru
-              >
-                {e.published ? "Unpublish" : "Publish"}
-              </button>
-
-              <button
-                className="text-xs px-3 py-1 bg-amber-100 text-amber-800 rounded hover:bg-amber-200 transition"
-                onClick={() => setEditing(e)}
-              >
-                Edit
-              </button>
-
-              <button
-                className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-                onClick={() => handleDelete(e.id)} // ✅ Panggil fungsi baru
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {events.length === 0 && (
-          <div className="p-6 text-center text-muted-foreground">
-            Belum ada event
-          </div>
-        )}
+        <EventsDataTable
+          data={events}
+          isLoading={isLoading} // ✅ tambah
+          onEdit={(e) => setEditing(e)}
+          onDelete={handleDelete}
+          onTogglePublish={handleTogglePublish}
+        />
       </div>
     </AdminLayout>
   );

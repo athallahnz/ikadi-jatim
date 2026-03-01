@@ -10,6 +10,8 @@ import Programs from "./Programs";
 import Settings from "./Settings";
 import ManageUsers from "./ManageUsers"; // Pastikan import ini ada
 import ProfilAdmin from "./Profile";    // Pastikan import ini ada
+import RunningTexts from "./RunningTexts";
+import Invitations from "./Invitations";
 
 export default function AdminRoutes() {
   const allAccess: ("jatim" | "daerah")[] = ["jatim", "daerah"];
@@ -22,6 +24,8 @@ export default function AdminRoutes() {
         <Route path="events" element={<RoleRoute allow={allAccess}><Events /></RoleRoute>} />
         <Route path="gallery" element={<RoleRoute allow={allAccess}><Gallery /></RoleRoute>} />
         <Route path="programs" element={<RoleRoute allow={allAccess}><Programs /></RoleRoute>} />
+        <Route path="runningtexts" element={<RoleRoute allow={allAccess}><RunningTexts /></RoleRoute>} />
+        <Route path="invitations" element={<RoleRoute allow={allAccess}><Invitations /></RoleRoute>} />
         <Route path="settings" element={<RoleRoute allow={allAccess}><Settings /></RoleRoute>} />
 
        <Route path="settings">

@@ -15,207 +15,261 @@ type ArticleRow = {
   content: string;
   cover_url: string | null;
   publish_at: string;
-  categories: Category[] | Category | null;
+  category: Category | null;
 };
 
-type Article = {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  cover_url: string | null;
-  publish_at: string;
-  category: Category | null; // ← normalized
-};
+type Article = ArticleRow;
+
+const PAGE_SIZE = 6;
 
 export default function Kajian() {
   const { categorySlug } = useParams();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
   const activeCategory = categories.find((c) => c.slug === categorySlug);
   const title = activeCategory?.name ?? categorySlug;
+
   const getExcerpt = (html: string, max = 120) => {
     const text = html.replace(/<[^>]+>/g, "");
     return text.length > max ? text.slice(0, max) + "…" : text;
   };
 
-  // FETCH CATEGORIES
+  /* ================= DEBOUNCE SEARCH ================= */
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
-        .from("categories")
-        .select("id,name,slug")
-        .order("name");
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
-      setCategories((data as Category[]) || []);
-    };
-
-    fetchCategories();
+  /* ================= FETCH CATEGORIES ================= */
+  useEffect(() => {
+    supabase
+      .from("categories")
+      .select("id,name,slug")
+      .order("name")
+      .then(({ data }) => setCategories((data as Category[]) || []));
   }, []);
 
-  // FETCH ARTICLES
+  /* ================= FETCH ARTICLES ================= */
   useEffect(() => {
     const fetchArticles = async () => {
-      let query = supabase
+      setLoading(true);
+
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      /* ===== DATA QUERY ===== */
+      let dataQuery = supabase
         .from("articles")
         .select(
           `
-          id,
-          title,
-          slug,
-          cover_url,
-          content,
-          publish_at,
-          categories!inner (
-            id,
-            name,
-            slug
-          )
-        `,
+      id,
+      title,
+      slug,
+      cover_url,
+      content,
+      publish_at,
+      category:categories (
+        id,
+        name,
+        slug
+      )
+    `,
         )
+        .eq("published", true);
 
-        .eq("published", true)
-        .order("created_at", { ascending: false });
+      if (categorySlug) dataQuery = dataQuery.eq("category.slug", categorySlug);
+      if (debouncedSearch)
+        dataQuery = dataQuery.ilike("title", `%${debouncedSearch}%`);
+
+      const { data, error } = await dataQuery
+        .order("publish_at", { ascending: false })
+        .range(from, to);
+
+      /* ===== COUNT QUERY ===== */
+      let countQuery = supabase
+        .from("articles")
+        .select("id", { count: "exact", head: true })
+        .eq("published", true);
 
       if (categorySlug) {
-        query = query.eq("categories.slug", categorySlug);
+        const cat = categories.find((c) => c.slug === categorySlug);
+        if (cat) countQuery = countQuery.eq("category_id", cat.id);
       }
 
-      const { data } = await query;
+      if (debouncedSearch)
+        countQuery = countQuery.ilike("title", `%${debouncedSearch}%`);
 
-      if (!data) return;
+      const { count } = await countQuery;
+      if (error) {
+        console.error(error.message);
+        setLoading(false);
+        return;
+      }
 
-      const rows = data as ArticleRow[];
+      if (!data) {
+        setArticles([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
 
-      const normalized: Article[] = rows.map((r) => ({
-        id: r.id,
-        title: r.title,
-        slug: r.slug,
-        cover_url: r.cover_url,
-        publish_at: r.publish_at,
-        category: Array.isArray(r.categories)
-          ? (r.categories[0] ?? null)
-          : (r.categories ?? null),
-        content: r.content,
-      }));
-
-      setArticles(normalized);
+      setArticles(data as unknown as Article[]);
+      setTotal(count || 0);
+      setLoading(false);
     };
 
     fetchArticles();
-  }, [categorySlug]);
+  }, [categories, categorySlug, debouncedSearch, page]);
+
+  /* RESET PAGE WHEN FILTER */
+  useEffect(() => {
+    setPage(1);
+  }, [categorySlug, debouncedSearch]);
+
+  /* ================= PAGINATION RANGE ================= */
+  const getPageNumbers = () => {
+    const pages = [];
+    const max = Math.min(totalPages, 5);
+
+    for (let i = 1; i <= max; i++) pages.push(i);
+    return pages;
+  };
+
+  const getSmartPages = (current: number, total: number) => {
+    const pages: (number | string)[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+      return pages;
+    }
+
+    pages.push(1);
+
+    if (current > 3) pages.push("...");
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let i = start; i <= end; i++) pages.push(i);
+
+    if (current < total - 2) pages.push("...");
+
+    pages.push(total);
+
+    return pages;
+  };
 
   return (
-    <section className="pt-24 pb-24 bg-cream islamic-pattern">
-      <div className="container mx-auto py-12">
-        {/* TITLE */}
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground mb-6 text-center">
-          {categorySlug ? `Kajian ${title}` : "Kajian IKADI"}
-        </h2>
+    <section className="pt-24 pb-24 md:pt-28 bg-cream islamic-pattern overflow-hidden">
+      <div className="container">
+        <div className="container mx-auto pt-12 px-6 mb-16 text-center">
+          {/* TITLE */}
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+            {categorySlug ? `Kajian ${title}` : "Kajian IKADI"}
+          </h2>
 
-        <div className="gold-divider mx-auto mb-8" />
+          <div className="gold-divider mx-auto mb-8" />
 
-        {/* TAB FILTER */}
-        <div className="flex flex-wrap gap-2 mb-10 justify-center">
-          <Link
-            to="/kajian"
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-              !categorySlug
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            }`}
-          >
-            Semua
-          </Link>
+          {/* SEARCH */}
+          <div className="max-w-md mx-auto mb-8">
+            <input
+              placeholder="Cari kajian..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full px-4 py-2 rounded-full border border-border bg-white shadow-sm focus:ring-2 focus:ring-primary outline-none"
+            />
+          </div>
 
-          {categories.map((c) => (
+          {/* TAB FILTER */}
+          <div className="flex flex-wrap gap-2 mb-10 justify-center">
             <Link
-              key={c.id}
-              to={`/kajian/${c.slug}`}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                categorySlug === c.slug
+              to="/kajian"
+              className={`px-4 py-2 rounded-full text-sm ${
+                !categorySlug
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
-              {c.name}
+              Semua
             </Link>
-          ))}
+
+            {categories.map((c) => (
+              <Link
+                key={c.id}
+                to={`/kajian/${c.slug}`}
+                className={`px-4 py-2 rounded-full text-sm ${
+                  categorySlug === c.slug
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
         </div>
-
-        <div className="grid lg:grid gap-10">
-          {/* SIDEBAR */}
-          {/* <aside>
-            <div className="bg-white rounded-xl border p-4">
-              <div className="font-bold mb-3">Kategori</div>
-
-              <div className="space-y-2">
-                <Link to="/kajian" className="block text-sm hover:text-primary">
-                  Semua
-                </Link>
-
-                {categories.map((c) => (
-                  <Link
-                    key={c.id}
-                    to={`/kajian/${c.slug}`}
-                    className="block text-sm hover:text-primary"
-                  >
-                    {c.name}
-                  </Link>
-                ))}
+        {/* GRID */}
+        {loading ? (
+          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border shadow-sm overflow-hidden animate-pulse"
+              >
+                <div className="h-44 bg-muted" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 bg-muted rounded w-1/3" />
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                  <div className="h-3 bg-muted rounded w-full" />
+                  <div className="h-3 bg-muted rounded w-5/6" />
+                </div>
               </div>
+            ))}
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-emerald-700 font-display font-bold text-lg mb-2">
+              Tidak ditemukan
             </div>
-          </aside> */}
-
-          {/* GRID */}
-          {/* GRID */}
-          {articles.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-emerald-700 font-display font-bold text-lg mb-2">
-                Belum ada kajian pada kategori ini
-              </div>
-              <div className="text-muted-foreground text-sm">
-                Silakan kembali lagi nanti.
-              </div>
+            <div className="text-muted-foreground text-sm">
+              Coba kata kunci lain.
             </div>
-          ) : (
+          </div>
+        ) : (
+          <>
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {articles.map((a) => (
                 <div
                   key={a.id}
-                  className="
-          flex flex-col
-          bg-white rounded-2xl
-          border border-border/60
-          shadow-sm
-          hover:shadow-lg hover:border-gold/30
-          transition-all duration-300
-          overflow-hidden
-        "
+                  className="bg-white rounded-2xl border shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col"
                 >
-                  {/* COVER */}
                   {a.cover_url ? (
                     <img
                       src={a.cover_url}
                       className="w-full h-44 object-cover"
                     />
                   ) : (
-                    <div className="w-full h-44 bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center">
+                    <div className="w-full h-44 bg-emerald-50 flex items-center justify-center">
                       <span className="text-emerald-700 font-display text-lg px-6 text-center">
                         {a.title}
                       </span>
                     </div>
                   )}
 
-                  {/* CONTENT */}
                   <div className="p-5 flex flex-col flex-1">
-                    {/* TOP META */}
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex justify-between mb-2">
                       <div className="text-xs text-muted-foreground">
                         {new Date(a.publish_at).toLocaleDateString()}
                       </div>
-
                       {a.category && (
                         <span className="text-xs px-2 py-1 rounded bg-emerald-light text-emerald-dark">
                           {a.category.name}
@@ -223,21 +277,18 @@ export default function Kajian() {
                       )}
                     </div>
 
-                    {/* TITLE */}
                     <div className="font-display font-semibold mb-2 line-clamp-2">
                       {a.title}
                     </div>
 
-                    {/* EXCERPT */}
                     <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
                       {getExcerpt(a.content)}
                     </div>
 
-                    {/* READ MORE */}
                     <div className="mt-auto">
                       <Link
                         to={`/kajian/${a.category?.slug}/${a.slug}`}
-                        className="text-sm font-medium text-emerald-700 hover:text-gold transition inline-flex items-center gap-1"
+                        className="text-sm font-medium text-emerald-700 hover:text-gold"
                       >
                         Baca Selengkapnya →
                       </Link>
@@ -246,8 +297,58 @@ export default function Kajian() {
                 </div>
               ))}
             </div>
-          )}
-        </div>
+
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-10 gap-2">
+                {/* PREV */}
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="px-3 py-1 rounded border bg-white disabled:opacity-40"
+                >
+                  Prev
+                </button>
+
+                {/* NUMBERS */}
+                {getSmartPages(page, totalPages).map((p, i) => {
+                  const key = typeof p === "number" ? `page-${p}` : `dots-${i}`;
+
+                  if (p === "...") {
+                    return (
+                      <span key={key} className="px-2 text-muted-foreground">
+                        …
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => typeof p === "number" && setPage(p)}
+                      className={`px-3 py-1 rounded border ${
+                        page === p
+                          ? "bg-primary text-white"
+                          : "bg-white hover:bg-muted"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+
+                {/* NEXT */}
+                <button
+                  disabled={page === totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-3 py-1 rounded border bg-white disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   );

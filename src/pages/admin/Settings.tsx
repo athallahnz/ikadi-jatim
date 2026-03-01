@@ -51,6 +51,9 @@ export default function Settings() {
   const [isEditingSocials, setIsEditingSocials] = useState(false);
   const [savingSocials, setSavingSocials] = useState(false);
 
+  const [qrisFile, setQrisFile] = useState<File | null>(null);
+  const [qrisPreview, setQrisPreview] = useState<string | null>(null);
+
   const loadSocials = async () => {
     const { data } = await supabase
       .from("social_links")
@@ -149,6 +152,7 @@ export default function Settings() {
         map[s.key] = s.value;
       });
       setGlobalSettings(map);
+      setQrisPreview(map.qris || null); // ← TAMBAH
     }
   };
 
@@ -179,7 +183,17 @@ export default function Settings() {
         didOpen: () => Swal.showLoading(),
       });
 
-      const updates = Object.entries(globalSettings).map(([key, value]) => ({
+      let qrisUrl = globalSettings.qris || null;
+
+      // upload jika ada file baru
+      if (qrisFile) {
+        qrisUrl = await uploadImage(qrisFile);
+      }
+
+      const updates = Object.entries({
+        ...globalSettings,
+        qris: qrisUrl,
+      }).map(([key, value]) => ({
         key,
         value,
       }));
@@ -187,10 +201,11 @@ export default function Settings() {
       const { error } = await supabase.from("settings").upsert(updates);
       if (error) throw error;
 
+      setQrisPreview(qrisUrl);
+
       Swal.fire({
         icon: "success",
         title: "Tersimpan!",
-        text: "Pengaturan website berhasil diperbarui.",
         timer: 1500,
         showConfirmButton: false,
       });
@@ -597,6 +612,7 @@ export default function Settings() {
             </div>
           )}
         </div>
+
         {/* WEBSITE SETTINGS */}
         <div
           className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingGlobal ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
@@ -731,6 +747,58 @@ export default function Settings() {
                   className="w-full border border-slate-200 rounded-lg p-2.5 text-sm italic outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
                 />
               </div>
+
+              {/* QRIS IMAGE */}
+              <div>
+                <label className="text-[10px] uppercase font-black text-slate-400 mb-2 ml-1 block tracking-widest">
+                  QRIS Image
+                </label>
+
+                <div
+                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
+                    isEditingGlobal
+                      ? "border-emerald-300 bg-emerald-50/30 cursor-pointer hover:bg-emerald-50"
+                      : "border-slate-100 bg-slate-50/30 cursor-not-allowed"
+                  }`}
+                  onClick={() =>
+                    isEditingGlobal &&
+                    document.getElementById("qrisUpload")?.click()
+                  }
+                >
+                  {qrisFile || qrisPreview ? (
+                    <img
+                      src={
+                        qrisFile ? URL.createObjectURL(qrisFile) : qrisPreview!
+                      }
+                      className="h-32 mx-auto object-contain"
+                    />
+                  ) : (
+                    <div className="py-6 text-sm text-slate-400">
+                      Belum ada QRIS
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="qrisUpload"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setQrisFile(file);
+                        setQrisPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+
+                {isEditingGlobal && (
+                  <p className="text-[10px] text-slate-400 mt-2 italic text-center">
+                    Upload QRIS pembayaran (PNG/JPG)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -754,6 +822,7 @@ export default function Settings() {
             </div>
           )}
         </div>
+
         {/* SOCIAL MEDIA SETTINGS */}
         <div
           className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingSocials ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
