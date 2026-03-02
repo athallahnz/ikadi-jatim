@@ -21,8 +21,9 @@ export default async function handler(
   res: VercelResponse,
 ): Promise<void> {
   const slug = req.query.slug;
+  const category = req.query.category;
 
-  if (typeof slug !== "string") {
+  if (typeof slug !== "string" || typeof category !== "string") {
     res.status(404).send("Not found");
     return;
   }
@@ -39,9 +40,9 @@ export default async function handler(
   }
 
   const description = stripHtml(data.content).slice(0, 150) + "...";
-
-  const url = `https://ikadijatim.vercel.app/kajian/${slug}`;
   const image = data.cover_url ?? "";
+
+  const canonicalUrl = `https://ikadijatim.vercel.app/kajian/${category}/${slug}`;
 
   const html = `<!DOCTYPE html>
 <html>
@@ -50,7 +51,7 @@ export default async function handler(
 <meta property="og:description" content="${description}" />
 <meta property="og:image" content="${image}" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="${url}" />
+<meta property="og:url" content="${canonicalUrl}" />
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${data.title}" />
@@ -59,7 +60,9 @@ export default async function handler(
 </head>
 <body>
 Redirecting...
-<script>window.location.href="/kajian/${slug}";</script>
+<script>
+window.location.href="/kajian/${category}/${slug}";
+</script>
 </body>
 </html>`;
 

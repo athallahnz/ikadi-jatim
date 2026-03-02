@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/kajian/:category/:slug",
-      "destination": "/api/og/kajian?slug=:slug"
+      "destination": "/api/og/kajian?slug=:slug&category=:category"
     },
     {
       "source": "/(.*)",
