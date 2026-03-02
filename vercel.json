@@ -2,6 +2,13 @@
   "rewrites": [
     {
       "source": "/kajian/:category/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot)"
+        }
+      ],
       "destination": "/api/og/kajian?slug=:slug&category=:category"
     },
     {
