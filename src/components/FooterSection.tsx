@@ -1,16 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import {
-  Mail,
-  MapPin,
-  Phone,
-  Instagram,
-  Facebook,
-  Youtube,
-  Twitter,
-  Music2,
-  Link as LinkIcon,
-} from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import logoIkadi from "@/assets/logo-ikadi.png";
 
 type SocialLink = {
@@ -23,51 +13,50 @@ const FooterSection = () => {
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [socials, setSocials] = useState<SocialLink[]>([]);
 
-  // GABUNGKAN SEMUA FETCH KE SATU EFFECT
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Fetch Socials
       const { data: socialData } = await supabase
         .from("social_links")
         .select("*")
         .order("order_num", { ascending: true });
+
       if (socialData) setSocials(socialData);
 
-      // 2. Fetch Settings
       const { data: settingData } = await supabase
         .from("settings")
         .select("key, value");
+
       if (settingData) {
-        const map = settingData.reduce(
-          (acc, curr) => ({ ...acc, [curr.key]: curr.value }),
-          {},
-        );
+        const map = settingData.reduce<Record<string, string>>((acc, curr) => {
+          acc[curr.key] = curr.value;
+          return acc;
+        }, {});
         setSettings(map);
       }
     };
+
     fetchData();
   }, []);
 
-  const renderIcon = (platform: string) => {
+  // ✅ Font Awesome icon mapper
+  const getFaIcon = (platform: string) => {
     const p = platform.toLowerCase();
-    const props = {
-      className: "hover:text-gold cursor-pointer transition-colors",
-      size: 22,
-    };
 
-    if (p.includes("instagram")) return <Instagram {...props} />;
-    if (p.includes("facebook")) return <Facebook {...props} />;
-    if (p.includes("youtube")) return <Youtube {...props} />;
-    if (p.includes("twitter") || p.includes("x")) return <Twitter {...props} />;
-    if (p.includes("tiktok")) return <Music2 {...props} />;
-    return <LinkIcon {...props} />;
+    if (p.includes("instagram")) return "fa-instagram";
+    if (p.includes("facebook")) return "fa-facebook-f";
+    if (p.includes("youtube")) return "fa-youtube";
+    if (p.includes("twitter") || p.includes("x")) return "fa-x-twitter";
+    if (p.includes("tiktok")) return "fa-tiktok";
+    if (p.includes("linkedin")) return "fa-linkedin-in";
+
+    return "fa-link";
   };
 
   return (
     <footer className="bg-emerald-dark islamic-pattern-dark py-16">
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-3 gap-10 text-primary-foreground/80">
-          {/* Brand & site_description */}
+          {/* Brand */}
           <div>
             <img
               src={logoIkadi}
@@ -100,32 +89,34 @@ const FooterSection = () => {
             </div>
           </div>
 
-          {/* Media Sosial */}
+          {/* Social */}
           <div>
             <h4 className="font-semibold text-primary-foreground mb-4">
               Media Sosial
             </h4>
-            <div className="flex gap-4">
+
+            <div className="flex gap-4 text-xl">
               {socials.map((social) => (
                 <a
                   key={social.id}
                   href={social.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary-foreground"
+                  className="text-primary-foreground hover:text-gold transition-colors hover:scale-110"
                   title={social.platform}
                 >
-                  {renderIcon(social.platform)}
+                  <i className={`fa-brands ${getFaIcon(social.platform)}`} />
                 </a>
               ))}
             </div>
+
             <p className="mt-6 text-xs font-bold text-gold uppercase tracking-tighter">
               {settings.site_title}
             </p>
           </div>
         </div>
 
-        {/* Footer Text Copyright */}
+        {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-primary-foreground/10 text-center">
           <p className="text-sm text-primary-foreground/40">
             © {new Date().getFullYear()}{" "}

@@ -3,6 +3,7 @@ import { Menu, User, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoIkadi from "@/assets/logo-ikadi.png";
 import { NavLink, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const navLinks = [
   {
@@ -40,7 +41,7 @@ const navLinks = [
     ],
   },
   { label: "Galeri", to: "/galeri" },
-  { label: "Kolaborasi", to: "/kolaborasi" },
+  { label: "Kolaborasi", to: "/#kolaborasi?tab=anggota" },
 ];
 
 const Navbar = () => {
@@ -49,7 +50,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showCTA, setShowCTA] = useState(false);
   const [triggerPulse, setTriggerPulse] = useState(false);
-
+  const navigate = useNavigate();
   /* CTA pulse on mount */
   useEffect(() => {
     if (showCTA) {
@@ -182,7 +183,9 @@ const Navbar = () => {
                   to={link.to}
                   className={({ isActive }) =>
                     `relative text-lg font-medium transition-colors ${
-                      isActive ? navActive : navInactive
+                      isActive || location.hash.includes("kolaborasi")
+                        ? navActive
+                        : navInactive
                     } hover:text-primary`
                   }
                 >
@@ -227,8 +230,23 @@ const Navbar = () => {
               `}
               asChild
             >
-              <NavLink to="/kolaborasi">
-                <Users className="mr-2 h-5 w-5" />
+              <NavLink
+                to="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/", { replace: false });
+                  setTimeout(() => {
+                    window.location.hash = "kolaborasi?tab=anggota";
+                  }, 0);
+                }}
+                className={({ isActive }) =>
+                  `relative text-lg font-medium ${
+                    location.hash.includes("kolaborasi")
+                      ? navActive
+                      : navInactive
+                  }`
+                }
+              >
                 Bergabung
               </NavLink>
             </Button>
@@ -311,7 +329,17 @@ const Navbar = () => {
             className="mt-6 w-full py-6 text-base font-semibold"
             asChild
           >
-            <NavLink to="/kolaborasi" onClick={() => setIsOpen(false)}>
+            <NavLink
+              to="/"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsOpen(false);
+                navigate("/");
+                setTimeout(() => {
+                  window.location.hash = "kolaborasi?tab=anggota";
+                }, 0);
+              }}
+            >
               Bergabung
             </NavLink>
           </Button>

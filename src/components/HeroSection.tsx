@@ -19,7 +19,7 @@ const HeroSection = () => {
         style={{ backgroundImage: `url(${heroBg})` }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/50 to-background/95" />
-      
+
       <div className="relative container mx-auto px-8 md:px-16 py-36 md:py-44 text-center max-w-7xl">
         <div className="inline-block mb-8 px-5 py-2 rounded-full bg-light/10 border border-gold/50 backdrop-blur animate-fade-up">
           <span className="text-xs tracking-widest uppercase font-semibold text-gold max-w-4xl">
@@ -72,26 +72,28 @@ const HeroSection = () => {
           style={{ animationDelay: "0.3s" }}
         >
           <Button size="lg" className="px-10 py-6 text-lg shadow-lg" asChild>
-            <a href="#kolaborasi">
+            <a href="#kolaborasi?tab=anggota">
               <Users className="mr-2 h-5 w-5" />
               Bergabung Bersama Kami
             </a>
           </Button>
+
           <Button
             size="lg"
             variant="outline"
             className="text-base py-6 bg-transparent border-gold text-gold hover:bg-gold hover:text-gold-light"
             asChild
           >
-            <a href="#kolaborasi">Undang Da'i</a>
+            <a href="#kolaborasi?tab=dai">Undang Da'i</a>
           </Button>
+
           <Button
             size="lg"
             variant="outline"
             className="text-base py-6 bg-gold text-gold-light hover:bg-transparent hover:text-gold hover:border-gold"
             asChild
           >
-            <a href="#kolaborasi">
+            <a href="#kolaborasi?tab=donasi">
               <Heart className="mr-2 h-4 w-4" />
               Dukung Dakwah
             </a>

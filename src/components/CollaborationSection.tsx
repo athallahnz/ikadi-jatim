@@ -75,6 +75,30 @@ export default function CollaborationSection() {
     loadQris();
   }, []);
 
+  useEffect(() => {
+    const applyHash = () => {
+      const hash = window.location.hash; // #kolaborasi?tab=dai
+      if (!hash.includes("kolaborasi")) return;
+
+      const [section, query] = hash.split("?");
+      const params = new URLSearchParams(query);
+      const tab = params.get("tab");
+
+      if (tab === "anggota" || tab === "dai" || tab === "donasi") {
+        setActive(tab);
+      }
+
+      const el = document.getElementById("kolaborasi");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
+
   const resetForm = () => {
     setName("");
     setEmail("");

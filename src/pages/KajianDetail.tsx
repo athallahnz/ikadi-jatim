@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import {
-  FacebookIcon,
-  InstagramIcon,
-  YoutubeIcon,
-  TwitchIcon,
-  Music3,
-} from "lucide-react";
 
 /* ================= TYPES ================= */
 
@@ -63,21 +56,17 @@ type SettingsMap = Record<string, string>;
 /* ================= ICON RENDER ================= */
 
 function renderIcon(platform: string) {
-  switch (platform.toLowerCase()) {
-    case "facebook":
-      return <FacebookIcon />;
-    case "instagram":
-      return <InstagramIcon />;
-    case "youtube":
-      return <YoutubeIcon />;
-    case "twitter":
-    case "x":
-      return <TwitchIcon />;
-    case "tiktok":
-      return <Music3 />;
-    default:
-      return null;
-  }
+  const p = platform.toLowerCase();
+
+  if (p.includes("instagram")) return <i className="fa-brands fa-instagram" />;
+  if (p.includes("facebook")) return <i className="fa-brands fa-facebook-f" />;
+  if (p.includes("youtube")) return <i className="fa-brands fa-youtube" />;
+  if (p.includes("twitter") || p.includes("x"))
+    return <i className="fa-brands fa-x-twitter" />;
+  if (p.includes("tiktok")) return <i className="fa-brands fa-tiktok" />;
+  if (p.includes("linkedin")) return <i className="fa-brands fa-linkedin-in" />;
+
+  return <i className="fa-solid fa-link" />;
 }
 
 /* ================= COMPONENT ================= */
@@ -336,7 +325,7 @@ export default function KajianDetail() {
                     href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-gold transition"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-gold hover:text-emerald-900 transition"
                     title={social.platform}
                   >
                     {renderIcon(social.platform)}

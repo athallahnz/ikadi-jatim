@@ -28,6 +28,7 @@ import AdminRoutes from "./pages/admin/AdminRoutes";
 import RunningTextBar from "./components/RunningTextBar";
 import MoonCursor from "./components/ui/MoonCursor";
 
+import "@fortawesome/fontawesome-free/css/all.min.css";
 // 1. Definisikan PublicLayout di luar atau di atas App agar rapi
 function PublicLayout() {
   return (
