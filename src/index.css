@@ -239,8 +239,22 @@
   }
 
   .scrollbar-none {
-    -ms-overflow-style: none;
     scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  /* smooth mobile scrolling */
+  .snap-x {
+    scroll-snap-type: x mandatory;
+  }
+
+  .snap-center {
+    scroll-snap-align: center;
+  }
+
+  .touch-pan-x {
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ========================================

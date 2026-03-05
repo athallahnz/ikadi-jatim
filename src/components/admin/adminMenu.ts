@@ -37,7 +37,6 @@ export const adminMenu: AdminMenuItem[] = [
   { to: "/admin/invitations", label: "Undangan", icon: Layers },
 
   {
-    to: "/admin/settings",
     label: "Settings",
     icon: Settings,
     children: [
