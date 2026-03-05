@@ -44,14 +44,20 @@ export default function AdminMobileNav() {
           container.clientWidth / 2 +
           active.clientWidth / 2;
 
-        container.scrollTo({
-          left,
-          behavior: "smooth",
-        });
+        const current = container.scrollLeft;
+
+        if (Math.abs(current - left) > 10) {
+          container.scrollTo({
+            left,
+            behavior: "smooth",
+          });
+        }
       });
     }
     setActiveKey(location.pathname);
   }, [location.pathname]);
+
+  let rafId: number;
 
   return (
     <>
@@ -65,7 +71,7 @@ export default function AdminMobileNav() {
   backdrop-blur-3xl
   bg-white/20 dark:bg-white/[0.06]
   border border-white/30 dark:border-white/10
-  shadow-[0_12px_40px_rgba(0,0,0,0.35)]
+  shadow-xl
   before:absolute before:inset-0
   before:rounded-[36px]
   before:bg-gradient-to-b
@@ -80,23 +86,27 @@ export default function AdminMobileNav() {
                 dockRef.current = node;
               }}
               className="flex overflow-x-auto gap-3 px-4 py-3 scrollbar-none dock snap-x"
-              onMouseMove={(e: React.MouseEvent<HTMLDivElement>) => {
-                const icons = dockRef.current?.querySelectorAll(".dock-icon");
-                if (!icons) return;
+              onMouseMove={(e) => {
+                cancelAnimationFrame(rafId);
 
-                icons.forEach((icon) => {
-                  const rect = icon.getBoundingClientRect();
-                  const center = rect.left + rect.width / 2;
+                rafId = requestAnimationFrame(() => {
+                  const icons = dockRef.current?.querySelectorAll(".dock-icon");
+                  if (!icons) return;
 
-                  const dx = e.clientX - center;
-                  const dist = Math.abs(dx);
+                  icons.forEach((icon) => {
+                    const rect = icon.getBoundingClientRect();
+                    const center = rect.left + rect.width / 2;
 
-                  const scale = Math.max(1, 1.8 - dist / 120);
-                  const translateX = dx * 0.05;
-                  const translateY = Math.max(0, 30 - dist / 4);
+                    const dx = e.clientX - center;
+                    const dist = Math.abs(dx);
 
-                  (icon as HTMLElement).style.transform =
-                    `translateX(${translateX}px) translateY(-${translateY}px) scale(${scale})`;
+                    const scale = Math.max(1, 1.6 - dist / 140);
+                    const translateX = dx * 0.04;
+                    const translateY = Math.max(0, 24 - dist / 5);
+
+                    (icon as HTMLElement).style.transform =
+                      `translateX(${translateX}px) translateY(-${translateY}px) scale(${scale})`;
+                  });
                 });
               }}
               onMouseLeave={() => {
@@ -129,7 +139,7 @@ export default function AdminMobileNav() {
                         size={36}
                         className={`
                           dock-icon
-                          transition-all duration-200
+                          transition-colors duration-200
                           ${
                             isActive
                               ? "text-emerald-500 animate-[bounce_0.4s]"
@@ -164,8 +174,8 @@ export default function AdminMobileNav() {
                     <Icon
                       size={36}
                       className={`
-    dock-icon transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] ease-[cubic-bezier(.34,1.56,.64,1)] will-change-transform
-    ${isActive ? "text-emerald-500 scale-110 -translate-y-1" : "text-muted-foreground"}
+    dock-icon transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)] will-change-transform
+    ${isActive ? "text-emerald-500 scale-[1.08] -translate-y-[2px]" : "text-muted-foreground"}
   `}
                     />
 

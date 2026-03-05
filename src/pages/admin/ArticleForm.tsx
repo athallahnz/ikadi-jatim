@@ -262,7 +262,7 @@ export default function ArticleForm({ onSaved, article }: Props) {
       {/* CONTENT */}
       <div className="space-y-1">
         <div
-          className={`rounded-lg transition-all ${
+          className={`rounded-lg transition-colors ${
             errors.content ? "ring-2 ring-red-500" : ""
           }`}
         >
@@ -299,7 +299,7 @@ export default function ArticleForm({ onSaved, article }: Props) {
               setErrors((prev) => ({ ...prev, cover: false }));
             }
           }}
-          className={`border-2 border-dashed rounded-xl py-8 px-5 flex flex-col items-center justify-center gap-4 transition-all
+          className={`border-2 border-dashed rounded-xl py-8 px-5 flex flex-col items-center justify-center gap-4 transition-colors
     ${
       errors.cover
         ? "border-red-400 bg-red-50"
@@ -406,14 +406,14 @@ export default function ArticleForm({ onSaved, article }: Props) {
               className="w-12 h-6 bg-muted rounded-full peer peer-checked:bg-emerald-500
         after:content-[''] after:absolute after:top-[2px] after:left-[2px]
         after:bg-white after:rounded-full after:h-5 after:w-5
-        after:transition-all peer-checked:after:translate-x-6"
+        after:transition-colors peer-checked:after:translate-x-6"
             ></div>
           </label>
         </div>
 
         {/* SCHEDULE */}
         <div
-          className={`overflow-hidden transition-all duration-500 ${
+          className={`overflow-hidden transition-colors duration-500 ${
             published ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
           }`}
         >

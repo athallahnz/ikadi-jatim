@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: Props) {
 
       {/* Main Layout */}
       <div
-        className={`flex min-h-screen flex-col transition-all duration-300 ${
+        className={`flex min-h-screen flex-col transition-colors duration-300 ${
           collapsed ? "md:pl-20" : "md:pl-64"
         }`}
       >

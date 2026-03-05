@@ -64,7 +64,7 @@ export default function RunningTextBar() {
 
   return (
     <div
-      className={`fixed left-0 right-0 z-40 overflow-hidden transition-all duration-500 ${
+      className={`fixed left-0 right-0 z-40 overflow-hidden transition-colors duration-500 ${
         isScrolled
           ? "top-20 xl:top-24 bg-primary/95 backdrop-blur-lg border-b border-gold/40 shadow-sm"
           : "top-20 xl:top-24 bg-primary/80 backdrop-blur-md"

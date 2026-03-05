@@ -80,7 +80,7 @@ export default function Dashboard() {
       {/* STATS GRID */}
       <div className="grid md:grid-cols-3 gap-6">
         {/* CARD ARTIKEL */}
-        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all hover:-translate-y-1 relative overflow-hidden group">
+        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-colors hover:-translate-y-1 relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 bg-emerald-50 w-24 h-24 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           <div className="relative z-10 flex items-center justify-between">
             <div>
@@ -102,7 +102,7 @@ export default function Dashboard() {
         </div>
 
         {/* CARD EVENT */}
-        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all hover:-translate-y-1 relative overflow-hidden group">
+        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-colors hover:-translate-y-1 relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 bg-amber-50 w-24 h-24 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           <div className="relative z-10 flex items-center justify-between">
             <div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
         </div>
 
         {/* CARD GALERI */}
-        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all hover:-translate-y-1 relative overflow-hidden group">
+        <div className="bg-white rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-colors hover:-translate-y-1 relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 bg-blue-50 w-24 h-24 rounded-full group-hover:scale-125 transition-transform duration-500"></div>
           <div className="relative z-10 flex items-center justify-between">
             <div>

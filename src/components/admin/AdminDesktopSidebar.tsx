@@ -27,7 +27,7 @@ export default function AdminDesktopSidebar({
       className={`
         hidden md:flex flex-col fixed top-0 left-0 h-screen
         bg-card border-r border-border
-        transition-all duration-300
+        transition-colors duration-300
         ${collapsed ? "w-20" : "w-64"}
       `}
     >
@@ -55,7 +55,7 @@ export default function AdminDesktopSidebar({
               <img
                 src={admin.brand_logo}
                 alt="brand"
-                className="h-16 object-contain transition-all duration-300"
+                className="h-16 object-contain transition-colors duration-300"
               />
             ) : (
               <div className="text-lg font-display text-gold">

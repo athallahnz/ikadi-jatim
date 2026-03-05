@@ -54,7 +54,7 @@ const Struktur = () => {
                   text-center
                   border border-border
                   shadow-sm
-                  transition-all duration-300
+                  transition-colors duration-300
                   hover:-translate-y-2
                   hover:border-gold/40
                   hover:shadow-xl

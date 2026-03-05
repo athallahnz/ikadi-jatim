@@ -345,7 +345,7 @@ export default function Settings() {
       <div className="space-y-6 max-w-5xl">
         {/* BRAND IDENTITY */}
         <div
-          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-colors ${
             isEditingBrand
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
@@ -417,7 +417,7 @@ export default function Settings() {
                     setIsEditingBrand(false);
                   }}
                   disabled={savingBrand}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl transition-all font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl transition-colors font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Save size={16} />
                   {savingBrand ? "Memproses..." : "Simpan Identitas"}
@@ -432,10 +432,10 @@ export default function Settings() {
               </label>
 
               <div
-                className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
+                className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
                   isEditingBrand
                     ? "border-emerald-300 bg-emerald-50/30 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                    : "border-border bg-muted/40 cursor-not-allowed"
+                    : "border-border bg-muted/40 cursor-not-colorsowed"
                 }`}
                 onClick={() =>
                   isEditingBrand &&
@@ -487,7 +487,7 @@ export default function Settings() {
 
         {/* STATS SECTION */}
         <div
-          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-colors ${
             isEditingStats
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
@@ -561,7 +561,7 @@ export default function Settings() {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-xl transition-all ${
+                className={`p-4 rounded-xl transition-colors ${
                   isEditingStats
                     ? "bg-muted border border-border shadow-sm"
                     : "bg-card border border-transparent hover:border-border"
@@ -580,7 +580,7 @@ export default function Settings() {
                       updateStatField(index, "label", e.target.value)
                     }
                     placeholder="Contoh: Pengurus Daerah"
-                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-transparent disabled:border-transparent disabled:font-bold disabled:text-emerald-600 transition-all"
+                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-transparent disabled:border-transparent disabled:font-bold disabled:text-emerald-600 transition-colors"
                   />
                 </div>
 
@@ -599,7 +599,7 @@ export default function Settings() {
                         updateStatField(index, "value", e.target.value)
                       }
                       placeholder="38"
-                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-emerald-50 dark:disabled:bg-emerald-900/20 disabled:border-transparent disabled:text-emerald-700 dark:disabled:text-emerald-400 font-semibold transition-all"
+                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-emerald-50 dark:disabled:bg-emerald-900/20 disabled:border-transparent disabled:text-emerald-700 dark:disabled:text-emerald-400 font-semibold transition-colors"
                     />
                   </div>
 
@@ -620,7 +620,7 @@ export default function Settings() {
                           parseInt(e.target.value),
                         )
                       }
-                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 text-center disabled:bg-transparent disabled:border-transparent transition-all"
+                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 text-center disabled:bg-transparent disabled:border-transparent transition-colors"
                     />
                   </div>
 
@@ -661,7 +661,7 @@ export default function Settings() {
 
         {/* WEBSITE SETTINGS */}
         <div
-          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-colors ${
             isEditingGlobal
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
@@ -808,10 +808,10 @@ export default function Settings() {
                 </label>
 
                 <div
-                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
+                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${
                     isEditingGlobal
                       ? "border-emerald-300 bg-emerald-50/30 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                      : "border-border bg-muted/40 cursor-not-allowed"
+                      : "border-border bg-muted/40 cursor-not-colorsowed"
                   }`}
                   onClick={() =>
                     isEditingGlobal &&
@@ -879,7 +879,7 @@ export default function Settings() {
 
         {/* SOCIAL MEDIA SETTINGS */}
         <div
-          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-colors ${
             isEditingSocials
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""

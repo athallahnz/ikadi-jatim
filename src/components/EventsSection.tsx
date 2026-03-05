@@ -217,7 +217,7 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
                   className="flex-shrink-0 px-4 my-4"
                   style={{ width: `${cardWidth}%` }}
                 >
-                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
+                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-colors duration-300 hover:-translate-y-2 h-full flex flex-col">
                     {/* IMAGE */}
                     <div className="relative h-56 overflow-hidden group bg-muted">
                       {event.cover ? (

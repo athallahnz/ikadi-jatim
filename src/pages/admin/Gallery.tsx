@@ -239,7 +239,7 @@ export default function Gallery() {
                 </label>
 
                 <div
-                  className={`border-2 border-dashed rounded-2xl p-4 transition-all ${
+                  className={`border-2 border-dashed rounded-2xl p-4 transition-colors ${
                     errors.file
                       ? "border-red-400 bg-red-50"
                       : "border-border bg-muted"
@@ -322,7 +322,7 @@ export default function Gallery() {
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-colors
             ${
               activeFilter === cat
                 ? "bg-background text-foreground shadow-sm border border-border"

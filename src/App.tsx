@@ -3,9 +3,6 @@ import { Routes, Route } from "react-router-dom";
 // layouts
 import PublicLayout from "@/layouts/PublicLayout";
 
-// components
-import MoonCursor from "@/components/ui/MoonCursor";
-
 // pages
 import Home from "@/pages/Home";
 import Profile from "@/pages/Profile";

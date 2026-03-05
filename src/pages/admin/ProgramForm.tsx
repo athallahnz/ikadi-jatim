@@ -200,7 +200,7 @@ export default function ProgramForm({ onSaved, program }: Props) {
 
         <input
           className={`w-full border border-border bg-background text-foreground
-    p-3 rounded-xl text-sm transition-all outline-none
+    p-3 rounded-xl text-sm transition-colors outline-none
     focus:ring-2 focus:ring-emerald-500/20
     ${errors.title ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
           placeholder="Contoh: Penguatan Ukhuwah Da'i"
@@ -324,7 +324,7 @@ export default function ProgramForm({ onSaved, program }: Props) {
         </label>
 
         <div
-          className={`rounded-2xl overflow-hidden transition-all
+          className={`rounded-2xl overflow-hidden transition-colors
     ${errors.description ? "ring-2 ring-red-500" : "border border-border"}`}
         >
           <RichEditor
@@ -344,7 +344,7 @@ export default function ProgramForm({ onSaved, program }: Props) {
           onClick={save}
           disabled={isSaving}
           className={`flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl
-    shadow-sm transition-all transform active:scale-[0.98]
+    shadow-sm transition-colors transform active:scale-[0.98]
     ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"}`}
         >
           {isSaving
@@ -359,7 +359,7 @@ export default function ProgramForm({ onSaved, program }: Props) {
             type="button"
             onClick={() => onSaved()}
             className="px-8 py-4 border border-border rounded-2xl
-      font-bold text-muted-foreground hover:bg-muted transition-all"
+      font-bold text-muted-foreground hover:bg-muted transition-colors"
           >
             Batal
           </button>

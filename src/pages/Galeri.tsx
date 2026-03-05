@@ -37,7 +37,7 @@ const GalleryCard = ({ item }: { item: GalleryItem }) => {
       </div>
 
       {/* HOVER SHADE */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
     </div>
   );
 };

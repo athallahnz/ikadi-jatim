@@ -47,7 +47,7 @@ const SeasonBadge = () => {
           bg-background/10 backdrop-blur-xl
           border border-gold/40
           shadow-[0_0_25px_rgba(212,175,55,0.28)]
-          transition-all duration-500
+          transition-colors duration-500
           hover:scale-105
           cursor-pointer
         "
@@ -100,7 +100,7 @@ const SeasonBadge = () => {
           bg-background/20 backdrop-blur-xl
           border border-gold/40
           shadow-[0_0_20px_rgba(212,175,55,0.3)]
-          transition-all duration-300
+          transition-colors duration-300
           overflow-hidden
           ${expanded ? "pl-3 pr-4 py-2 gap-2" : "w-12 h-12 justify-center"}
         `}
@@ -113,7 +113,7 @@ const SeasonBadge = () => {
         <span
           className={`
             text-xs font-semibold text-gold whitespace-nowrap
-            transition-all duration-300
+            transition-colors duration-300
             ${expanded ? "opacity-100 max-w-[160px]" : "opacity-0 max-w-0"}
           `}
         >

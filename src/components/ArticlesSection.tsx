@@ -116,7 +116,7 @@ const ArticlesSection = () => {
             articles.map((article, i) => (
               <article
                 key={article.id}
-                className="bg-card rounded-2xl border border-border overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all duration-300 group flex flex-col shadow-sm"
+                className="bg-card rounded-2xl border border-border overflow-hidden hover:border-gold/30 hover:shadow-xl transition-colors duration-300 group flex flex-col shadow-sm"
               >
                 {/* IMAGE COVER */}
                 <div className="relative h-48 overflow-hidden bg-emerald-50">
@@ -181,7 +181,7 @@ const ArticlesSection = () => {
             <Button
               variant="outline"
               size="lg"
-              className="border-gold/40 text-gold hover:bg-gold-light transition-all"
+              className="border-gold/40 text-gold hover:bg-gold-light transition-colors"
             >
               <Download className="mr-2 h-5 w-5" />
               Lihat Semua Kajian

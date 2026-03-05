@@ -100,7 +100,7 @@ export default function RichEditor({ value, onChange, className }: Props) {
 
   return (
     <div
-      className={`border border-border rounded-xl overflow-hidden bg-card shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all ${className || ""}`}
+      className={`border border-border rounded-xl overflow-hidden bg-card shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-colors ${className || ""}`}
     >
       {/* TOOLBAR */}
       <div className="flex flex-wrap gap-1 border-b border-border p-1.5 bg-muted/40 backdrop-blur-sm sticky top-0 z-10 py-3">
@@ -273,7 +273,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded-lg transition-all
+      className={`p-2 rounded-lg transition-colors duration-200
       hover:bg-muted hover:text-foreground
       ${
         active ? "bg-emerald-500/10 text-emerald-600" : "text-muted-foreground"

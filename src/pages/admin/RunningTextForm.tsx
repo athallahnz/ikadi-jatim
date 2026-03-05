@@ -213,7 +213,7 @@ export default function RunningTextForm({ item, onSaved }: Props) {
       peer-checked:bg-emerald-500
       after:content-[''] after:absolute after:top-[2px] after:left-[2px]
       after:bg-white after:rounded-full after:h-5 after:w-5
-      after:transition-all peer-checked:after:translate-x-6"
+      after:transition-colors peer-checked:after:translate-x-6"
           ></div>
         </label>
       </div>

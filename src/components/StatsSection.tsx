@@ -103,7 +103,7 @@ const StatsSection = () => {
             return (
               <div
                 key={stat.id}
-                className={`text-center transform transition-all duration-1000 ease-out ${
+                className={`text-center transform transition-colors duration-1000 ease-out ${
                   hasAppeared
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-10"

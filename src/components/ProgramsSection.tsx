@@ -101,7 +101,7 @@ const ProgramsSection = () => {
                 border border-border
                 hover:border-gold/30 hover:shadow-xl
                 hover:-translate-y-1
-                transition-all duration-300
+                transition-colors duration-300
                 group
               "
               // Kita ganti animasi otomatis dengan transisi masuk manual agar data dinamis tetap terlihat

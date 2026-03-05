@@ -101,7 +101,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 will-change-transform ${
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-500 will-change-transform ${
         isScrolled
           ? "bg-background/95 backdrop-blur-lg border-b border-gold/60 shadow-sm"
           : "bg-transparent"
@@ -116,7 +116,7 @@ export default function Navbar() {
         {/* ================= DESKTOP ================= */}
         <div className="hidden xl:flex items-center gap-6">
           <div
-            className={`flex items-center gap-10 transition-all duration-500 ease-smooth ${
+            className={`flex items-center gap-10 transition-colors duration-500 ease-smooth ${
               showCTA ? "translate-x-0" : "translate-x-4"
             }`}
           >
@@ -135,7 +135,7 @@ export default function Navbar() {
                     {link.label}
                   </span>
 
-                  <div className="absolute left-0 top-full mt-8 w-64 bg-background/95 backdrop-blur-md border border-gold/30 shadow-xl opacity-0 invisible scale-95 translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:translate-y-0 transition-all duration-300 origin-top">
+                  <div className="absolute left-0 top-full mt-8 w-64 bg-background/95 backdrop-blur-md border border-gold/30 shadow-xl opacity-0 invisible scale-95 translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:translate-y-0 transition-colors duration-300 origin-top">
                     <div className="py-3">
                       {link.children.map((child) => (
                         <NavLink
@@ -174,7 +174,7 @@ export default function Navbar() {
 
             <NavLink
               to="/konsultasi"
-              className="relative overflow-hidden px-6 py-3 rounded-md bg-primary text-primary-foreground text-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.04]"
+              className="relative overflow-hidden px-6 py-3 rounded-md bg-primary text-primary-foreground text-lg font-semibold shadow-md hover:shadow-lg transition-colors duration-300 hover:scale-[1.04]"
             >
               <span className="relative z-10">konsultasisyariah.net</span>
               <span className="absolute inset-0 shimmer-effect" />
@@ -183,7 +183,7 @@ export default function Navbar() {
 
           {/* CTA Animated */}
           <div
-            className={`transition-all duration-500 ease-smooth ${
+            className={`transition-colors duration-500 ease-smooth ${
               showCTA
                 ? "opacity-100 translate-x-0 scale-100 delay-200"
                 : "opacity-0 translate-x-6 scale-95"

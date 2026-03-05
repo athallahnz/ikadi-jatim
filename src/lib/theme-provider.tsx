@@ -1,21 +1,9 @@
-// src/lib/theme-provider.tsx
 import { useEffect, useState, ReactNode } from "react";
 import { ThemeContext, Theme } from "./theme-context";
 
 type ThemeProviderProps = {
   children: ReactNode;
   defaultTheme?: Theme;
-};
-
-const getAutoNightTheme = () => {
-  const hour = new Date().getHours();
-
-  // Dark antara 18:00 - 05:00
-  if (hour >= 18 || hour < 5) {
-    return "dark";
-  }
-
-  return "light";
 };
 
 export function ThemeProvider({
@@ -26,31 +14,29 @@ export function ThemeProvider({
     if (typeof window === "undefined") return defaultTheme;
 
     const saved = localStorage.getItem("theme") as Theme | null;
-
-    if (saved) return saved;
-
-    return defaultTheme;
+    return saved ?? defaultTheme;
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove("light", "dark");
+
+    const applyTheme = (dark: boolean) => {
+      root.classList.toggle("dark", dark);
+      root.classList.toggle("light", !dark);
+    };
 
     if (theme === "system") {
       const media = window.matchMedia("(prefers-color-scheme: dark)");
 
-      const applyTheme = () => {
-        root.classList.remove("light", "dark");
-        root.classList.add(media.matches ? "dark" : "light");
-      };
+      applyTheme(media.matches);
 
-      applyTheme();
+      const listener = () => applyTheme(media.matches);
 
-      media.addEventListener("change", applyTheme);
-      return () => media.removeEventListener("change", applyTheme);
+      media.addEventListener("change", listener);
+      return () => media.removeEventListener("change", listener);
     }
 
-    root.classList.add(theme);
+    applyTheme(theme === "dark");
   }, [theme]);
 
   useEffect(() => {

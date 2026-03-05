@@ -181,7 +181,7 @@ export default function HijriCalendar({ large = false }: HijriCalendarProps) {
                 flex flex-col items-center justify-center
                 rounded-lg
                 text-xs sm:text-sm
-                transition-all duration-200
+                transition-colors duration-200
 
                 ${
                   day.isToday

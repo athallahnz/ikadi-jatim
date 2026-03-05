@@ -208,7 +208,7 @@ export default function Programs() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border-b border-border last:border-0 transition-all
+                            className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border-b border-border last:border-0 transition-colors
                     ${
                       snapshot.isDragging
                         ? "bg-muted shadow-md"
