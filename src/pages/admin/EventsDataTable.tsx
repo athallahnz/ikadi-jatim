@@ -129,141 +129,147 @@ export default function EventsDataTable({
       </div>
 
       {/* TABLE */}
-      <table className="w-full text-sm">
-        <thead className="bg-muted/40 border-b border-border">
-          <tr className="text-left text-foreground">
-            <th className="p-3">Event</th>
-            <th className="p-3">Tanggal</th>
-            <th className="p-3">Lokasi</th>
-            <th className="p-3">Status</th>
-            <th className="p-3 text-right">Aksi</th>
-          </tr>
-        </thead>
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[700px] w-full text-sm">
+          <thead className="bg-muted/40 border-b border-border">
+            <tr className="text-left text-foreground">
+              <th className="p-3">Event</th>
+              <th className="p-3">Tanggal</th>
+              <th className="p-3">Lokasi</th>
+              <th className="p-3">Status</th>
+              <th className="p-3 text-right">Aksi</th>
+            </tr>
+          </thead>
 
-        <tbody className="bg-background">
-          {/* LOADING */}
-          {isLoading &&
-            Array.from({ length: 6 }).map((_, i) => (
-              <tr
-                key={`sk-${i}`}
-                className="border-t border-border animate-pulse"
-              >
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-10 bg-muted rounded" />
-                    <div className="h-4 w-40 bg-muted rounded" />
-                  </div>
-                </td>
-
-                <td className="p-3">
-                  <div className="h-3 w-20 bg-muted rounded" />
-                </td>
-
-                <td className="p-3">
-                  <div className="h-3 w-24 bg-muted rounded" />
-                </td>
-
-                <td className="p-3">
-                  <div className="h-4 w-16 bg-muted rounded" />
-                </td>
-
-                <td className="p-3">
-                  <div className="h-6 w-24 bg-muted rounded ml-auto" />
-                </td>
-              </tr>
-            ))}
-
-          {/* DATA */}
-          {!isLoading &&
-            paginated.map((e) => {
-              const dateLabel =
-                e.display_date || getEventDate(e).toLocaleDateString();
-
-              return (
+          <tbody className="bg-background">
+            {/* LOADING */}
+            {isLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
                 <tr
-                  key={e.id}
-                  className="border-t border-border hover:bg-muted/40 transition"
+                  key={`sk-${i}`}
+                  className="border-t border-border animate-pulse"
                 >
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      {e.cover && (
-                        <img
-                          src={e.cover}
-                          className="w-14 h-10 object-cover rounded border border-border"
-                        />
-                      )}
-
-                      <div className="font-medium text-foreground">
-                        {e.title}
-                      </div>
+                      <div className="w-14 h-10 bg-muted rounded" />
+                      <div className="h-4 w-40 bg-muted rounded" />
                     </div>
                   </td>
 
-                  <td className="p-3 text-muted-foreground">{dateLabel}</td>
-
-                  <td className="p-3 text-muted-foreground">
-                    {e.location || "-"}
+                  <td className="p-3">
+                    <div className="h-3 w-20 bg-muted rounded" />
                   </td>
 
                   <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs
+                    <div className="h-3 w-24 bg-muted rounded" />
+                  </td>
+
+                  <td className="p-3">
+                    <div className="h-4 w-16 bg-muted rounded" />
+                  </td>
+
+                  <td className="p-3">
+                    <div className="h-6 w-24 bg-muted rounded ml-auto" />
+                  </td>
+                </tr>
+              ))}
+
+            {/* DATA */}
+            {!isLoading &&
+              paginated.map((e) => {
+                const dateLabel =
+                  e.display_date || getEventDate(e).toLocaleDateString();
+
+                return (
+                  <tr
+                    key={e.id}
+                    className="border-t border-border hover:bg-muted/40 transition"
+                  >
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        {e.cover && (
+                          <img
+                            src={e.cover}
+                            className="w-14 h-10 object-cover rounded border border-border"
+                          />
+                        )}
+
+                        <div className="font-medium text-foreground">
+                          {e.title}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="p-3 text-muted-foreground">{dateLabel}</td>
+
+                    <td className="p-3 text-muted-foreground">
+                      {e.location || "-"}
+                    </td>
+
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs
                 ${
                   e.published
                     ? "bg-emerald-500/10 text-emerald-600"
                     : "bg-muted text-muted-foreground"
                 }`}
-                    >
-                      {e.published ? "Published" : "Draft"}
-                    </span>
-                  </td>
+                      >
+                        {e.published ? "Published" : "Draft"}
+                      </span>
+                    </td>
 
-                  <td className="p-3">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => onTogglePublish(e)}
-                        className={`p-2 rounded-lg transition
+                    <td className="p-3">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => onTogglePublish(e)}
+                          className={`p-2 rounded-lg transition
                   ${
                     e.published
                       ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                       : "bg-muted text-muted-foreground hover:bg-muted/70"
                   }`}
-                      >
-                        {e.published ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                        >
+                          {e.published ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
 
-                      <button
-                        onClick={() => onEdit(e)}
-                        className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
-                      >
-                        <Pencil size={16} />
-                      </button>
+                        <button
+                          onClick={() => onEdit(e)}
+                          className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
+                        >
+                          <Pencil size={16} />
+                        </button>
 
-                      <button
-                        onClick={() => onDelete(e.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        <button
+                          onClick={() => onDelete(e.id)}
+                          className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
-          {/* EMPTY */}
-          {!isLoading && paginated.length === 0 && (
-            <tr>
-              <td
-                colSpan={5}
-                className="text-center py-12 text-muted-foreground"
-              >
-                Tidak ada event ditemukan
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+            {/* EMPTY */}
+            {!isLoading && paginated.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-center py-12 text-muted-foreground"
+                >
+                  Tidak ada event ditemukan
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* PAGINATION */}
       <div className="flex justify-between items-center p-4 border-t border-border bg-background">

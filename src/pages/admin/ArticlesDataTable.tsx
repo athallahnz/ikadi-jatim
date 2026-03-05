@@ -121,156 +121,162 @@ export default function ArticlesDataTable({
       </div>
 
       {/* TABLE */}
-      <table className="w-full text-sm">
-        {/* HEADER */}
-        <thead className="bg-card border-b border-border">
-          <tr className="text-left text-muted-foreground">
-            <th className="p-3">Artikel</th>
-            <th className="p-3">Kategori</th>
-            <th className="p-3">Tanggal</th>
-            <th className="p-3">Status</th>
-            <th className="p-3 text-right">Aksi</th>
-          </tr>
-        </thead>
-
-        {/* BODY */}
-        <tbody className="bg-card">
-          {/* LOADING */}
-          {isLoading &&
-            Array.from({ length: 6 }).map((_, i) => (
-              <tr
-                key={`skeleton-${i}`}
-                className="border-t border-border animate-pulse"
-              >
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-10 rounded bg-muted" />
-                    <div className="h-3 w-40 rounded bg-muted" />
-                  </div>
-                </td>
-
-                <td className="p-3">
-                  <div className="h-3 w-20 rounded bg-muted" />
-                </td>
-
-                <td className="p-3">
-                  <div className="h-3 w-24 rounded bg-muted" />
-                </td>
-
-                <td className="p-3">
-                  <div className="h-4 w-16 rounded bg-muted" />
-                </td>
-
-                <td className="p-3">
-                  <div className="flex justify-end gap-2">
-                    <div className="w-8 h-8 rounded bg-muted" />
-                    <div className="w-8 h-8 rounded bg-muted" />
-                    <div className="w-8 h-8 rounded bg-muted" />
-                  </div>
-                </td>
-              </tr>
-            ))}
-
-          {/* EMPTY */}
-          {!isLoading && paginated.length === 0 && (
-            <tr>
-              <td
-                colSpan={5}
-                className="text-center py-12 text-muted-foreground"
-              >
-                Tidak ada artikel ditemukan
-              </td>
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-[700px] w-full text-sm">
+          {/* HEADER */}
+          <thead className="bg-card border-b border-border">
+            <tr className="text-left text-muted-foreground">
+              <th className="p-3">Artikel</th>
+              <th className="p-3">Kategori</th>
+              <th className="p-3">Tanggal</th>
+              <th className="p-3">Status</th>
+              <th className="p-3 text-right">Aksi</th>
             </tr>
-          )}
+          </thead>
 
-          {/* DATA */}
-          {!isLoading &&
-            paginated.map((a) => {
-              const cat = Array.isArray(a.categories)
-                ? a.categories[0]?.name
-                : a.categories?.name;
-
-              return (
+          {/* BODY */}
+          <tbody className="bg-card">
+            {/* LOADING */}
+            {isLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
                 <tr
-                  key={a.id}
-                  className="border-t border-border hover:bg-muted/40 transition-colors"
+                  key={`skeleton-${i}`}
+                  className="border-t border-border animate-pulse"
                 >
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
-                        {a.cover_url ? (
-                          <img
-                            src={a.cover_url}
-                            alt={a.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
-                            No Img
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="font-medium text-foreground">
-                        {a.title}
-                      </div>
+                      <div className="w-14 h-10 rounded bg-muted" />
+                      <div className="h-3 w-40 rounded bg-muted" />
                     </div>
                   </td>
 
-                  <td className="p-3 text-muted-foreground">{cat || "-"}</td>
-
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(a.created_at).toLocaleDateString()}
+                  <td className="p-3">
+                    <div className="h-3 w-20 rounded bg-muted" />
                   </td>
 
                   <td className="p-3">
-                    <span
-                      className={`px-2 py-0.5 rounded text-xs
+                    <div className="h-3 w-24 rounded bg-muted" />
+                  </td>
+
+                  <td className="p-3">
+                    <div className="h-4 w-16 rounded bg-muted" />
+                  </td>
+
+                  <td className="p-3">
+                    <div className="flex justify-end gap-2">
+                      <div className="w-8 h-8 rounded bg-muted" />
+                      <div className="w-8 h-8 rounded bg-muted" />
+                      <div className="w-8 h-8 rounded bg-muted" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+            {/* EMPTY */}
+            {!isLoading && paginated.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="text-center py-12 text-muted-foreground"
+                >
+                  Tidak ada artikel ditemukan
+                </td>
+              </tr>
+            )}
+
+            {/* DATA */}
+            {!isLoading &&
+              paginated.map((a) => {
+                const cat = Array.isArray(a.categories)
+                  ? a.categories[0]?.name
+                  : a.categories?.name;
+
+                return (
+                  <tr
+                    key={a.id}
+                    className="border-t border-border hover:bg-muted/40 transition-colors"
+                  >
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
+                          {a.cover_url ? (
+                            <img
+                              src={a.cover_url}
+                              alt={a.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                              No Img
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="font-medium text-foreground">
+                          {a.title}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="p-3 text-muted-foreground">{cat || "-"}</td>
+
+                    <td className="p-3 text-muted-foreground">
+                      {new Date(a.created_at).toLocaleDateString()}
+                    </td>
+
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs
                 ${
                   a.published
                     ? "bg-emerald-500/10 text-emerald-600"
                     : "bg-muted text-muted-foreground"
                 }`}
-                    >
-                      {a.published ? "Published" : "Draft"}
-                    </span>
-                  </td>
+                      >
+                        {a.published ? "Published" : "Draft"}
+                      </span>
+                    </td>
 
-                  <td className="p-3">
-                    <div className="flex justify-end gap-1">
-                      <button
-                        onClick={() => onTogglePublish(a)}
-                        className={`p-2 rounded-lg transition
+                    <td className="p-3">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => onTogglePublish(a)}
+                          className={`p-2 rounded-lg transition
                   ${
                     a.published
                       ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
                       : "bg-muted text-muted-foreground hover:bg-muted/70"
                   }`}
-                      >
-                        {a.published ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
+                        >
+                          {a.published ? (
+                            <EyeOff size={16} />
+                          ) : (
+                            <Eye size={16} />
+                          )}
+                        </button>
 
-                      <button
-                        onClick={() => onEdit(a)}
-                        className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
-                      >
-                        <Pencil size={16} />
-                      </button>
+                        <button
+                          onClick={() => onEdit(a)}
+                          className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
+                        >
+                          <Pencil size={16} />
+                        </button>
 
-                      <button
-                        onClick={() => onDelete(a.id)}
-                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-        </tbody>
-      </table>
+                        <button
+                          onClick={() => onDelete(a.id)}
+                          className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
 
       {/* PAGINATION */}
       <div className="flex justify-between items-center p-4 border-t border-border bg-card">

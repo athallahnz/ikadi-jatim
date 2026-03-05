@@ -148,7 +148,7 @@ export default function ManageUsers() {
     <AdminLayout>
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display text-foreground">
+          <h1 className="text-2xl font-black text-foreground">
             Manage Users
           </h1>
 

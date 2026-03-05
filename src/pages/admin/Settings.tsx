@@ -345,13 +345,14 @@ export default function Settings() {
       <div className="space-y-6 max-w-5xl">
         {/* BRAND IDENTITY */}
         <div
-          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
             isEditingBrand
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-6">
+          {/* HEADER */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div className="flex items-center gap-2 font-bold text-foreground">
               <CheckCircle
                 size={18}
@@ -359,7 +360,9 @@ export default function Settings() {
                   isEditingBrand ? "text-emerald-500" : "text-muted-foreground"
                 }
               />
-              Brand Identitas
+
+              <span>Brand Identitas</span>
+
               {!isEditingBrand && (
                 <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                   Locked
@@ -371,7 +374,7 @@ export default function Settings() {
             {!isEditingBrand ? (
               <button
                 onClick={() => setIsEditingBrand(true)}
-                className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
+                className="flex items-center justify-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition w-full sm:w-auto"
               >
                 <Edit3 size={16} /> Edit Identitas
               </button>
@@ -381,14 +384,16 @@ export default function Settings() {
                   setIsEditingBrand(false);
                   setLogoFile(null);
                 }}
-                className="text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
+                className="text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition w-full sm:w-auto"
               >
                 Batal
               </button>
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
+          {/* CONTENT */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            {/* LEFT SIDE */}
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase font-black text-muted-foreground mb-1.5 block ml-1 tracking-widest">
@@ -412,7 +417,7 @@ export default function Settings() {
                     setIsEditingBrand(false);
                   }}
                   disabled={savingBrand}
-                  className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition-all font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl transition-all font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Save size={16} />
                   {savingBrand ? "Memproses..." : "Simpan Identitas"}
@@ -420,6 +425,7 @@ export default function Settings() {
               )}
             </div>
 
+            {/* RIGHT SIDE */}
             <div>
               <label className="text-[10px] uppercase font-black text-muted-foreground mb-2 block ml-1 tracking-widest">
                 Logo Brand
@@ -440,7 +446,7 @@ export default function Settings() {
                   <div className="relative inline-block">
                     <img
                       src={logoFile ? URL.createObjectURL(logoFile) : logoUrl!}
-                      className={`h-20 mx-auto object-contain transition ${
+                      className={`h-16 sm:h-20 mx-auto object-contain transition ${
                         !isEditingBrand && "grayscale-[0.5] opacity-80"
                       }`}
                     />
@@ -479,15 +485,16 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* STATS SECTION - HIGH UX IMPROVEMENT */}
+        {/* STATS SECTION */}
         <div
-          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
             isEditingStats
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-6">
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <div className="font-bold text-foreground flex items-center gap-2">
                 <CheckCircle
@@ -511,11 +518,12 @@ export default function Settings() {
               </p>
             </div>
 
-            <div className="flex gap-2">
+            {/* BUTTONS */}
+            <div className="flex flex-wrap gap-2">
               {!isEditingStats ? (
                 <button
                   onClick={() => setIsEditingStats(true)}
-                  className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
+                  className="flex items-center justify-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition w-full sm:w-auto"
                 >
                   <Edit3 size={16} /> Edit Data
                 </button>
@@ -526,14 +534,14 @@ export default function Settings() {
                       setIsEditingStats(false);
                       loadStats();
                     }}
-                    className="flex items-center gap-2 bg-background border border-border text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
+                    className="flex items-center justify-center gap-2 bg-background border border-border text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition w-full sm:w-auto"
                   >
                     Batal
                   </button>
 
                   <button
                     onClick={addNewStat}
-                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition border border-emerald-200 dark:border-emerald-800"
+                    className="flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition border border-emerald-200 dark:border-emerald-800 w-full sm:w-auto"
                   >
                     <Plus size={16} /> Tambah
                   </button>
@@ -542,6 +550,7 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* LIST */}
           <div className="space-y-3">
             {stats.length === 0 && (
               <div className="text-center py-10 border-2 border-dashed border-border rounded-xl text-muted-foreground text-sm italic">
@@ -552,13 +561,14 @@ export default function Settings() {
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className={`flex gap-3 items-end p-4 rounded-xl transition-all ${
+                className={`p-4 rounded-xl transition-all ${
                   isEditingStats
                     ? "bg-muted border border-border shadow-sm"
                     : "bg-card border border-transparent hover:border-border"
                 }`}
               >
-                <div className="flex-1">
+                {/* LABEL */}
+                <div className="mb-4">
                   <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
                     Label
                   </label>
@@ -574,60 +584,67 @@ export default function Settings() {
                   />
                 </div>
 
-                <div className="w-32">
-                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
-                    Angka/Value
-                  </label>
+                {/* VALUE + ORDER */}
+                <div className="flex items-end gap-3">
+                  {/* ANGKA */}
+                  <div className="flex-1">
+                    <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
+                      Angka
+                    </label>
 
-                  <input
-                    disabled={!isEditingStats}
-                    value={stat.value}
-                    onChange={(e) =>
-                      updateStatField(index, "value", e.target.value)
-                    }
-                    placeholder="38"
-                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-emerald-50 dark:disabled:bg-emerald-900/20 disabled:border-transparent disabled:text-emerald-700 dark:disabled:text-emerald-400 font-semibold transition-all"
-                  />
+                    <input
+                      disabled={!isEditingStats}
+                      value={stat.value}
+                      onChange={(e) =>
+                        updateStatField(index, "value", e.target.value)
+                      }
+                      placeholder="38"
+                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-emerald-50 dark:disabled:bg-emerald-900/20 disabled:border-transparent disabled:text-emerald-700 dark:disabled:text-emerald-400 font-semibold transition-all"
+                    />
+                  </div>
+
+                  {/* ORDER */}
+                  <div className="w-24">
+                    <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
+                      Urutan
+                    </label>
+
+                    <input
+                      disabled={!isEditingStats}
+                      type="number"
+                      value={stat.order_num}
+                      onChange={(e) =>
+                        updateStatField(
+                          index,
+                          "order_num",
+                          parseInt(e.target.value),
+                        )
+                      }
+                      className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 text-center disabled:bg-transparent disabled:border-transparent transition-all"
+                    />
+                  </div>
+
+                  {/* DELETE */}
+                  {isEditingStats && (
+                    <button
+                      onClick={() => deleteStat(stat.id, index)}
+                      className="mb-[2px] p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  )}
                 </div>
-
-                <div className="w-20">
-                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
-                    Urutan
-                  </label>
-
-                  <input
-                    disabled={!isEditingStats}
-                    type="number"
-                    value={stat.order_num}
-                    onChange={(e) =>
-                      updateStatField(
-                        index,
-                        "order_num",
-                        parseInt(e.target.value),
-                      )
-                    }
-                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 text-center disabled:bg-transparent disabled:border-transparent transition-all"
-                  />
-                </div>
-
-                {isEditingStats && (
-                  <button
-                    onClick={() => deleteStat(stat.id, index)}
-                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                )}
               </div>
             ))}
           </div>
 
+          {/* SAVE SECTION */}
           {isEditingStats && (
-            <div className="mt-8 flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+            <div className="mt-8 flex flex-col md:flex-row md:items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
               <button
                 onClick={saveStats}
                 disabled={savingStats}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl transition font-bold flex items-center gap-2 disabled:opacity-50"
+                className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 md:px-8 py-3 rounded-xl transition font-bold flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Save size={18} />
                 {savingStats
@@ -644,15 +661,16 @@ export default function Settings() {
 
         {/* WEBSITE SETTINGS */}
         <div
-          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
             isEditingGlobal
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-6">
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
-              <div className="font-bold text-foreground flex items-center gap-2">
+              <div className="font-bold text-foreground flex items-center gap-2 flex-wrap">
                 <CheckCircle
                   size={18}
                   className={
@@ -677,21 +695,23 @@ export default function Settings() {
             {!isEditingGlobal ? (
               <button
                 onClick={() => setIsEditingGlobal(true)}
-                className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
+                className="flex items-center justify-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition w-full md:w-auto"
               >
                 <Edit3 size={16} /> Edit Settings
               </button>
             ) : (
               <button
                 onClick={() => setIsEditingGlobal(false)}
-                className="flex items-center gap-2 text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
+                className="flex items-center justify-center gap-2 text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition w-full md:w-auto"
               >
                 Batal
               </button>
             )}
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* FORM */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* LEFT */}
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
@@ -702,7 +722,7 @@ export default function Settings() {
                   disabled={!isEditingGlobal}
                   value={globalSettings.site_title || ""}
                   onChange={(e) => updateSetting("site_title", e.target.value)}
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
@@ -717,7 +737,7 @@ export default function Settings() {
                   onChange={(e) =>
                     updateSetting("site_description", e.target.value)
                   }
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
@@ -732,11 +752,12 @@ export default function Settings() {
                   onChange={(e) =>
                     updateSetting("contact_email", e.target.value)
                   }
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
             </div>
 
+            {/* RIGHT */}
             <div className="space-y-4">
               <div>
                 <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
@@ -748,7 +769,7 @@ export default function Settings() {
                   value={globalSettings.address || ""}
                   onChange={(e) => updateSetting("address", e.target.value)}
                   rows={3}
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
@@ -763,7 +784,7 @@ export default function Settings() {
                   onChange={(e) =>
                     updateSetting("contact_phone", e.target.value)
                   }
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
@@ -776,11 +797,11 @@ export default function Settings() {
                   disabled={!isEditingGlobal}
                   value={globalSettings.footer_text || ""}
                   onChange={(e) => updateSetting("footer_text", e.target.value)}
-                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm italic outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm italic outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
-              {/* QRIS IMAGE */}
+              {/* QRIS */}
               <div>
                 <label className="text-[10px] uppercase font-black text-muted-foreground mb-2 ml-1 block tracking-widest">
                   QRIS Image
@@ -802,7 +823,7 @@ export default function Settings() {
                       src={
                         qrisFile ? URL.createObjectURL(qrisFile) : qrisPreview!
                       }
-                      className="h-32 mx-auto object-contain"
+                      className="h-28 md:h-32 mx-auto object-contain"
                     />
                   ) : (
                     <div className="py-6 text-sm text-muted-foreground">
@@ -834,15 +855,16 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* SAVE */}
           {isEditingGlobal && (
-            <div className="mt-8 pt-6 border-t border-border flex items-center gap-4">
+            <div className="mt-8 pt-6 border-t border-border flex flex-col md:flex-row md:items-center gap-4">
               <button
                 onClick={async () => {
                   await saveGlobal();
                   setIsEditingGlobal(false);
                 }}
                 disabled={savingGlobal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-3 rounded-xl transition font-bold disabled:opacity-50 flex items-center gap-2"
+                className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl transition font-bold disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Save size={18} />
                 {savingGlobal ? "Menyimpan..." : "Simpan Perubahan"}
@@ -857,13 +879,14 @@ export default function Settings() {
 
         {/* SOCIAL MEDIA SETTINGS */}
         <div
-          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+          className={`bg-card border border-border rounded-xl p-5 md:p-6 shadow-sm transition-all ${
             isEditingSocials
               ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
               : ""
           }`}
         >
-          <div className="flex justify-between items-center mb-6">
+          {/* HEADER */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div>
               <div className="font-bold text-foreground flex items-center gap-2">
                 <CheckCircle
@@ -882,11 +905,11 @@ export default function Settings() {
               </p>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!isEditingSocials ? (
                 <button
                   onClick={() => setIsEditingSocials(true)}
-                  className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
+                  className="flex items-center justify-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition w-full md:w-auto"
                 >
                   <Edit3 size={16} /> Edit Socials
                 </button>
@@ -897,14 +920,14 @@ export default function Settings() {
                       setIsEditingSocials(false);
                       loadSocials();
                     }}
-                    className="text-muted-foreground px-4 py-2 text-sm font-bold hover:bg-muted rounded-lg transition"
+                    className="text-muted-foreground px-4 py-2 text-sm font-bold hover:bg-muted rounded-lg transition w-full md:w-auto"
                   >
                     Batal
                   </button>
 
                   <button
                     onClick={addNewSocial}
-                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition"
+                    className="flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition w-full md:w-auto"
                   >
                     <Plus size={16} /> Tambah
                   </button>
@@ -913,13 +936,15 @@ export default function Settings() {
             </div>
           </div>
 
+          {/* LIST */}
           <div className="space-y-4">
             {socials.map((social, index) => (
               <div
                 key={index}
-                className="flex gap-3 items-end p-3 rounded-lg bg-muted/40"
+                className="flex flex-col md:flex-row gap-4 md:items-end p-4 rounded-xl bg-muted/40"
               >
-                <div className="w-1/4">
+                {/* PLATFORM */}
+                <div className="w-full md:w-1/3">
                   <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1 tracking-widest">
                     Platform
                   </label>
@@ -941,6 +966,7 @@ export default function Settings() {
                   </select>
                 </div>
 
+                {/* URL */}
                 <div className="flex-1">
                   <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1 tracking-widest">
                     URL Profil
@@ -957,10 +983,11 @@ export default function Settings() {
                   />
                 </div>
 
+                {/* DELETE */}
                 {isEditingSocials && (
                   <button
                     onClick={() => deleteSocial(social.id, index)}
-                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition mb-0.5"
+                    className="self-end md:self-auto p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -969,12 +996,13 @@ export default function Settings() {
             ))}
           </div>
 
+          {/* SAVE */}
           {isEditingSocials && (
-            <div className="mt-8 border-t border-border pt-6 flex items-center gap-4">
+            <div className="mt-8 border-t border-border pt-6 flex flex-col md:flex-row md:items-center gap-4">
               <button
                 onClick={saveSocials}
                 disabled={savingSocials}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition font-bold flex items-center gap-2"
+                className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition font-bold flex items-center justify-center gap-2"
               >
                 <Save size={18} /> Simpan Social Media
               </button>

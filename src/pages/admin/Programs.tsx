@@ -192,7 +192,7 @@ export default function Programs() {
           </span>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden select-none">
           {loading ? (
             <div className="p-20 text-center animate-pulse text-muted-foreground">
               Memuat data...
@@ -208,18 +208,19 @@ export default function Programs() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`group flex items-center justify-between gap-4 p-5 border-b border-border last:border-0 transition-all
-                      ${
-                        snapshot.isDragging
-                          ? "bg-muted shadow-md"
-                          : "bg-card hover:bg-muted/50"
-                      }`}
+                            className={`group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border-b border-border last:border-0 transition-all
+                    ${
+                      snapshot.isDragging
+                        ? "bg-muted shadow-md"
+                        : "bg-card hover:bg-muted/50"
+                    }`}
                           >
-                            <div className="flex items-center gap-5">
+                            {/* LEFT CONTENT */}
+                            <div className="flex items-start gap-4 flex-1 min-w-0">
                               {/* Drag Handle */}
                               <div
                                 {...provided.dragHandleProps}
-                                className="cursor-grab active:cursor-grabbing"
+                                className="cursor-grab active:cursor-grabbing touch-none pt-1"
                               >
                                 <GripVertical
                                   className="text-muted-foreground/40 group-hover:text-muted-foreground"
@@ -227,23 +228,25 @@ export default function Programs() {
                                 />
                               </div>
 
+                              {/* ICON */}
                               <div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
                                 <DynamicIcon name={p.icon} />
                               </div>
 
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
+                              {/* TEXT */}
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                                     No. {p.order_num}
                                   </span>
 
-                                  <h3 className="font-bold text-foreground leading-tight">
+                                  <h3 className="font-bold text-foreground leading-tight break-words">
                                     {p.title}
                                   </h3>
                                 </div>
 
                                 <div
-                                  className="text-xs text-muted-foreground line-clamp-1 max-w-md italic"
+                                  className="text-xs text-muted-foreground line-clamp-2 max-w-full italic"
                                   dangerouslySetInnerHTML={{
                                     __html: p.description
                                       .substring(0, 120)
@@ -253,7 +256,8 @@ export default function Programs() {
                               </div>
                             </div>
 
-                            <div className="flex gap-2 shrink-0">
+                            {/* ACTION BUTTONS */}
+                            <div className="flex gap-2 shrink-0 w-full sm:w-auto justify-end">
                               <button
                                 onClick={() => {
                                   setEditing(p);

@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { useAdmin } from "@/hooks/useAdmin";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function AdminHeader() {
   const { admin } = useAdmin();
@@ -18,6 +19,11 @@ export default function AdminHeader() {
 
       {/* RIGHT */}
       <div className="flex items-center gap-3">
+        {/* DARK MODE SWITCH */}
+        <div className="flex items-center">
+          <ThemeToggle />
+        </div>
+
         {/* SCOPE BADGE */}
         {admin && (
           <span className="hidden sm:inline-flex items-center rounded bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">

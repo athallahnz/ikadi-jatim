@@ -32,17 +32,54 @@ export default function AdminDesktopSidebar({
       `}
     >
       {/* HEADER */}
+      {/* HEADER */}
       <div
-        className={`flex items-center border-b border-border ${
-          collapsed ? "justify-center h-20" : "px-5 h-24"
+        className={`relative flex items-center border-b border-border ${
+          collapsed ? "justify-center h-20" : "justify-center h-24"
         }`}
       >
-        <button
-          onClick={toggleCollapse}
-          className="p-2 rounded-lg border border-border"
-        >
-          <PanelLeft size={18} />
-        </button>
+        {/* COLLAPSED MODE */}
+        {collapsed && (
+          <button
+            onClick={toggleCollapse}
+            className="p-2 rounded-lg border border-border hover:bg-muted transition"
+          >
+            <PanelLeft size={18} />
+          </button>
+        )}
+
+        {/* EXPANDED MODE */}
+        {!collapsed && (
+          <>
+            {admin?.brand_logo ? (
+              <img
+                src={admin.brand_logo}
+                alt="brand"
+                className="h-16 object-contain transition-all duration-300"
+              />
+            ) : (
+              <div className="text-lg font-display text-gold">
+                {admin?.brand_name ||
+                  (admin?.scope === "jatim"
+                    ? "IKADI Jawa Timur"
+                    : `IKADI ${admin?.daerah}`)}
+              </div>
+            )}
+
+            {/* FLOAT COLLAPSE BTN */}
+            <button
+              onClick={toggleCollapse}
+              className="
+          absolute -right-3 top-1/2 -translate-y-1/2
+          bg-card border border-border
+          rounded-full shadow-sm p-1.5
+          hover:scale-110 transition
+        "
+            >
+              <PanelLeft size={16} />
+            </button>
+          </>
+        )}
       </div>
 
       {/* MENU */}
