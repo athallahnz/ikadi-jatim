@@ -13,8 +13,9 @@ type UserAdmin = {
   scope: string;
   daerah: string | null;
   brand_name: string | null;
-  brand_logo?: string | null; // ✅ Tambahkan ini
+  brand_logo?: string | null;
   created_at?: string;
+  status: "pending" | "active" | "rejected" | "blocked";
 };
 
 export default function ManageUsers() {
@@ -75,7 +76,12 @@ export default function ManageUsers() {
     if (result.isConfirmed) {
       try {
         Swal.fire({ title: "Menghapus...", didOpen: () => Swal.showLoading() });
-        const { error } = await supabase.from("admins").delete().eq("id", id);
+        const { data, error } = await supabase
+          .from("admins")
+          .delete()
+          .eq("id", id)
+          .select();
+        console.log("deleted:", data);
         if (error) throw error;
         await fetchUsers();
         Swal.fire({
@@ -97,6 +103,41 @@ export default function ManageUsers() {
     }
   };
 
+  const updateStatus = async (id: string, status: string) => {
+    const result = await Swal.fire({
+      title: "Ubah Status?",
+      text: `Status akan diubah menjadi "${status}"`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, Update",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from("admins")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      await fetchUsers();
+
+      Swal.fire({
+        icon: "success",
+        title: "Status diperbarui",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal update status",
+      });
+    }
+  };
+
   // ✅ Fungsi untuk membuka modal edit
   const handleEditClick = (user: UserAdmin) => {
     setEditingUser(user);
@@ -107,9 +148,10 @@ export default function ManageUsers() {
     <AdminLayout>
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-display text-emerald-dark">
+          <h1 className="text-2xl font-display text-foreground">
             Manage Users
           </h1>
+
           <p className="text-sm text-muted-foreground mt-1">
             Kelola daftar admin pusat dan admin cabang daerah.
           </p>
@@ -117,31 +159,37 @@ export default function ManageUsers() {
 
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition active:scale-95"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white
+    px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition active:scale-95"
         >
           <UserPlus size={18} />
           Tambah Admin Baru
         </button>
       </div>
 
-      <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         {/* SEARCH BAR */}
-        <div className="p-4 border-b bg-muted/30">
+        <div className="p-4 border-b border-border bg-muted/40">
           <input
             placeholder="Cari admin..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="px-3 py-2 border rounded-lg text-sm w-full max-w-xs"
+            className="px-3 py-2 border border-border rounded-lg text-sm
+      bg-background text-foreground
+      placeholder:text-muted-foreground
+      focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+      w-full max-w-xs"
           />
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-emerald-900 uppercase bg-emerald-50/50 border-b">
+            <thead className="text-xs uppercase text-muted-foreground bg-muted border-b border-border">
               <tr>
                 <th className="px-6 py-4 font-semibold">Nama Admin</th>
                 <th className="px-6 py-4 font-semibold">Role</th>
                 <th className="px-6 py-4 font-semibold">Scope / Daerah</th>
+                <th className="px-6 py-4 font-semibold">Status</th>
                 <th className="px-6 py-4 font-semibold text-right">Aksi</th>
               </tr>
             </thead>
@@ -150,17 +198,20 @@ export default function ManageUsers() {
               {/* ================= LOADING ================= */}
               {loading &&
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b animate-pulse">
+                  <tr key={i} className="border-b border-border animate-pulse">
                     <td className="px-6 py-4">
                       <div className="h-4 bg-muted rounded w-40 mb-2" />
                       <div className="h-3 bg-muted rounded w-24" />
                     </td>
+
                     <td className="px-6 py-4">
                       <div className="h-4 bg-muted rounded w-16" />
                     </td>
+
                     <td className="px-6 py-4">
                       <div className="h-4 bg-muted rounded w-32" />
                     </td>
+
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <div className="h-7 w-7 bg-muted rounded" />
@@ -187,10 +238,11 @@ export default function ManageUsers() {
                 filteredUsers.map((u) => (
                   <tr
                     key={u.id}
-                    className="border-b last:border-0 hover:bg-muted/30"
+                    className="border-b border-border last:border-0 hover:bg-muted/40 transition"
                   >
-                    <td className="px-6 py-4 font-medium text-emerald-dark">
+                    <td className="px-6 py-4 font-medium text-foreground">
                       {u.name}
+
                       {u.brand_name && (
                         <span className="block text-xs font-normal text-muted-foreground mt-0.5">
                           {u.brand_name}
@@ -200,11 +252,12 @@ export default function ManageUsers() {
 
                     <td className="px-6 py-4 capitalize">
                       <span
-                        className={`px-2.5 py-1 rounded text-xs font-medium ${
-                          u.role === "admin"
-                            ? "bg-purple-100 text-purple-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}
+                        className={`px-2.5 py-1 rounded text-xs font-medium
+                  ${
+                    u.role === "admin"
+                      ? "bg-purple-500/10 text-purple-600"
+                      : "bg-blue-500/10 text-blue-600"
+                  }`}
                       >
                         {u.role}
                       </span>
@@ -212,28 +265,51 @@ export default function ManageUsers() {
 
                     <td className="px-6 py-4">
                       {u.scope === "jatim" ? (
-                        <span className="text-emerald-700 font-semibold">
+                        <span className="text-emerald-600 font-semibold">
                           Jatim (Pusat)
                         </span>
                       ) : (
-                        <span className="text-amber-700">
+                        <span className="text-amber-600">
                           Cabang {u.daerah}
                         </span>
                       )}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <select
+                        value={u.status}
+                        onChange={(e) => updateStatus(u.id, e.target.value)}
+                        className={`text-xs px-2 py-1 rounded border border-border
+                  bg-background
+                  ${
+                    u.status === "active"
+                      ? "text-green-600"
+                      : u.status === "pending"
+                        ? "text-yellow-600"
+                        : u.status === "blocked"
+                          ? "text-red-600"
+                          : "text-muted-foreground"
+                  }`}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="active">Active</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="blocked">Blocked</option>
+                      </select>
                     </td>
 
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEditClick(u)}
-                          className="p-1.5 bg-amber-50 text-amber-600 rounded hover:bg-amber-100 transition"
+                          className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
                         >
                           <Edit size={16} />
                         </button>
 
                         <button
                           onClick={() => handleDelete(u.id, u.name)}
-                          className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition"
+                          className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
                         >
                           <Trash2 size={16} />
                         </button>

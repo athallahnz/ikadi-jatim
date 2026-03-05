@@ -44,7 +44,8 @@ export default function RichEditor({ value, onChange, className }: Props) {
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-emerald-600 underline cursor-pointer font-medium",
+          class:
+            "text-emerald-600 underline cursor-pointer font-medium hover:text-emerald-700",
         },
         validate: (url) => !!url,
       }),
@@ -64,7 +65,7 @@ export default function RichEditor({ value, onChange, className }: Props) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm focus:outline-none min-h-[300px] p-4 max-w-none prose-emerald",
+          "prose prose-sm max-w-none p-4 min-h-[300px] focus:outline-none prose-emerald dark:prose-invert",
       },
     },
     // Pastikan editor dihancurkan saat unmount (membantu Strict Mode)
@@ -99,10 +100,10 @@ export default function RichEditor({ value, onChange, className }: Props) {
 
   return (
     <div
-      className={`border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all ${className || ""}`}
+      className={`border border-border rounded-xl overflow-hidden bg-card shadow-sm focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all ${className || ""}`}
     >
       {/* TOOLBAR */}
-      <div className="flex flex-wrap gap-0.5 border-b p-1.5 bg-slate-50/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="flex flex-wrap gap-1 border-b border-border p-1.5 bg-muted/40 backdrop-blur-sm sticky top-0 z-10 py-3">
         <ToolbarButton
           onClick={() => editor.chain().focus().setParagraph().run()}
           active={editor.isActive("paragraph")}
@@ -245,14 +246,15 @@ export default function RichEditor({ value, onChange, className }: Props) {
           <Redo size={16} />
         </ToolbarButton>
       </div>
-
-      <EditorContent editor={editor} />
+      <div className="bg-card">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
 
 function Divider() {
-  return <div className="w-[1px] h-5 bg-slate-300 mx-1.5 self-center" />;
+  return <div className="w-px h-5 bg-border mx-1.5 self-center" />;
 }
 
 function ToolbarButton({
@@ -271,8 +273,10 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-2 rounded-lg transition-all hover:bg-emerald-100 hover:text-emerald-700 ${
-        active ? "bg-emerald-100 text-emerald-700 shadow-sm" : "text-slate-500"
+      className={`p-2 rounded-lg transition-all
+      hover:bg-muted hover:text-foreground
+      ${
+        active ? "bg-emerald-500/10 text-emerald-600" : "text-muted-foreground"
       }`}
     >
       {children}

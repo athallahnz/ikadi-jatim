@@ -103,6 +103,9 @@ const config: Config = {
         "fade-up": "fade-up 0.6s ease-out forwards",
         "fade-in": "fade-in 0.6s ease-out forwards",
       },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.22,1,0.36,1)",
+      },
     },
   },
   // Perbaikan utama: Menggunakan import variabel alih-alih require()

@@ -40,6 +40,22 @@
   </head>
 
   <body>
+    <script>
+      (function () {
+        const savedTheme = localStorage.getItem("theme");
+
+        if (savedTheme === "dark") {
+          document.documentElement.classList.add("dark");
+        } else if (savedTheme === "light") {
+          document.documentElement.classList.remove("dark");
+        } else {
+          const hour = new Date().getHours();
+          if (hour >= 18 || hour < 5) {
+            document.documentElement.classList.add("dark");
+          }
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

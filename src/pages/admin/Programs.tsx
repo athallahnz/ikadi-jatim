@@ -159,16 +159,17 @@ export default function Programs() {
     <AdminLayout>
       <div className="mb-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
+          <h1 className="text-2xl font-black text-foreground tracking-tight">
             Manajemen Program
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+
+          <p className="text-sm text-muted-foreground mt-1">
             Kelola program unggulan. Tarik ikon{" "}
             <GripVertical className="inline h-4 w-4" /> untuk mengurutkan.
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-8">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm mb-8">
           <ProgramForm
             program={editing}
             onSaved={() => {
@@ -179,20 +180,21 @@ export default function Programs() {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-emerald-800">
+          <div className="flex items-center gap-2 text-emerald-600">
             <Info size={18} />
             <p className="text-sm font-bold uppercase tracking-wider">
               Daftar Program Aktif
             </p>
           </div>
-          <span className="text-xs text-slate-400 font-medium">
+
+          <span className="text-xs text-muted-foreground font-medium">
             Total: {programs.length}
           </span>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-20 text-center animate-pulse text-slate-400">
+            <div className="p-20 text-center animate-pulse text-muted-foreground">
               Memuat data...
             </div>
           ) : (
@@ -206,11 +208,12 @@ export default function Programs() {
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`group flex items-center justify-between gap-4 p-5 border-b last:border-0 transition-all ${
-                              snapshot.isDragging
-                                ? "bg-emerald-50 shadow-md border-emerald-200"
-                                : "bg-white hover:bg-slate-50/50"
-                            }`}
+                            className={`group flex items-center justify-between gap-4 p-5 border-b border-border last:border-0 transition-all
+                      ${
+                        snapshot.isDragging
+                          ? "bg-muted shadow-md"
+                          : "bg-card hover:bg-muted/50"
+                      }`}
                           >
                             <div className="flex items-center gap-5">
                               {/* Drag Handle */}
@@ -219,26 +222,28 @@ export default function Programs() {
                                 className="cursor-grab active:cursor-grabbing"
                               >
                                 <GripVertical
-                                  className="text-slate-300 group-hover:text-slate-400"
+                                  className="text-muted-foreground/40 group-hover:text-muted-foreground"
                                   size={20}
                                 />
                               </div>
 
-                              <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+                              <div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
                                 <DynamicIcon name={p.icon} />
                               </div>
 
                               <div className="space-y-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                                  <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
                                     No. {p.order_num}
                                   </span>
-                                  <h3 className="font-bold text-slate-800 leading-tight">
+
+                                  <h3 className="font-bold text-foreground leading-tight">
                                     {p.title}
                                   </h3>
                                 </div>
+
                                 <div
-                                  className="text-xs text-slate-500 line-clamp-1 max-w-md italic"
+                                  className="text-xs text-muted-foreground line-clamp-1 max-w-md italic"
                                   dangerouslySetInnerHTML={{
                                     __html: p.description
                                       .substring(0, 120)
@@ -257,14 +262,15 @@ export default function Programs() {
                                     behavior: "smooth",
                                   });
                                 }}
-                                className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
+                                className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
                                 title="Edit"
                               >
                                 <Pencil size={16} />
                               </button>
+
                               <button
                                 onClick={() => handleDelete(p.id)}
-                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
+                                className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
                                 title="Hapus"
                               >
                                 <Trash2 size={16} />
@@ -274,6 +280,7 @@ export default function Programs() {
                         )}
                       </Draggable>
                     ))}
+
                     {provided.placeholder}
                   </div>
                 )}

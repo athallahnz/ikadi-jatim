@@ -186,22 +186,23 @@ export default function ProgramForm({ onSaved, program }: Props) {
   };
 
   return (
-    <div className="bg-white border border-border p-5 rounded-2xl space-y-5 shadow-sm">
+    <div className="bg-background border border-border p-5 rounded-2xl space-y-5 shadow-sm">
       {program && (
-        <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-wider border border-amber-100">
+        <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-black uppercase tracking-wider border border-amber-100">
           ✏️ Mode Edit Aktif
         </div>
       )}
 
-      {/* INPUT JUDUL */}
       <div className="space-y-1">
-        <label className="text-[10px] uppercase font-black text-slate-400 ml-1">
+        <label className="text-xs uppercase font-black text-muted-foreground ml-1">
           Judul Program
         </label>
+
         <input
-          className={`w-full border p-3 rounded-xl text-sm transition-all outline-none focus:ring-2 focus:ring-emerald-500/20 ${
-            errors.title ? "border-red-500 bg-red-50" : "border-slate-200"
-          }`}
+          className={`w-full border border-border bg-background text-foreground
+    p-3 rounded-xl text-sm transition-all outline-none
+    focus:ring-2 focus:ring-emerald-500/20
+    ${errors.title ? "border-red-500 bg-red-50 dark:bg-red-900/20" : ""}`}
           placeholder="Contoh: Penguatan Ukhuwah Da'i"
           value={title}
           onChange={(e) => {
@@ -214,12 +215,15 @@ export default function ProgramForm({ onSaved, program }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* INPUT URUTAN */}
         <div className="space-y-1">
-          <label className="text-[10px] uppercase font-black text-slate-400 ml-1">
+          <label className="text-xs uppercase font-black text-muted-foreground ml-1">
             Urutan Tampil (Order)
           </label>
+
           <input
             type="number"
-            className="w-full border border-slate-200 p-3 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="w-full border border-border bg-background text-foreground
+      p-3 rounded-xl text-sm outline-none
+      focus:ring-2 focus:ring-emerald-500/20"
             value={orderNum}
             onChange={(e) => setOrderNum(parseInt(e.target.value) || 0)}
           />
@@ -227,48 +231,61 @@ export default function ProgramForm({ onSaved, program }: Props) {
 
         {/* SEARCHABLE ICON PICKER */}
         <div className="space-y-1 relative icon-picker-container">
-          <label className="text-[10px] uppercase font-black text-slate-400 ml-1">
+          <label className="text-xs uppercase font-black text-muted-foreground ml-1">
             Ikon Program
           </label>
+
           <div
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center justify-between border border-slate-200 p-3 rounded-xl cursor-pointer hover:bg-slate-50 transition bg-white"
+            className="flex items-center justify-between border border-border
+      p-3 rounded-xl cursor-pointer hover:bg-muted transition bg-card"
           >
             <div className="flex items-center gap-3">
-              <div className="text-emerald-600 bg-emerald-50 p-1.5 rounded-lg">
+              <div className="text-emerald-600 bg-emerald-500/10 p-1.5 rounded-lg">
                 {renderIcon(selectedIcon, 18)}
               </div>
-              <span className="text-sm font-semibold text-slate-700">
+
+              <span className="text-sm font-semibold text-foreground">
                 {selectedIcon}
               </span>
             </div>
+
             <ChevronDown
               size={16}
-              className={`text-slate-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`}
+              className={`text-muted-foreground transition-transform duration-300 ${
+                isDropdownOpen ? "rotate-180" : ""
+              }`}
             />
           </div>
 
           {isDropdownOpen && (
-            <div className="absolute z-[100] top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-              <div className="p-3 border-b bg-slate-50 flex items-center gap-2">
-                <Search size={14} className="text-slate-400" />
+            <div
+              className="absolute z-[100] top-full left-0 right-0 mt-2
+      bg-card border border-border rounded-2xl shadow-xl overflow-hidden
+      animate-in fade-in zoom-in duration-200"
+            >
+              <div className="p-3 border-b border-border bg-muted flex items-center gap-2">
+                <Search size={14} className="text-muted-foreground" />
+
                 <input
                   autoFocus
-                  className="bg-transparent text-sm outline-none w-full"
+                  className="bg-transparent text-sm outline-none w-full text-foreground"
                   placeholder="Cari ikon (User, Heart, dsb)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onClick={(e) => e.stopPropagation()}
                 />
+
                 {searchTerm && (
                   <X
                     size={14}
-                    className="text-slate-400 cursor-pointer"
+                    className="text-muted-foreground cursor-pointer"
                     onClick={() => setSearchTerm("")}
                   />
                 )}
               </div>
-              <div className="max-h-60 overflow-y-auto grid grid-cols-4 gap-2 p-3 scrollbar-thin scrollbar-thumb-slate-200">
+
+              <div className="max-h-60 overflow-y-auto grid grid-cols-4 gap-2 p-3">
                 {filteredIcons.length > 0 ? (
                   filteredIcons.map((name) => (
                     <div
@@ -279,17 +296,18 @@ export default function ProgramForm({ onSaved, program }: Props) {
                         setIsDropdownOpen(false);
                         setSearchTerm("");
                       }}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl transition cursor-pointer ${
-                        selectedIcon === name
-                          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200"
-                          : "text-slate-400 hover:bg-emerald-50 hover:text-emerald-600"
-                      }`}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl transition cursor-pointer
+                ${
+                  selectedIcon === name
+                    ? "bg-emerald-600 text-white shadow-lg"
+                    : "text-muted-foreground hover:bg-muted hover:text-emerald-600"
+                }`}
                     >
                       {renderIcon(name, 22)}
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-4 py-8 text-center text-slate-400 text-xs italic">
+                  <div className="col-span-4 py-8 text-center text-muted-foreground text-xs italic">
                     Ikon tidak ditemukan...
                   </div>
                 )}
@@ -301,11 +319,13 @@ export default function ProgramForm({ onSaved, program }: Props) {
 
       {/* EDITOR DESKRIPSI */}
       <div className="space-y-1">
-        <label className="text-[10px] uppercase font-black text-slate-400 ml-1">
+        <label className="text-xs uppercase font-black text-muted-foreground ml-1">
           Deskripsi Detail
         </label>
+
         <div
-          className={`rounded-2xl overflow-hidden transition-all ${errors.description ? "ring-2 ring-red-500" : "border border-slate-200"}`}
+          className={`rounded-2xl overflow-hidden transition-all
+    ${errors.description ? "ring-2 ring-red-500" : "border border-border"}`}
         >
           <RichEditor
             value={description}
@@ -319,15 +339,13 @@ export default function ProgramForm({ onSaved, program }: Props) {
       </div>
 
       {/* TOMBOL AKSI */}
-      <div className="flex gap-3 pt-4 border-t border-slate-50">
+      <div className="flex gap-3 pt-4 border-t border-border">
         <button
           onClick={save}
           disabled={isSaving}
-          className={`flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-100 transition-all transform active:scale-[0.98] ${
-            isSaving
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:bg-emerald-700 hover:shadow-emerald-200"
-          }`}
+          className={`flex-1 bg-emerald-600 text-white font-bold py-4 rounded-2xl
+    shadow-sm transition-all transform active:scale-[0.98]
+    ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"}`}
         >
           {isSaving
             ? "Menyimpan..."
@@ -335,11 +353,13 @@ export default function ProgramForm({ onSaved, program }: Props) {
               ? "Perbarui Program"
               : "Publikasikan Program"}
         </button>
+
         {program && (
           <button
             type="button"
             onClick={() => onSaved()}
-            className="px-8 py-4 border-2 border-slate-100 rounded-2xl font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
+            className="px-8 py-4 border border-border rounded-2xl
+      font-bold text-muted-foreground hover:bg-muted transition-all"
           >
             Batal
           </button>

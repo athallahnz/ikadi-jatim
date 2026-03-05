@@ -144,7 +144,7 @@ export default function Events() {
     <AdminLayout>
       <div className="mb-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-display text-emerald-dark">
+          <h1 className="text-2xl font-black text-foreground">
             Agenda / Events
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -152,7 +152,7 @@ export default function Events() {
           </p>
         </div>
 
-        <div className="bg-white border border-border rounded-xl p-5 shadow-sm">
+        <div className="bg-background border border-border rounded-xl p-5 shadow-sm">
           <EventForm
             event={editing}
             onSaved={() => {
@@ -163,7 +163,7 @@ export default function Events() {
         </div>
       </div>
 
-      <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-background border border-border rounded-xl shadow-sm overflow-hidden">
         <EventsDataTable
           data={events}
           isLoading={isLoading} // ✅ tambah

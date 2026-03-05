@@ -9,10 +9,10 @@ export default function DetailInvitation({ data, onClose }: Props) {
   if (!data) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl shadow-xl max-w-md w-full">
         <div className="p-6 border-b">
-          <h3 className="font-bold text-lg text-emerald-dark">
+          <h3 className="font-bold text-lg text-foreground">
             {data.type === "anggota"
               ? "Detail Pendaftaran Anggota"
               : "Detail Permintaan Da'i"}

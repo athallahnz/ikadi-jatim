@@ -46,7 +46,7 @@ export default function Invitations() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-display text-emerald-dark">
+        <h1 className="text-2xl font-black text-foreground">
           Undangan & Pendaftaran
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -54,7 +54,7 @@ export default function Invitations() {
         </p>
       </div>
 
-      <div className="bg-white border rounded-xl shadow-sm">
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <InvitationsDataTable
           data={data}
           onDelete={deleteInvitation}

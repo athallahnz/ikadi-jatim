@@ -74,7 +74,7 @@ export default function ArticlesDataTable({
   return (
     <div>
       {/* FILTER BAR */}
-      <div className="flex flex-wrap gap-2 p-4 border-b bg-muted/30">
+      <div className="flex flex-wrap gap-2 p-4 border-b border-border bg-card">
         <input
           placeholder="Cari judul..."
           value={search}
@@ -82,7 +82,10 @@ export default function ArticlesDataTable({
             setSearch(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-2 border rounded-lg text-sm"
+          className="px-3 py-2 text-sm border border-border rounded-lg
+    bg-background text-foreground
+    placeholder:text-muted-foreground
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         />
 
         <select
@@ -91,7 +94,9 @@ export default function ArticlesDataTable({
             setStatus(e.target.value as never);
             setPage(1);
           }}
-          className="px-3 py-2 border rounded-lg text-sm"
+          className="px-3 py-2 text-sm border border-border rounded-lg
+    bg-background text-foreground
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         >
           <option value="all">Semua Status</option>
           <option value="published">Published</option>
@@ -104,7 +109,9 @@ export default function ArticlesDataTable({
             setCategory(e.target.value);
             setPage(1);
           }}
-          className="px-3 py-2 border rounded-lg text-sm"
+          className="px-3 py-2 text-sm border border-border rounded-lg
+    bg-background text-foreground
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
         >
           <option value="all">Semua Kategori</option>
           {categories.map((c) => (
@@ -115,8 +122,9 @@ export default function ArticlesDataTable({
 
       {/* TABLE */}
       <table className="w-full text-sm">
-        <thead className="bg-muted/40">
-          <tr className="text-left">
+        {/* HEADER */}
+        <thead className="bg-card border-b border-border">
+          <tr className="text-left text-muted-foreground">
             <th className="p-3">Artikel</th>
             <th className="p-3">Kategori</th>
             <th className="p-3">Tanggal</th>
@@ -125,37 +133,45 @@ export default function ArticlesDataTable({
           </tr>
         </thead>
 
-        <tbody>
-          {/* ================= LOADING ================= */}
+        {/* BODY */}
+        <tbody className="bg-card">
+          {/* LOADING */}
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
-              <tr key={`skeleton-${i}`} className="border-t animate-pulse">
+              <tr
+                key={`skeleton-${i}`}
+                className="border-t border-border animate-pulse"
+              >
                 <td className="p-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-10 bg-muted rounded" />
-                    <div className="h-3 bg-muted rounded w-40" />
+                    <div className="w-14 h-10 rounded bg-muted" />
+                    <div className="h-3 w-40 rounded bg-muted" />
                   </div>
                 </td>
+
                 <td className="p-3">
-                  <div className="h-3 bg-muted rounded w-20" />
+                  <div className="h-3 w-20 rounded bg-muted" />
                 </td>
+
                 <td className="p-3">
-                  <div className="h-3 bg-muted rounded w-24" />
+                  <div className="h-3 w-24 rounded bg-muted" />
                 </td>
+
                 <td className="p-3">
-                  <div className="h-4 bg-muted rounded w-16" />
+                  <div className="h-4 w-16 rounded bg-muted" />
                 </td>
+
                 <td className="p-3">
                   <div className="flex justify-end gap-2">
-                    <div className="w-8 h-8 bg-muted rounded" />
-                    <div className="w-8 h-8 bg-muted rounded" />
-                    <div className="w-8 h-8 bg-muted rounded" />
+                    <div className="w-8 h-8 rounded bg-muted" />
+                    <div className="w-8 h-8 rounded bg-muted" />
+                    <div className="w-8 h-8 rounded bg-muted" />
                   </div>
                 </td>
               </tr>
             ))}
 
-          {/* ================= EMPTY ================= */}
+          {/* EMPTY */}
           {!isLoading && paginated.length === 0 && (
             <tr>
               <td
@@ -167,7 +183,7 @@ export default function ArticlesDataTable({
             </tr>
           )}
 
-          {/* ================= DATA ================= */}
+          {/* DATA */}
           {!isLoading &&
             paginated.map((a) => {
               const cat = Array.isArray(a.categories)
@@ -177,17 +193,26 @@ export default function ArticlesDataTable({
               return (
                 <tr
                   key={a.id}
-                  className="border-t hover:bg-muted/30 transition"
+                  className="border-t border-border hover:bg-muted/40 transition-colors"
                 >
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      {a.cover_url && (
-                        <img
-                          src={a.cover_url}
-                          className="w-14 h-10 object-cover rounded"
-                        />
-                      )}
-                      <div className="font-medium text-emerald-dark">
+                      <div className="w-14 h-10 rounded overflow-hidden bg-muted flex-shrink-0">
+                        {a.cover_url ? (
+                          <img
+                            src={a.cover_url}
+                            alt={a.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                            No Img
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="font-medium text-foreground">
                         {a.title}
                       </div>
                     </div>
@@ -201,11 +226,12 @@ export default function ArticlesDataTable({
 
                   <td className="p-3">
                     <span
-                      className={`px-2 py-0.5 rounded text-xs ${
-                        a.published
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                      className={`px-2 py-0.5 rounded text-xs
+                ${
+                  a.published
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : "bg-muted text-muted-foreground"
+                }`}
                     >
                       {a.published ? "Published" : "Draft"}
                     </span>
@@ -215,25 +241,26 @@ export default function ArticlesDataTable({
                     <div className="flex justify-end gap-1">
                       <button
                         onClick={() => onTogglePublish(a)}
-                        className={`p-2 rounded-lg transition ${
-                          a.published
-                            ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                            : "bg-amber-50 text-amber-600 hover:bg-amber-100"
-                        }`}
+                        className={`p-2 rounded-lg transition
+                  ${
+                    a.published
+                      ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70"
+                  }`}
                       >
                         {a.published ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
 
                       <button
                         onClick={() => onEdit(a)}
-                        className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100"
+                        className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
                       >
                         <Pencil size={16} />
                       </button>
 
                       <button
                         onClick={() => onDelete(a.id)}
-                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -246,28 +273,34 @@ export default function ArticlesDataTable({
       </table>
 
       {/* PAGINATION */}
-      <div className="flex justify-between items-center p-4 border-t">
+      <div className="flex justify-between items-center p-4 border-t border-border bg-card">
         <div className="text-xs text-muted-foreground">
           {isLoading ? "Memuat..." : `${filtered.length} artikel`}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             disabled={page === 1 || isLoading}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 border rounded text-xs disabled:opacity-40"
+            className="px-3 py-1 text-xs border border-border rounded-md
+      bg-background text-foreground
+      hover:bg-muted transition
+      disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Prev
           </button>
 
-          <span className="text-xs mt-1">
+          <span className="text-xs text-muted-foreground px-2">
             {page} / {totalPages || 1}
           </span>
 
           <button
             disabled={page === totalPages || isLoading}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 border rounded text-xs disabled:opacity-40"
+            className="px-3 py-1 text-xs border border-border rounded-md
+      bg-background text-foreground
+      hover:bg-muted transition
+      disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Next
           </button>

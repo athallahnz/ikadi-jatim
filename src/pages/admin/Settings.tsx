@@ -336,7 +336,7 @@ export default function Settings() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-display text-emerald-dark">Settings</h1>
+        <h1 className="text-2xl font-black text-foreground">Settings</h1>
         <p className="text-sm text-muted-foreground mt-1 tracking-wide">
           Kelola identitas brand, statistik, dan pengaturan website
         </p>
@@ -344,31 +344,34 @@ export default function Settings() {
 
       <div className="space-y-6 max-w-5xl">
         {/* BRAND IDENTITY */}
-        {/* ================= BRAND IDENTITY SECTION ================= */}
         <div
-          className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingBrand ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
+          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+            isEditingBrand
+              ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
+              : ""
+          }`}
         >
           <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center gap-2 font-bold text-emerald-dark">
+            <div className="flex items-center gap-2 font-bold text-foreground">
               <CheckCircle
                 size={18}
                 className={
-                  isEditingBrand ? "text-emerald-500" : "text-slate-400"
+                  isEditingBrand ? "text-emerald-500" : "text-muted-foreground"
                 }
               />
               Brand Identitas
               {!isEditingBrand && (
-                <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                   Locked
                 </span>
               )}
             </div>
 
-            {/* Tombol Toggle Edit */}
+            {/* Toggle Edit */}
             {!isEditingBrand ? (
               <button
                 onClick={() => setIsEditingBrand(true)}
-                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition"
+                className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
               >
                 <Edit3 size={16} /> Edit Identitas
               </button>
@@ -376,10 +379,9 @@ export default function Settings() {
               <button
                 onClick={() => {
                   setIsEditingBrand(false);
-                  setLogoFile(null); // Reset file yang belum ter-upload
-                  // Optional: Jika ingin revert nama brand, panggil ulang data admin dari hook/db
+                  setLogoFile(null);
                 }}
-                className="text-slate-500 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 transition"
+                className="text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
               >
                 Batal
               </button>
@@ -389,19 +391,20 @@ export default function Settings() {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1.5 block ml-1 tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1.5 block ml-1 tracking-widest">
                   Nama Brand
                 </label>
+
                 <input
                   disabled={!isEditingBrand}
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
-                  className="w-full border-slate-200 border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition disabled:bg-slate-50/50 disabled:text-slate-500"
                   placeholder="IKADI Jawa Timur"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none transition focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground"
                 />
               </div>
 
-              {/* Tombol Simpan hanya muncul saat EDIT */}
+              {/* Save Button */}
               {isEditingBrand && (
                 <button
                   onClick={async () => {
@@ -409,7 +412,7 @@ export default function Settings() {
                     setIsEditingBrand(false);
                   }}
                   disabled={savingBrand}
-                  className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition-all font-bold text-sm shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition-all font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Save size={16} />
                   {savingBrand ? "Memproses..." : "Simpan Identitas"}
@@ -418,14 +421,15 @@ export default function Settings() {
             </div>
 
             <div>
-              <label className="text-[10px] uppercase font-black text-slate-400 mb-2 block ml-1 tracking-widest">
+              <label className="text-[10px] uppercase font-black text-muted-foreground mb-2 block ml-1 tracking-widest">
                 Logo Brand
               </label>
+
               <div
                 className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
                   isEditingBrand
-                    ? "border-emerald-300 bg-emerald-50/30 cursor-pointer hover:bg-emerald-50"
-                    : "border-slate-100 bg-slate-50/30 cursor-not-allowed"
+                    ? "border-emerald-300 bg-emerald-50/30 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                    : "border-border bg-muted/40 cursor-not-allowed"
                 }`}
                 onClick={() =>
                   isEditingBrand &&
@@ -436,10 +440,13 @@ export default function Settings() {
                   <div className="relative inline-block">
                     <img
                       src={logoFile ? URL.createObjectURL(logoFile) : logoUrl!}
-                      className={`h-20 mx-auto object-contain drop-shadow-sm transition-all ${!isEditingBrand && "grayscale-[0.5] opacity-80"}`}
+                      className={`h-20 mx-auto object-contain transition ${
+                        !isEditingBrand && "grayscale-[0.5] opacity-80"
+                      }`}
                     />
+
                     {isEditingBrand && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-emerald-900/20 rounded opacity-0 hover:opacity-100 transition-opacity">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded opacity-0 hover:opacity-100 transition-opacity">
                         <p className="text-[10px] text-white font-bold bg-emerald-600 px-2 py-1 rounded shadow">
                           GANTI LOGO
                         </p>
@@ -447,7 +454,7 @@ export default function Settings() {
                     )}
                   </div>
                 ) : (
-                  <div className="py-4 text-sm text-slate-400">
+                  <div className="py-4 text-sm text-muted-foreground">
                     Belum ada logo terpasang
                   </div>
                 )}
@@ -462,35 +469,44 @@ export default function Settings() {
                   }
                 />
               </div>
+
               {isEditingBrand && (
-                <p className="text-[10px] text-slate-400 mt-2 italic text-center">
+                <p className="text-[10px] text-muted-foreground mt-2 italic text-center">
                   Format: PNG/JPG. Disarankan background transparan.
                 </p>
               )}
             </div>
           </div>
         </div>
+
         {/* STATS SECTION - HIGH UX IMPROVEMENT */}
         <div
-          className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingStats ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
+          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+            isEditingStats
+              ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
+              : ""
+          }`}
         >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="font-bold text-emerald-dark flex items-center gap-2">
+              <div className="font-bold text-foreground flex items-center gap-2">
                 <CheckCircle
                   size={18}
                   className={
-                    isEditingStats ? "text-emerald-500" : "text-slate-400"
+                    isEditingStats
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
                   }
                 />
                 Statistik Beranda
                 {!isEditingStats && (
-                  <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                  <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                     Read Only
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+
+              <p className="text-xs text-muted-foreground mt-1">
                 Angka pencapaian yang tampil di landing page.
               </p>
             </div>
@@ -499,7 +515,7 @@ export default function Settings() {
               {!isEditingStats ? (
                 <button
                   onClick={() => setIsEditingStats(true)}
-                  className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition"
+                  className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
                 >
                   <Edit3 size={16} /> Edit Data
                 </button>
@@ -510,13 +526,14 @@ export default function Settings() {
                       setIsEditingStats(false);
                       loadStats();
                     }}
-                    className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-50 transition"
+                    className="flex items-center gap-2 bg-background border border-border text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
                   >
                     Batal
                   </button>
+
                   <button
                     onClick={addNewStat}
-                    className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 transition border border-emerald-200"
+                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition border border-emerald-200 dark:border-emerald-800"
                   >
                     <Plus size={16} /> Tambah
                   </button>
@@ -527,47 +544,57 @@ export default function Settings() {
 
           <div className="space-y-3">
             {stats.length === 0 && (
-              <div className="text-center py-10 border-2 border-dashed border-slate-100 rounded-xl text-slate-400 text-sm italic">
+              <div className="text-center py-10 border-2 border-dashed border-border rounded-xl text-muted-foreground text-sm italic">
                 Belum ada data statistik.
               </div>
             )}
+
             {stats.map((stat, index) => (
               <div
                 key={index}
-                className={`flex gap-3 items-end p-4 rounded-xl transition-all ${isEditingStats ? "bg-slate-50 border border-slate-200 shadow-sm" : "bg-white border border-transparent hover:border-slate-100"}`}
+                className={`flex gap-3 items-end p-4 rounded-xl transition-all ${
+                  isEditingStats
+                    ? "bg-muted border border-border shadow-sm"
+                    : "bg-card border border-transparent hover:border-border"
+                }`}
               >
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-black text-slate-400 block mb-1.5 ml-1 tracking-widest">
+                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
                     Label
                   </label>
+
                   <input
                     disabled={!isEditingStats}
                     value={stat.label}
                     onChange={(e) =>
                       updateStatField(index, "label", e.target.value)
                     }
-                    className="w-full bg-white border-slate-200 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none disabled:bg-transparent disabled:border-transparent disabled:font-bold disabled:text-emerald-900 disabled:px-1 transition-all"
                     placeholder="Contoh: Pengurus Daerah"
+                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-transparent disabled:border-transparent disabled:font-bold disabled:text-emerald-600 transition-all"
                   />
                 </div>
+
                 <div className="w-32">
-                  <label className="text-[10px] uppercase font-black text-slate-400 block mb-1.5 ml-1 tracking-widest">
+                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
                     Angka/Value
                   </label>
+
                   <input
                     disabled={!isEditingStats}
                     value={stat.value}
                     onChange={(e) =>
                       updateStatField(index, "value", e.target.value)
                     }
-                    className="w-full bg-white border-slate-200 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none disabled:bg-emerald-50/50 disabled:border-transparent disabled:text-emerald-700 disabled:font-black transition-all"
                     placeholder="38"
+                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-emerald-50 dark:disabled:bg-emerald-900/20 disabled:border-transparent disabled:text-emerald-700 dark:disabled:text-emerald-400 font-semibold transition-all"
                   />
                 </div>
+
                 <div className="w-20">
-                  <label className="text-[10px] uppercase font-black text-slate-400 block mb-1.5 ml-1 tracking-widest">
+                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1.5 ml-1 tracking-widest">
                     Urutan
                   </label>
+
                   <input
                     disabled={!isEditingStats}
                     type="number"
@@ -579,13 +606,14 @@ export default function Settings() {
                         parseInt(e.target.value),
                       )
                     }
-                    className="w-full bg-white border-slate-200 border rounded-lg p-2 text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none disabled:bg-transparent disabled:border-transparent text-center transition-all"
+                    className="w-full bg-background border border-border rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 text-center disabled:bg-transparent disabled:border-transparent transition-all"
                   />
                 </div>
+
                 {isEditingStats && (
                   <button
                     onClick={() => deleteStat(stat.id, index)}
-                    className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                   >
                     <Trash2 size={20} />
                   </button>
@@ -595,18 +623,19 @@ export default function Settings() {
           </div>
 
           {isEditingStats && (
-            <div className="mt-8 flex items-center gap-4 bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+            <div className="mt-8 flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
               <button
                 onClick={saveStats}
                 disabled={savingStats}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl transition shadow-lg shadow-emerald-200 font-bold flex items-center gap-2 disabled:opacity-50"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-xl transition font-bold flex items-center gap-2 disabled:opacity-50"
               >
-                <Save size={18} />{" "}
+                <Save size={18} />
                 {savingStats
                   ? "Proses Simpan..."
                   : "Simpan Perubahan Statistik"}
               </button>
-              <p className="text-xs text-emerald-700 italic">
+
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 italic">
                 Pastikan semua label dan angka sudah sesuai sebelum menyimpan.
               </p>
             </div>
@@ -615,44 +644,47 @@ export default function Settings() {
 
         {/* WEBSITE SETTINGS */}
         <div
-          className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingGlobal ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
+          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+            isEditingGlobal
+              ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
+              : ""
+          }`}
         >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="font-bold text-emerald-dark flex items-center gap-2">
+              <div className="font-bold text-foreground flex items-center gap-2">
                 <CheckCircle
                   size={18}
                   className={
-                    isEditingGlobal ? "text-emerald-500" : "text-slate-400"
+                    isEditingGlobal
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
                   }
                 />
                 Pengaturan Website (SEO & Kontak)
                 {!isEditingGlobal && (
-                  <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+                  <span className="bg-muted text-muted-foreground text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
                     Read Only
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+
+              <p className="text-xs text-muted-foreground mt-1">
                 Konfigurasi global identitas situs dan informasi kontak.
               </p>
             </div>
 
-            {/* Tombol Toggle Edit */}
             {!isEditingGlobal ? (
               <button
                 onClick={() => setIsEditingGlobal(true)}
-                className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition"
+                className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
               >
                 <Edit3 size={16} /> Edit Settings
               </button>
             ) : (
               <button
-                onClick={() => {
-                  setIsEditingGlobal(false);
-                  // Optional: panggil loadSettings() lagi jika ingin membatalkan perubahan yang belum disimpan
-                }}
-                className="flex items-center gap-2 text-slate-500 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-100 transition"
+                onClick={() => setIsEditingGlobal(false)}
+                className="flex items-center gap-2 text-muted-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted transition"
               >
                 Batal
               </button>
@@ -661,104 +693,104 @@ export default function Settings() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              {/* Kolom SITE TITLE */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   site_title
                 </label>
+
                 <input
                   disabled={!isEditingGlobal}
                   value={globalSettings.site_title || ""}
                   onChange={(e) => updateSetting("site_title", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
 
-              {/* Kolom SITE DESCRIPTION */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   site_description
                 </label>
+
                 <input
                   disabled={!isEditingGlobal}
                   value={globalSettings.site_description || ""}
                   onChange={(e) =>
                     updateSetting("site_description", e.target.value)
                   }
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
 
-              {/* Kolom CONTACT EMAIL */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   contact_email
                 </label>
+
                 <input
                   disabled={!isEditingGlobal}
                   value={globalSettings.contact_email || ""}
                   onChange={(e) =>
                     updateSetting("contact_email", e.target.value)
                   }
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-4">
-              {/* Kolom ADDRESS */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   address
                 </label>
+
                 <textarea
                   disabled={!isEditingGlobal}
                   value={globalSettings.address || ""}
                   onChange={(e) => updateSetting("address", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
                   rows={3}
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
 
-              {/* Kolom CONTACT PHONE */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   contact_phone
                 </label>
+
                 <input
                   disabled={!isEditingGlobal}
                   value={globalSettings.contact_phone || ""}
                   onChange={(e) =>
                     updateSetting("contact_phone", e.target.value)
                   }
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
 
-              {/* Kolom FOOTER TEXT */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-1 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-1 ml-1 block tracking-widest">
                   footer_text
                 </label>
+
                 <input
                   disabled={!isEditingGlobal}
                   value={globalSettings.footer_text || ""}
                   onChange={(e) => updateSetting("footer_text", e.target.value)}
-                  className="w-full border border-slate-200 rounded-lg p-2.5 text-sm italic outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-50/50 disabled:text-slate-500 transition-all"
+                  className="w-full border border-border bg-background text-foreground rounded-lg p-2.5 text-sm italic outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted disabled:text-muted-foreground transition-all"
                 />
               </div>
 
               {/* QRIS IMAGE */}
               <div>
-                <label className="text-[10px] uppercase font-black text-slate-400 mb-2 ml-1 block tracking-widest">
+                <label className="text-[10px] uppercase font-black text-muted-foreground mb-2 ml-1 block tracking-widest">
                   QRIS Image
                 </label>
 
                 <div
                   className={`border-2 border-dashed rounded-xl p-4 text-center transition-all ${
                     isEditingGlobal
-                      ? "border-emerald-300 bg-emerald-50/30 cursor-pointer hover:bg-emerald-50"
-                      : "border-slate-100 bg-slate-50/30 cursor-not-allowed"
+                      ? "border-emerald-300 bg-emerald-50/30 dark:bg-emerald-900/10 cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
+                      : "border-border bg-muted/40 cursor-not-allowed"
                   }`}
                   onClick={() =>
                     isEditingGlobal &&
@@ -773,7 +805,7 @@ export default function Settings() {
                       className="h-32 mx-auto object-contain"
                     />
                   ) : (
-                    <div className="py-6 text-sm text-slate-400">
+                    <div className="py-6 text-sm text-muted-foreground">
                       Belum ada QRIS
                     </div>
                   )}
@@ -794,7 +826,7 @@ export default function Settings() {
                 </div>
 
                 {isEditingGlobal && (
-                  <p className="text-[10px] text-slate-400 mt-2 italic text-center">
+                  <p className="text-[10px] text-muted-foreground mt-2 italic text-center">
                     Upload QRIS pembayaran (PNG/JPG)
                   </p>
                 )}
@@ -802,21 +834,21 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Tombol Simpan hanya muncul saat mode EDIT */}
           {isEditingGlobal && (
-            <div className="mt-8 pt-6 border-t border-slate-100 flex items-center gap-4">
+            <div className="mt-8 pt-6 border-t border-border flex items-center gap-4">
               <button
                 onClick={async () => {
                   await saveGlobal();
-                  setIsEditingGlobal(false); // Selesai edit, kembali ke read-only
+                  setIsEditingGlobal(false);
                 }}
                 disabled={savingGlobal}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-3 rounded-xl transition font-bold shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center gap-2"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-3 rounded-xl transition font-bold disabled:opacity-50 flex items-center gap-2"
               >
                 <Save size={18} />
                 {savingGlobal ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
-              <p className="text-[11px] text-emerald-600 italic font-medium">
+
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 italic font-medium">
                 * Klik simpan untuk menerapkan perubahan ke database publik.
               </p>
             </div>
@@ -825,20 +857,27 @@ export default function Settings() {
 
         {/* SOCIAL MEDIA SETTINGS */}
         <div
-          className={`bg-white border rounded-xl p-6 shadow-sm transition-all ${isEditingSocials ? "ring-2 ring-emerald-500/10 border-emerald-200" : "border-border"}`}
+          className={`bg-card border border-border rounded-xl p-6 shadow-sm transition-all ${
+            isEditingSocials
+              ? "ring-2 ring-emerald-500/10 border-emerald-500/30"
+              : ""
+          }`}
         >
           <div className="flex justify-between items-center mb-6">
             <div>
-              <div className="font-bold text-emerald-dark flex items-center gap-2">
+              <div className="font-bold text-foreground flex items-center gap-2">
                 <CheckCircle
                   size={18}
                   className={
-                    isEditingSocials ? "text-emerald-500" : "text-slate-400"
+                    isEditingSocials
+                      ? "text-emerald-500"
+                      : "text-muted-foreground"
                   }
                 />
                 Link Media Sosial
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+
+              <p className="text-xs text-muted-foreground mt-1">
                 Kelola link akun sosial media resmi untuk ditampilkan di footer.
               </p>
             </div>
@@ -847,7 +886,7 @@ export default function Settings() {
               {!isEditingSocials ? (
                 <button
                   onClick={() => setIsEditingSocials(true)}
-                  className="flex items-center gap-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition"
+                  className="flex items-center gap-2 bg-muted text-foreground px-4 py-2 rounded-lg text-sm font-bold hover:bg-muted/70 transition"
                 >
                   <Edit3 size={16} /> Edit Socials
                 </button>
@@ -858,13 +897,14 @@ export default function Settings() {
                       setIsEditingSocials(false);
                       loadSocials();
                     }}
-                    className="text-slate-500 px-4 py-2 text-sm font-bold"
+                    className="text-muted-foreground px-4 py-2 text-sm font-bold hover:bg-muted rounded-lg transition"
                   >
                     Batal
                   </button>
+
                   <button
                     onClick={addNewSocial}
-                    className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 hover:bg-emerald-100 transition"
+                    className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition"
                   >
                     <Plus size={16} /> Tambah
                   </button>
@@ -877,19 +917,20 @@ export default function Settings() {
             {socials.map((social, index) => (
               <div
                 key={index}
-                className="flex gap-3 items-end p-3 rounded-lg bg-slate-50/50"
+                className="flex gap-3 items-end p-3 rounded-lg bg-muted/40"
               >
                 <div className="w-1/4">
-                  <label className="text-[10px] uppercase font-black text-slate-400 block mb-1 tracking-widest">
+                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1 tracking-widest">
                     Platform
                   </label>
+
                   <select
                     disabled={!isEditingSocials}
                     value={social.platform}
                     onChange={(e) =>
                       updateSocialField(index, "platform", e.target.value)
                     }
-                    className="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-white"
+                    className="w-full border border-border bg-background text-foreground rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted"
                   >
                     <option value="">Pilih</option>
                     <option value="Instagram">Instagram</option>
@@ -899,10 +940,12 @@ export default function Settings() {
                     <option value="TikTok">TikTok</option>
                   </select>
                 </div>
+
                 <div className="flex-1">
-                  <label className="text-[10px] uppercase font-black text-slate-400 block mb-1 tracking-widest">
+                  <label className="text-[10px] uppercase font-black text-muted-foreground block mb-1 tracking-widest">
                     URL Profil
                   </label>
+
                   <input
                     disabled={!isEditingSocials}
                     value={social.url}
@@ -910,13 +953,14 @@ export default function Settings() {
                       updateSocialField(index, "url", e.target.value)
                     }
                     placeholder="https://..."
-                    className="w-full border border-slate-200 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-white"
+                    className="w-full border border-border bg-background text-foreground rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-muted"
                   />
                 </div>
+
                 {isEditingSocials && (
                   <button
                     onClick={() => deleteSocial(social.id, index)}
-                    className="p-2 text-red-400 hover:text-red-600 transition mb-0.5"
+                    className="p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition mb-0.5"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -926,15 +970,16 @@ export default function Settings() {
           </div>
 
           {isEditingSocials && (
-            <div className="mt-8 border-t pt-6 flex items-center gap-4">
+            <div className="mt-8 border-t border-border pt-6 flex items-center gap-4">
               <button
                 onClick={saveSocials}
                 disabled={savingSocials}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition font-bold shadow-lg shadow-emerald-200 flex items-center gap-2"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-2.5 rounded-xl transition font-bold flex items-center gap-2"
               >
                 <Save size={18} /> Simpan Social Media
               </button>
-              <p className="text-[10px] text-emerald-600 italic">
+
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 italic">
                 Ikon akan otomatis disesuaikan di landing page berdasarkan
                 pilihan platform.
               </p>

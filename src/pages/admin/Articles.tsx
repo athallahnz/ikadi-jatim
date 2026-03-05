@@ -6,6 +6,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import Swal from "sweetalert2";
 import ArticlesDataTable from "./ArticlesDataTable";
 import CategoryModals from "./CategoryModals";
+import { Plus, PlusCircle } from "lucide-react";
 
 type Article = {
   id: string;
@@ -149,7 +150,7 @@ export default function Articles() {
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-2xl font-display text-emerald-dark">
+            <h1 className="text-2xl font-black text-foreground">
               Kajian & Artikel
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -160,11 +161,12 @@ export default function Articles() {
             onClick={() => setOpenCategoryModal(true)}
             className="px-3 py-2 rounded-lg bg-emerald-700 text-white text-sm hover:bg-emerald-800"
           >
-            + Kategori
+            <PlusCircle className="inline-block mr-1" size={16}/ >
+            Kategori
           </button>
         </div>
 
-        <div className="bg-white border border-border rounded-xl p-5 shadow-sm">
+        <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
           <ArticleForm
             article={editing}
             onSaved={() => {
@@ -175,7 +177,7 @@ export default function Articles() {
         </div>
       </div>
 
-      <div className="bg-white border border-border rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <ArticlesDataTable
           data={articles}
           isLoading={isLoading}

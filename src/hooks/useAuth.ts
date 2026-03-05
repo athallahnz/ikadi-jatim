@@ -1,24 +1,6 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useContext } from "react";
+import { AuthContext } from "@/auth/auth-context";
 
 export function useAuth() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLoading(false);
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-      },
-    );
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  return { session, loading };
+  return useContext(AuthContext);
 }

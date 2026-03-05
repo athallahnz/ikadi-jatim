@@ -74,15 +74,15 @@ export default function RunningTexts() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-black text-slate-800 uppercase">
+        <h1 className="text-2xl font-black text-foreground">
           Running Text Header
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground mt-1">
           Kelola teks berjalan di header website
         </p>
       </div>
 
-      <div className="bg-white border rounded-2xl p-6 mb-8">
+      <div className="bg-background border rounded-2xl p-6 mb-8">
         <RunningTextForm
           item={editing}
           onSaved={() => {
@@ -95,7 +95,7 @@ export default function RunningTexts() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-emerald-800">
           <Info size={18} />
-          <p className="text-sm font-bold uppercase tracking-wider">
+          <p className="text-sm font-bold uppercase text-foreground tracking-wider">
             Daftar Running Text Aktif
           </p>
         </div>
@@ -104,9 +104,9 @@ export default function RunningTexts() {
         </span>
       </div>
 
-      <div className="bg-white border rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         {loading ? (
-          <div className="p-20 text-center animate-pulse text-slate-400">
+          <div className="p-20 text-center animate-pulse text-muted-foreground">
             Memuat data...
           </div>
         ) : (
@@ -120,19 +120,24 @@ export default function RunningTexts() {
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          className={`flex items-center justify-between p-4 border-b ${
-                            snapshot.isDragging ? "bg-emerald-50" : "bg-white"
-                          }`}
+                          className={`flex items-center justify-between p-4 border-b border-border transition-colors
+                    ${snapshot.isDragging ? "bg-muted" : "bg-background"}`}
                         >
                           <div className="flex items-center gap-4">
-                            <div {...provided.dragHandleProps}>
+                            <div
+                              {...provided.dragHandleProps}
+                              className="text-muted-foreground cursor-grab active:cursor-grabbing"
+                            >
                               <GripVertical size={18} />
                             </div>
 
                             <div>
-                              <div className="font-semibold">{i.content}</div>
+                              <div className="font-semibold text-foreground">
+                                {i.content}
+                              </div>
+
                               {i.link && (
-                                <div className="text-xs text-emerald-600">
+                                <div className="text-xs text-muted-foreground">
                                   {i.link}
                                 </div>
                               )}
@@ -148,14 +153,15 @@ export default function RunningTexts() {
                                   behavior: "smooth",
                                 });
                               }}
-                              className="p-2 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition"
+                              className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
                               title="Edit"
                             >
                               <Pencil size={16} />
                             </button>
+
                             <button
                               onClick={() => handleDelete(i.id)}
-                              className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition"
+                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
                               title="Hapus"
                             >
                               <Trash2 size={16} />
@@ -165,6 +171,7 @@ export default function RunningTexts() {
                       )}
                     </Draggable>
                   ))}
+
                   {provided.placeholder}
                 </div>
               )}

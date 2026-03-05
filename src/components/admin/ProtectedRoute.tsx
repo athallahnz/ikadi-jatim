@@ -1,11 +1,19 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { session, loading } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
-  if (!session) return <Navigate to="/admin/login" />;
+  if (loading) return <LoadingSpinner />;
 
-  return children;
+  if (!session) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  return <>{children}</>;
 }

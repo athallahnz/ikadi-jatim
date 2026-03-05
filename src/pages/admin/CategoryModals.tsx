@@ -46,32 +46,47 @@ export default function CategoryModals({ open, onClose, onCreated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200">
       {/* BACKDROP */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       {/* MODAL */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <div className="font-display text-lg font-semibold mb-4">
+      <div className="relative bg-card border border-border rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="font-display text-lg font-semibold text-foreground mb-4">
           Tambah Kategori
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* NAME */}
           <div>
-            <label className="text-sm font-medium">Nama Kategori</label>
+            <label className="text-sm font-medium text-foreground">
+              Nama Kategori
+            </label>
+
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: Akidah"
-              className="mt-1 w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-emerald-600 outline-none"
+              className="mt-1 w-full px-3 py-2 rounded-lg
+          border border-border
+          bg-background text-foreground
+          placeholder:text-muted-foreground
+          focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+          transition"
             />
           </div>
 
           {/* SLUG PREVIEW */}
           <div>
-            <label className="text-sm font-medium">Slug</label>
-            <div className="mt-1 px-3 py-2 rounded-lg bg-muted text-sm text-muted-foreground">
+            <label className="text-sm font-medium text-foreground">Slug</label>
+
+            <div
+              className="mt-1 px-3 py-2 rounded-lg
+        bg-muted text-sm text-muted-foreground border border-border"
+            >
               {slug || "slug-otomatis"}
             </div>
           </div>
@@ -81,14 +96,21 @@ export default function CategoryModals({ open, onClose, onCreated }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border"
+              className="px-4 py-2 rounded-lg
+          border border-border
+          bg-background text-foreground
+          hover:bg-muted transition"
             >
               Batal
             </button>
 
             <button
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg
+          bg-emerald-600 text-white
+          hover:bg-emerald-700
+          disabled:opacity-50
+          transition"
             >
               {loading ? "Menyimpan..." : "Simpan"}
             </button>

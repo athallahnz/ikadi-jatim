@@ -7,30 +7,25 @@ type Props = {
 };
 
 export default function AdminLayout({ children }: Props) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* SIDEBAR */}
-      <AdminSidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onCollapseChange={setCollapsed}
-      />
+    <div className="min-h-screen bg-background">
+      {/* Sidebar */}
+      <AdminSidebar onCollapseChange={setCollapsed} />
 
-      {/* MAIN AREA */}
+      {/* Main Layout */}
       <div
-        className={`
-          flex flex-col min-h-screen
-          transition-all duration-300
-          ${collapsed ? "md:pl-20" : "md:pl-64"}
-        `}
+        className={`flex min-h-screen flex-col transition-all duration-300 ${
+          collapsed ? "md:pl-20" : "md:pl-64"
+        }`}
       >
-        <AdminHeader onMenuClick={() => setSidebarOpen(true)} />
+        {/* Header */}
+        <AdminHeader />
 
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-5xl mx-auto">{children}</div>
+        {/* Content */}
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6">
+          <div className="mx-auto w-full max-w-5xl">{children}</div>
         </main>
       </div>
     </div>

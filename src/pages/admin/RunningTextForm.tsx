@@ -125,7 +125,7 @@ export default function RunningTextForm({ item, onSaved }: Props) {
   };
 
   return (
-    <div className="bg-white border border-border p-4 rounded-lg space-y-4">
+    <div className="bg-background border border-border p-4 rounded-lg space-y-4">
       {item && (
         <div className="inline-flex items-center px-3 py-1 rounded bg-amber-100 text-amber-800 text-xs font-medium italic">
           ✏️ Mode Edit Running Text
@@ -134,13 +134,15 @@ export default function RunningTextForm({ item, onSaved }: Props) {
 
       {/* CONTENT */}
       <div className="space-y-1">
-        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
           Isi Running Text
         </label>
+
         <textarea
-          className={`w-full border p-3 rounded transition-colors ${
-            errors.content ? "border-red-500 bg-red-50" : "border-border"
-          }`}
+          className={`w-full border border-border bg-background text-foreground
+    p-3 rounded-lg transition-colors
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+    ${errors.content ? "border-red-500 bg-red-50" : ""}`}
           placeholder="Contoh: Pendaftaran Dai 2026 telah dibuka"
           value={content}
           onChange={(e) => {
@@ -148,6 +150,7 @@ export default function RunningTextForm({ item, onSaved }: Props) {
             if (errors.content) setErrors((p) => ({ ...p, content: false }));
           }}
         />
+
         {errors.content && (
           <p className="text-[10px] text-red-500 ml-1">
             Isi running text wajib diisi
@@ -157,36 +160,42 @@ export default function RunningTextForm({ item, onSaved }: Props) {
 
       {/* LINK */}
       <div className="space-y-1">
-        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
           Link (Opsional)
         </label>
+
         <input
-          className="w-full border p-2 rounded border-border"
+          className="w-full border border-border bg-background text-foreground
+    p-2 rounded-lg
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
           placeholder="/program/pembinaan"
           value={link}
           onChange={(e) => setLink(e.target.value)}
         />
-        <p className="text-[10px] text-slate-400 ml-1">
+
+        <p className="text-[10px] text-muted-foreground ml-1">
           Bisa link internal atau eksternal
         </p>
       </div>
 
       {/* PUBLISH TOGGLE */}
-      <div className="flex items-center justify-between p-4 bg-slate-50 border rounded-xl border-slate-200 shadow-inner">
+      <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
         <div>
-          <label className="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <label className="text-sm font-bold text-foreground flex items-center gap-2">
             Status Publikasi
             <span
-              className={`px-2 py-0.5 text-[10px] rounded-full uppercase font-black ${
-                published
-                  ? "bg-emerald-500 text-white"
-                  : "bg-slate-300 text-slate-600"
-              }`}
+              className={`px-2 py-0.5 text-[10px] rounded-full uppercase font-black
+        ${
+          published
+            ? "bg-emerald-500 text-white"
+            : "bg-muted text-muted-foreground"
+        }`}
             >
               {published ? "Live" : "Draft"}
             </span>
           </label>
-          <p className="text-xs text-slate-500 italic">
+
+          <p className="text-xs text-muted-foreground italic">
             Running text tampil di header website jika aktif
           </p>
         </div>
@@ -198,7 +207,14 @@ export default function RunningTextForm({ item, onSaved }: Props) {
             checked={published}
             onChange={(e) => setPublished(e.target.checked)}
           />
-          <div className="w-12 h-6 bg-slate-300 rounded-full peer peer-checked:bg-emerald-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6"></div>
+
+          <div
+            className="w-12 h-6 bg-muted rounded-full peer
+      peer-checked:bg-emerald-500
+      after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+      after:bg-white after:rounded-full after:h-5 after:w-5
+      after:transition-all peer-checked:after:translate-x-6"
+          ></div>
         </label>
       </div>
 
@@ -207,9 +223,8 @@ export default function RunningTextForm({ item, onSaved }: Props) {
         <button
           onClick={save}
           disabled={isSaving}
-          className={`flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg transition ${
-            isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"
-          }`}
+          className={`flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-sm transition
+    ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"}`}
         >
           {isSaving
             ? "Menyimpan..."
@@ -222,7 +237,8 @@ export default function RunningTextForm({ item, onSaved }: Props) {
           <button
             type="button"
             onClick={() => onSaved()}
-            className="px-6 py-3 border-2 border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50"
+            className="px-6 py-3 border border-border rounded-xl font-bold
+      text-muted-foreground hover:bg-muted transition"
           >
             Batal
           </button>

@@ -188,7 +188,7 @@ export default function EventForm({ onSaved, event }: Props) {
   };
 
   return (
-    <div className="bg-white border border-border p-4 rounded-lg space-y-4">
+    <div className="bg-background border border-border p-4 rounded-lg space-y-4">
       {event && (
         <div className="inline-flex px-3 py-1 rounded bg-amber-100 text-amber-800 text-xs font-medium">
           ✏️ Mode Edit Event
@@ -197,11 +197,15 @@ export default function EventForm({ onSaved, event }: Props) {
 
       {/* TITLE */}
       <div className="space-y-1">
-        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
           Judul Event
         </label>
+
         <input
-          className={`w-full border p-2 rounded transition-colors ${errors.title ? "border-red-500 bg-red-50" : "border-border"}`}
+          className={`w-full border border-border bg-background text-foreground
+    p-2 rounded-lg transition-colors
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+    ${errors.title ? "border-red-500 bg-red-50" : ""}`}
           placeholder="Judul event"
           value={title}
           onChange={(e) => {
@@ -209,6 +213,7 @@ export default function EventForm({ onSaved, event }: Props) {
             if (errors.title) setErrors((prev) => ({ ...prev, title: false }));
           }}
         />
+
         {errors.title && (
           <p className="text-[10px] text-red-500 font-medium ml-1">
             Judul wajib diisi
@@ -218,11 +223,15 @@ export default function EventForm({ onSaved, event }: Props) {
 
       {/* LOCATION */}
       <div className="space-y-1">
-        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
           Lokasi Event
         </label>
+
         <input
-          className={`w-full border p-2 rounded transition-colors ${errors.location ? "border-red-500 bg-red-50" : "border-border"}`}
+          className={`w-full border border-border bg-background text-foreground
+    p-2 rounded-lg transition-colors
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+    ${errors.location ? "border-red-500 bg-red-50" : ""}`}
           placeholder="Lokasi (Gedung, Kota, atau Link Zoom)"
           value={location}
           onChange={(e) => {
@@ -231,6 +240,7 @@ export default function EventForm({ onSaved, event }: Props) {
               setErrors((prev) => ({ ...prev, location: false }));
           }}
         />
+
         {errors.location && (
           <p className="text-[10px] text-red-500 font-medium ml-1">
             Lokasi wajib diisi
@@ -239,12 +249,14 @@ export default function EventForm({ onSaved, event }: Props) {
       </div>
 
       <div className="space-y-1">
-        {/* EXCERPT */}
-        <label className="text-xs font-bold text-slate-600 uppercase ml-1">
-          RINGKASAN SINGKAT
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
+          Ringkasan Singkat
         </label>
+
         <textarea
-          className="w-full border p-2 rounded min-h-[80px]"
+          className="w-full border border-border bg-background text-foreground
+    p-2 rounded-lg min-h-[80px]
+    focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
           placeholder="Ringkasan singkat event..."
           value={excerpt}
           onChange={(e) => setExcerpt(e.target.value)}
@@ -254,18 +266,23 @@ export default function EventForm({ onSaved, event }: Props) {
       {/* DATE SECTION */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-600 uppercase ml-1">
+          <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
             Tanggal Pelaksanaan
           </label>
+
           <input
             type="date"
-            className={`w-full border p-2 rounded transition-colors ${errors.date ? "border-red-500 bg-red-50" : "border-border"}`}
+            className={`w-full border border-border bg-background text-foreground
+      p-2 rounded-lg
+      focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+      ${errors.date ? "border-red-500 bg-red-50" : ""}`}
             value={date || ""}
             onChange={(e) => {
               setDate(e.target.value);
               if (errors.date) setErrors((prev) => ({ ...prev, date: false }));
             }}
           />
+
           {errors.date && (
             <p className="text-[10px] text-red-500 font-medium ml-1">
               Tanggal wajib dipilih
@@ -274,15 +291,15 @@ export default function EventForm({ onSaved, event }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-bold text-slate-600 uppercase ml-1">
-            Display Date (Otomatis)
+          <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
+            Display Date
           </label>
+
           <input
             value={displayDate || ""}
-            onChange={(e) => setDisplayDate(e.target.value)}
-            className="w-full border rounded p-2 bg-slate-50 cursor-not-allowed"
-            placeholder="Contoh: 12 Mei 2025"
             readOnly
+            className="w-full border border-border bg-muted text-muted-foreground
+      rounded-lg p-2 cursor-not-allowed"
           />
         </div>
       </div>
@@ -290,7 +307,9 @@ export default function EventForm({ onSaved, event }: Props) {
       {/* CONTENT */}
       <div className="space-y-1">
         <div
-          className={`rounded-md transition-all ${errors.content ? "ring-2 ring-red-500 bg-red-50" : ""}`}
+          className={`rounded-lg transition-all ${
+            errors.content ? "ring-2 ring-red-500" : ""
+          }`}
         >
           <RichEditor
             value={content}
@@ -301,6 +320,7 @@ export default function EventForm({ onSaved, event }: Props) {
             }}
           />
         </div>
+
         {errors.content && (
           <p className="text-[10px] text-red-500 font-medium ml-1">
             Isi konten event tidak boleh kosong
@@ -308,11 +328,12 @@ export default function EventForm({ onSaved, event }: Props) {
         )}
       </div>
 
-      {/* COVER DRAG DROP */}
+      {/* COVER */}
       <div className="space-y-1">
-        <label className="block text-sm font-medium text-emerald-800 ml-1">
+        <label className="text-xs font-bold text-muted-foreground uppercase ml-1">
           Cover Event
         </label>
+
         <div
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
@@ -322,11 +343,12 @@ export default function EventForm({ onSaved, event }: Props) {
               setErrors((prev) => ({ ...prev, cover: false }));
             }
           }}
-          className={`border-2 border-dashed rounded-xl py-8 px-5 flex flex-col items-center justify-center gap-4 transition-all ${
-            errors.cover
-              ? "border-red-400 bg-red-50"
-              : "border-emerald-300 bg-emerald-50 hover:bg-emerald-100/50"
-          }`}
+          className={`border-2 border-dashed rounded-xl py-8 px-5 flex flex-col items-center justify-center gap-4 transition-all
+    ${
+      errors.cover
+        ? "border-red-400 bg-red-50"
+        : "border-border bg-muted hover:bg-muted/70"
+    }`}
         >
           {coverFile || existingCoverUrl ? (
             <div className="relative group">
@@ -334,9 +356,10 @@ export default function EventForm({ onSaved, event }: Props) {
                 src={
                   coverFile ? URL.createObjectURL(coverFile) : existingCoverUrl!
                 }
-                className="w-48 h-32 object-cover rounded-lg shadow-md border-2 border-white"
+                className="w-48 h-32 object-cover rounded-lg shadow-md border border-border"
                 alt="Preview"
               />
+
               <button
                 type="button"
                 onClick={() => {
@@ -350,10 +373,10 @@ export default function EventForm({ onSaved, event }: Props) {
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-sm text-emerald-700 font-medium">
+              <p className="text-sm text-foreground font-medium">
                 Drag & drop cover event di sini
               </p>
-              <p className="text-[11px] text-emerald-600/60 italic">
+              <p className="text-xs text-muted-foreground italic">
                 Disarankan aspek rasio 16:9 atau 4:3
               </p>
             </div>
@@ -371,13 +394,15 @@ export default function EventForm({ onSaved, event }: Props) {
               }
             }}
           />
+
           <label
             htmlFor="coverUpload"
-            className="px-5 py-2 text-xs font-bold rounded-full bg-emerald-600 text-white cursor-pointer hover:bg-emerald-700 shadow-sm transition active:scale-95"
+            className="px-5 py-2 text-xs font-bold rounded-full bg-emerald-600 text-white cursor-pointer hover:bg-emerald-700 shadow-sm transition"
           >
             Pilih Gambar
           </label>
         </div>
+
         {errors.cover && (
           <p className="text-[10px] text-red-500 font-medium ml-1 text-center">
             Gambar cover wajib diunggah
@@ -385,19 +410,25 @@ export default function EventForm({ onSaved, event }: Props) {
         )}
       </div>
 
-      {/* STATUS PUBLISH & TANGGAL */}
+      {/* STATUS */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 bg-slate-50 border rounded-xl border-slate-200">
+        <div className="flex items-center justify-between p-4 bg-card border border-border rounded-xl">
           <div className="space-y-0.5">
-            <label className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <label className="text-sm font-bold text-foreground flex items-center gap-2">
               Status Publikasi
               <span
-                className={`px-2 py-0.5 text-[10px] rounded-full uppercase font-black ${published ? "bg-emerald-500 text-white" : "bg-slate-300 text-slate-600"}`}
+                className={`px-2 py-0.5 text-[10px] rounded-full uppercase font-black
+          ${
+            published
+              ? "bg-emerald-500 text-white"
+              : "bg-muted text-muted-foreground"
+          }`}
               >
                 {published ? "Live" : "Draft"}
               </span>
             </label>
-            <p className="text-xs text-slate-500">
+
+            <p className="text-xs text-muted-foreground">
               Event akan{" "}
               {published
                 ? "tampil di website publik"
@@ -405,6 +436,7 @@ export default function EventForm({ onSaved, event }: Props) {
               .
             </p>
           </div>
+
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
@@ -412,22 +444,35 @@ export default function EventForm({ onSaved, event }: Props) {
               checked={published}
               onChange={(e) => setPublished(e.target.checked)}
             />
-            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+
+            <div
+              className="w-11 h-6 bg-muted rounded-full peer
+        peer-checked:bg-emerald-500
+        after:content-[''] after:absolute after:top-[2px] after:left-[2px]
+        after:bg-white after:rounded-full after:h-5 after:w-5
+        after:transition-all peer-checked:after:translate-x-full"
+            ></div>
           </label>
         </div>
 
+        {/* SCHEDULE */}
         <div
-          className={`overflow-hidden transition-all duration-500 ${published ? "max-h-40 opacity-100" : "max-h-0 opacity-0"}`}
+          className={`overflow-hidden transition-all duration-500 ${
+            published ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+          }`}
         >
-          <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 space-y-2">
-            <label className="block text-xs font-bold text-emerald-800 uppercase">
+          <div className="bg-muted p-3 rounded-xl border border-border space-y-2">
+            <label className="block text-xs font-bold text-muted-foreground uppercase">
               Waktu Publikasi Konten
             </label>
+
             <input
               type="datetime-local"
               value={publishAt ? publishAt.slice(0, 16) : ""}
               onChange={(e) => setPublishAt(e.target.value)}
-              className="border border-emerald-200 rounded-lg px-3 py-2 w-full focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+              className="border border-border rounded-lg px-3 py-2 w-full
+        bg-background text-foreground
+        focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
             />
           </div>
         </div>
@@ -438,7 +483,8 @@ export default function EventForm({ onSaved, event }: Props) {
         <button
           onClick={save}
           disabled={isSaving}
-          className={`flex-1 bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg transition transform active:scale-[0.98] ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-800 hover:shadow-emerald-200"}`}
+          className={`flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-sm transition
+    ${isSaving ? "opacity-50 cursor-not-allowed" : "hover:bg-emerald-700"}`}
         >
           {isSaving
             ? "Menyimpan..."
@@ -446,11 +492,13 @@ export default function EventForm({ onSaved, event }: Props) {
               ? "Update Event"
               : "Simpan & Publikasikan"}
         </button>
+
         {event && (
           <button
             type="button"
             onClick={() => onSaved()}
-            className="px-6 py-3 border-2 border-slate-200 rounded-xl font-bold text-slate-500 hover:bg-slate-50 transition"
+            className="px-6 py-3 border border-border rounded-xl font-bold
+      text-muted-foreground hover:bg-muted transition"
           >
             Batal
           </button>

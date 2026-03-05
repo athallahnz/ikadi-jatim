@@ -24,7 +24,7 @@ const PAGE_SIZE = 6;
 
 export default function Kajian() {
   const { categorySlug } = useParams();
-  
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
@@ -169,7 +169,7 @@ export default function Kajian() {
   };
 
   return (
-    <section className="pt-24 pb-24 md:pt-28 bg-cream islamic-pattern overflow-hidden">
+    <section className="pt-24 pb-24 md:pt-28 bg-background islamic-pattern overflow-hidden">
       <div className="container">
         <div className="container mx-auto pt-12 px-6 mb-16 text-center">
           {/* TITLE */}
@@ -185,7 +185,7 @@ export default function Kajian() {
               placeholder="Cari kajian..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 rounded-full border border-border bg-white shadow-sm focus:ring-2 focus:ring-primary outline-none"
+              className="w-full px-4 py-2 rounded-full border border-border bg-background shadow-sm focus:ring-2 focus:ring-primary outline-none"
             />
           </div>
 
@@ -223,7 +223,7 @@ export default function Kajian() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl border shadow-sm overflow-hidden animate-pulse"
+                className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden animate-pulse"
               >
                 <div className="h-44 bg-muted" />
                 <div className="p-5 space-y-3">
@@ -237,7 +237,7 @@ export default function Kajian() {
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-emerald-700 font-display font-bold text-lg mb-2">
+            <div className="text-primary font-display font-bold text-lg mb-2">
               Tidak ditemukan
             </div>
             <div className="text-muted-foreground text-sm">
@@ -250,7 +250,7 @@ export default function Kajian() {
               {articles.map((a) => (
                 <div
                   key={a.id}
-                  className="bg-white rounded-2xl border shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col"
+                  className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col"
                 >
                   {a.cover_url ? (
                     <img
@@ -258,8 +258,8 @@ export default function Kajian() {
                       className="w-full h-44 object-cover"
                     />
                   ) : (
-                    <div className="w-full h-44 bg-emerald-50 flex items-center justify-center">
-                      <span className="text-emerald-700 font-display text-lg px-6 text-center">
+                    <div className="w-full h-44 bg-muted flex items-center justify-center">
+                      <span className="text-primary font-display text-lg px-6 text-center">
                         {a.title}
                       </span>
                     </div>
@@ -271,7 +271,7 @@ export default function Kajian() {
                         {new Date(a.publish_at).toLocaleDateString()}
                       </div>
                       {a.category && (
-                        <span className="text-xs px-2 py-1 rounded bg-emerald-light text-emerald-dark">
+                        <span className="text-xs px-2 py-1 rounded bg-accent/20 text-accent-foreground">
                           {a.category.name}
                         </span>
                       )}
@@ -288,7 +288,7 @@ export default function Kajian() {
                     <div className="mt-auto">
                       <Link
                         to={`/kajian/${a.category?.slug}/${a.slug}`}
-                        className="text-sm font-medium text-emerald-700 hover:text-gold"
+                        className="text-sm font-medium text-primary hover:text-accent transition"
                       >
                         Baca Selengkapnya →
                       </Link>
@@ -305,7 +305,7 @@ export default function Kajian() {
                 <button
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="px-3 py-1 rounded border bg-white disabled:opacity-40"
+                  className="px-3 py-1 rounded bg-backgroundg-white disabled:opacity-40"
                 >
                   Prev
                 </button>
@@ -326,10 +326,10 @@ export default function Kajian() {
                     <button
                       key={key}
                       onClick={() => typeof p === "number" && setPage(p)}
-                      className={`px-3 py-1 rounded border ${
+                      className={`px-3 py-1 rounded border border-border ${
                         page === p
-                          ? "bg-primary text-white"
-                          : "bg-white hover:bg-muted"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background hover:bg-muted"
                       }`}
                     >
                       {p}
@@ -341,7 +341,7 @@ export default function Kajian() {
                 <button
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-1 rounded border bg-white disabled:opacity-40"
+                  className="px-3 py-1 rounded border bg-background disabled:opacity-40"
                 >
                   Next
                 </button>

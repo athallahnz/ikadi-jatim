@@ -127,7 +127,8 @@ export default function Profile() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-display text-emerald-dark">My Profile</h1>
+        <h1 className="text-2xl font-black text-foreground tracking-tight">My Profile</h1>
+
         <p className="text-sm text-muted-foreground mt-1">
           Kelola informasi pribadi dan keamanan akun Anda.
         </p>
@@ -135,38 +136,44 @@ export default function Profile() {
 
       <div className="space-y-6">
         {/* ================= BAGIAN 1: PROFIL PUBLIK ================= */}
-        <div className="bg-white border border-border rounded-xl p-6 shadow-sm h-fit">
-          <div className="flex items-center gap-2 font-semibold text-emerald-dark mb-5 border-b pb-3">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm h-fit">
+          <div className="flex items-center gap-2 font-semibold text-foreground mb-5 border-b border-border pb-3">
             <UserIcon size={20} />
             <span>Informasi Publik</span>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-emerald-dark mb-1 block">
+              <label className="text-sm font-medium text-foreground mb-1 block">
                 Nama Lengkap
               </label>
+
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full border border-border bg-background text-foreground
+          rounded-lg p-2.5 outline-none
+          focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-emerald-dark mb-1 block">
+              <label className="text-sm font-medium text-foreground mb-1 block">
                 Nama Brand (Opsional)
               </label>
+
               <input
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
                 placeholder="Misal: IKADI Surabaya"
-                className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full border border-border bg-background text-foreground
+          rounded-lg p-2.5 outline-none
+          focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-emerald-dark mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block">
                 Logo Brand
               </label>
 
@@ -177,7 +184,9 @@ export default function Profile() {
                   if (e.dataTransfer.files?.[0])
                     setLogoFile(e.dataTransfer.files[0]);
                 }}
-                className="border-2 border-dashed border-emerald-300 rounded-xl py-8 px-5 flex flex-col items-center justify-center gap-4 bg-emerald-50 hover:bg-emerald-100/50 transition"
+                className="border-2 border-dashed border-border rounded-xl py-8 px-5
+          flex flex-col items-center justify-center gap-4
+          bg-muted hover:bg-muted/70 transition"
               >
                 {logoFile ? (
                   <div className="relative inline-block">
@@ -185,9 +194,11 @@ export default function Profile() {
                       src={URL.createObjectURL(logoFile)}
                       className="h-16 object-contain"
                     />
+
                     <button
                       onClick={() => setLogoFile(null)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white
+                rounded-full w-5 h-5 text-xs"
                     >
                       X
                     </button>
@@ -198,15 +209,17 @@ export default function Profile() {
                       src={existingLogoUrl}
                       className="h-16 object-contain"
                     />
+
                     <button
                       onClick={() => setExistingLogoUrl(null)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white
+                rounded-full w-5 h-5 text-xs"
                     >
                       X
                     </button>
                   </div>
                 ) : (
-                  <div className="text-sm text-emerald-700">
+                  <div className="text-sm text-muted-foreground">
                     Drag & drop logo di sini
                   </div>
                 )}
@@ -220,9 +233,12 @@ export default function Profile() {
                     if (e.target.files?.[0]) setLogoFile(e.target.files[0]);
                   }}
                 />
+
                 <label
                   htmlFor="profileLogoUpload"
-                  className="mt-3 inline-block px-4 py-1.5 text-xs rounded bg-emerald-600 text-white font-medium cursor-pointer shadow-sm"
+                  className="mt-3 inline-block px-4 py-1.5 text-xs rounded
+            bg-emerald-600 text-white font-medium cursor-pointer shadow-sm
+            hover:bg-emerald-700 transition"
                 >
                   Pilih Logo
                 </label>
@@ -232,7 +248,8 @@ export default function Profile() {
             <button
               onClick={handleSaveProfile}
               disabled={savingProfile}
-              className="w-full bg-emerald-dark hover:bg-emerald-800 text-white px-4 py-2.5 rounded-lg transition font-medium mt-4"
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white
+        px-4 py-2.5 rounded-lg transition font-medium mt-4"
             >
               {savingProfile ? "Menyimpan..." : "Simpan Profil"}
             </button>
@@ -240,38 +257,45 @@ export default function Profile() {
         </div>
 
         {/* ================= BAGIAN 2: KEAMANAN AKUN ================= */}
-        <div className="bg-white border border-border rounded-xl p-6 shadow-sm h-fit">
-          <div className="flex items-center gap-2 font-semibold text-emerald-dark mb-5 border-b pb-3">
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm h-fit">
+          <div className="flex items-center gap-2 font-semibold text-foreground mb-5 border-b border-border pb-3">
             <ShieldCheck size={20} />
             <span>Keamanan Akun & Login</span>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-emerald-dark mb-1 block">
+              <label className="text-sm font-medium text-foreground mb-1 block">
                 Email Login
               </label>
+
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
+                className="w-full border border-border bg-muted text-foreground
+          rounded-lg p-2.5 outline-none
+          focus:ring-2 focus:ring-emerald-500/30"
               />
+
               <p className="text-[11px] text-muted-foreground mt-1 leading-tight">
                 *Mengubah email mungkin akan memutuskan sesi Anda saat ini.
               </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-emerald-dark mb-1 block">
+              <label className="text-sm font-medium text-foreground mb-1 block">
                 Password Baru
               </label>
+
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Kosongkan jika tidak ingin mengubah sandi"
-                className="w-full border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-emerald-500"
+                className="w-full border border-border bg-background text-foreground
+          rounded-lg p-2.5 outline-none
+          focus:ring-2 focus:ring-emerald-500/30"
               />
             </div>
 
@@ -279,7 +303,9 @@ export default function Profile() {
               <button
                 onClick={handleSaveAuth}
                 disabled={savingAuth || (!email && !password)}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-2.5 rounded-lg transition font-medium disabled:opacity-50"
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white
+          px-4 py-2.5 rounded-lg transition font-medium
+          disabled:opacity-50"
               >
                 {savingAuth ? "Memproses..." : "Perbarui Keamanan"}
               </button>

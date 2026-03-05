@@ -1,0 +1,13 @@
+// src/lib/theme-context.ts
+import { createContext } from "react";
+
+export type Theme = "light" | "dark" | "system";
+
+export type ThemeProviderState = {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+};
+
+export const ThemeContext = createContext<ThemeProviderState | undefined>(
+  undefined,
+);
