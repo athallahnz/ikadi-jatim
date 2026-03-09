@@ -116,9 +116,7 @@ export default function Navbar() {
         {/* ================= DESKTOP ================= */}
         <div className="hidden xl:flex items-center gap-6">
           <div
-            className={`flex items-center gap-10 transition-colors duration-500 ease-smooth ${
-              showCTA ? "translate-x-0" : "translate-x-4"
-            }`}
+            className={`flex items-center gap-10 transition-all duration-500 ease-out ${showCTA ? "translate-x-0" : "translate-x-4"}`}
           >
             {navLinks.map((link) =>
               link.children ? (
@@ -186,7 +184,7 @@ export default function Navbar() {
 
           {/* CTA Animated */}
           <div
-            className={`transition-colors duration-500 ease-smooth ${
+            className={`transition-all duration-500 ease-out ${
               showCTA
                 ? "opacity-100 translate-x-0 scale-100 delay-200"
                 : "opacity-0 translate-x-6 scale-95"
