@@ -137,7 +137,7 @@ export default function Navbar() {
 
                   <div className="absolute left-0 top-full pt-6 w-64 opacity-0 invisible scale-95 translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:translate-y-0 transition-all duration-300 origin-top z-50">
                     {/* Box visual diletakkan di dalam wrapper */}
-                    <div className="bg-background/80 backdrop-blur-md border border-gold/30 shadow-xl overflow-hidden">
+                    <div className="bg-background/80 mt-2 backdrop-blur-md border border-gold/30 shadow-xl overflow-hidden">
                       <div className="py-3">
                         {link.children.map((child) => (
                           <NavLink
