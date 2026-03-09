@@ -135,23 +135,26 @@ export default function Navbar() {
                     {link.label}
                   </span>
 
-                  <div className="absolute left-0 top-full mt-8 w-64 bg-background/95 backdrop-blur-md border border-gold/30 shadow-xl opacity-0 invisible scale-95 translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:translate-y-0 transition-colors duration-300 origin-top">
-                    <div className="py-3">
-                      {link.children.map((child) => (
-                        <NavLink
-                          key={child.label}
-                          to={child.to}
-                          className={({ isActive }) =>
-                            `block px-6 py-3 text-base transition-colors ${
-                              isActive
-                                ? "text-primary font-semibold"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`
-                          }
-                        >
-                          {child.label}
-                        </NavLink>
-                      ))}
+                  <div className="absolute left-0 top-full pt-6 w-64 opacity-0 invisible scale-95 translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:scale-100 group-hover:translate-y-0 transition-all duration-300 origin-top z-50">
+                    {/* Box visual diletakkan di dalam wrapper */}
+                    <div className="bg-background/80 backdrop-blur-md border border-gold/30 shadow-xl overflow-hidden">
+                      <div className="py-3">
+                        {link.children.map((child) => (
+                          <NavLink
+                            key={child.label}
+                            to={child.to}
+                            className={({ isActive }) =>
+                              `block px-6 py-3 text-base transition-colors ${
+                                isActive
+                                  ? "text-primary font-semibold"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                              }`
+                            }
+                          >
+                            {child.label}
+                          </NavLink>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
