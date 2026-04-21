@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://ikadijatim.org/</loc>
+    <lastmod>2026-04-18</lastmod>
+    <priority>1.0</priority>
+  </url>
+  <url><loc>https://ikadijatim.org/tentang/profil</loc><priority>0.8</priority></url>
+  <url><loc>https://ikadijatim.org/tentang/struktur</loc><priority>0.8</priority></url>
+  <url><loc>https://ikadijatim.org/program/kuliah</loc><priority>0.8</priority></url>
+  <url><loc>https://ikadijatim.org/program/pembinaan</loc><priority>0.8</priority></url>
+  <url><loc>https://ikadijatim.org/program/konsultasi</loc><priority>0.8</priority></url>
+  <url><loc>https://ikadijatim.org/kabar/jatim</loc><priority>0.7</priority></url>
+  <url><loc>https://ikadijatim.org/kabar/daerah</loc><priority>0.7</priority></url>
+  <url><loc>https://ikadijatim.org/kajian/khutbah</loc><priority>0.9</priority></url>
+  <url><loc>https://ikadijatim.org/kajian/mutiara-al-quran</loc><priority>0.9</priority></url>
+  <url><loc>https://ikadijatim.org/kajian/mutiara-hadits</loc><priority>0.9</priority></url>
+  <url><loc>https://ikadijatim.org/kajian/hikmah</loc><priority>0.9</priority></url>
+  <url><loc>https://ikadijatim.org/galeri</loc><priority>0.6</priority></url>
+</urlset>

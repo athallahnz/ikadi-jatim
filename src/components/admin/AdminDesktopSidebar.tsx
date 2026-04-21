@@ -84,90 +84,97 @@ export default function AdminDesktopSidebar({
 
       {/* MENU */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-        {adminMenu.map((m) => {
-          const Icon = m.icon;
+        {adminMenu
 
-          if (m.children) {
-            const children = m.children.filter((c) => {
-              if (!c.scopes) return true;
-              return c.scopes.includes(scope ?? "");
-            });
+          // ✅ TAMBAHKAN FILTER UTAMA DI SINI
+          .filter((m) => {
+            if (!m.scopes) return true;
+            return m.scopes.includes(scope ?? "");
+          })
+          .map((m) => {
+            const Icon = m.icon;
 
-            if (!children.length) return null;
+            if (m.children) {
+              const children = m.children.filter((c) => {
+                if (!c.scopes) return true;
+                return c.scopes.includes(scope ?? "");
+              });
+
+              if (!children.length) return null;
+
+              return (
+                <div key={m.label}>
+                  <button
+                    onClick={() => setOpenSettings(!openSettings)}
+                    className={`flex items-center w-full ${
+                      collapsed ? "justify-center" : "gap-3"
+                    } px-3 py-3 rounded-lg text-sm text-muted-foreground hover:bg-muted`}
+                  >
+                    <Icon size={18} />
+
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 text-left">{m.label}</span>
+                        {openSettings ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
+                      </>
+                    )}
+                  </button>
+
+                  {openSettings && !collapsed && (
+                    <div className="pl-3 mt-1 space-y-1">
+                      {children.map((c) => {
+                        const CIcon = c.icon;
+
+                        return (
+                          <NavLink
+                            key={c.to}
+                            to={c.to!}
+                            end={c.to === "/admin/settings"}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2 px-3 py-3 rounded-lg text-sm ${
+                                isActive
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                                  : "text-muted-foreground hover:bg-muted"
+                              }`
+                            }
+                          >
+                            <CIcon size={16} />
+                            {c.label}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            if (!m.to) return null;
 
             return (
-              <div key={m.label}>
-                <button
-                  onClick={() => setOpenSettings(!openSettings)}
-                  className={`flex items-center w-full ${
+              <NavLink
+                key={m.to}
+                to={m.to}
+                end={m.to === "/admin"}
+                className={({ isActive }) =>
+                  `flex items-center ${
                     collapsed ? "justify-center" : "gap-3"
-                  } px-3 py-3 rounded-lg text-sm text-muted-foreground hover:bg-muted`}
-                >
-                  <Icon size={18} />
-
-                  {!collapsed && (
-                    <>
-                      <span className="flex-1 text-left">{m.label}</span>
-                      {openSettings ? (
-                        <ChevronDown size={16} />
-                      ) : (
-                        <ChevronRight size={16} />
-                      )}
-                    </>
-                  )}
-                </button>
-
-                {openSettings && !collapsed && (
-                  <div className="pl-3 mt-1 space-y-1">
-                    {children.map((c) => {
-                      const CIcon = c.icon;
-
-                      return (
-                        <NavLink
-                          key={c.to}
-                          to={c.to!}
-                          end={c.to === "/admin/settings"}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2 px-3 py-3 rounded-lg text-sm ${
-                              isActive
-                                ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                                : "text-muted-foreground hover:bg-muted"
-                            }`
-                          }
-                        >
-                          <CIcon size={16} />
-                          {c.label}
-                        </NavLink>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                  } px-3 py-3 rounded-lg text-sm ${
+                    isActive
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {!collapsed && <span>{m.label}</span>}
+              </NavLink>
             );
-          }
-
-          if (!m.to) return null;
-
-          return (
-            <NavLink
-              key={m.to}
-              to={m.to}
-              end={m.to === "/admin"}
-              className={({ isActive }) =>
-                `flex items-center ${
-                  collapsed ? "justify-center" : "gap-3"
-                } px-3 py-3 rounded-lg text-sm ${
-                  isActive
-                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400"
-                    : "text-muted-foreground hover:bg-muted"
-                }`
-              }
-            >
-              <Icon size={18} />
-              {!collapsed && <span>{m.label}</span>}
-            </NavLink>
-          );
-        })}
+          })}
       </nav>
 
       {/* FOOTER */}

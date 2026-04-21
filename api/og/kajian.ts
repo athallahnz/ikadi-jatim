@@ -1,11 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
-type ArticleOG = {
+// Sesuai instruksi: Menggunakan Interface yang spesifik & akurat
+interface ArticleOG {
   title: string;
   content: string;
   cover_url: string | null;
-};
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL as string,
@@ -40,13 +41,16 @@ export default async function handler(
   }
 
   const description = stripHtml(data.content).slice(0, 150) + "...";
-  const image = data.cover_url ?? "";
+  const image = data.cover_url ?? "https://ikadijatim.org/logo-ikadi.png"; // Fallback ke logo jika cover kosong
 
-  const canonicalUrl = `https://ikadijatim.vercel.app/kajian/${category}/${slug}`;
+  // UPDATE: Mengarah ke domain .org
+  const canonicalUrl = `https://ikadijatim.org/kajian/${category}/${slug}`;
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8" />
+<title>${data.title} | IKADI Jawa Timur</title>
 <meta property="og:title" content="${data.title}" />
 <meta property="og:description" content="${description}" />
 <meta property="og:image" content="${image}" />
@@ -57,11 +61,14 @@ export default async function handler(
 <meta name="twitter:title" content="${data.title}" />
 <meta name="twitter:description" content="${description}" />
 <meta name="twitter:image" content="${image}" />
+
+<link rel="canonical" href="${canonicalUrl}" />
 </head>
 <body>
-Redirecting...
+Pindah halaman...
 <script>
-window.location.href="/kajian/${category}/${slug}";
+  // Redirect ke website utama di Jagoan Hosting
+  window.location.href = "${canonicalUrl}";
 </script>
 </body>
 </html>`;

@@ -1,10 +1,10 @@
 import {
-  LayoutDashboard,
-  Newspaper,
   CalendarDays,
   Image,
   Layers,
+  LayoutDashboard,
   MessageSquareText,
+  Newspaper,
   Settings,
   User,
   Users,
@@ -24,17 +24,39 @@ export type AdminMenuItem = {
 export const adminMenu: AdminMenuItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
 
-  { to: "/admin/articles", label: "Kajian & Artikel", icon: Newspaper },
+  {
+    to: "/admin/articles",
+    label: "Kajian & Artikel",
+    icon: Newspaper,
+  },
 
-  { to: "/admin/events", label: "Agenda / Event", icon: CalendarDays },
+  {
+    to: "/admin/events",
+    label: "Agenda / Event",
+    icon: CalendarDays,
+  },
 
-  { to: "/admin/gallery", label: "Galeri", icon: Image },
+  {
+    to: "/admin/gallery",
+    label: "Galeri",
+    icon: Image,
+  },
 
-  { to: "/admin/programs", label: "Program", icon: Layers },
+  { to: "/admin/programs", label: "Program", icon: Layers, scopes: ["jatim"] },
 
-  { to: "/admin/runningtexts", label: "Running Text", icon: MessageSquareText },
+  {
+    to: "/admin/runningtexts",
+    label: "Running Text",
+    icon: MessageSquareText,
+    scopes: ["jatim"],
+  },
 
-  { to: "/admin/invitations", label: "Undangan", icon: Layers },
+  {
+    to: "/admin/invitations",
+    label: "Undangan",
+    icon: Layers,
+    scopes: ["jatim"],
+  },
 
   {
     label: "Settings",

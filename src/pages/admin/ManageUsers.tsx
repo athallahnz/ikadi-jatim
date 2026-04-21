@@ -2,10 +2,11 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
 import CreateUser from "./CreateUser";
-import EditUserModal from "./EditUserModal"; // ✅ IMPORT MODAL EDIT BARU
+import EditUserModal from "./EditUserModal";
 import { UserPlus, Trash2, Edit } from "lucide-react";
 import Swal from "sweetalert2";
 
+// ✅ Sesuaikan tipe data dengan EditUserModal (tambahkan email)
 type UserAdmin = {
   id: string;
   name: string;
@@ -14,6 +15,7 @@ type UserAdmin = {
   daerah: string | null;
   brand_name: string | null;
   brand_logo?: string | null;
+  email?: string; // Tambahan field email
   created_at?: string;
   status: "pending" | "active" | "rejected" | "blocked";
 };
@@ -26,7 +28,7 @@ export default function ManageUsers() {
   // State untuk Modal Create
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // ✅ State untuk Modal Edit
+  // State untuk Modal Edit
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserAdmin | null>(null);
 
@@ -39,7 +41,8 @@ export default function ManageUsers() {
       return (
         u.name.toLowerCase().includes(q) ||
         (u.brand_name || "").toLowerCase().includes(q) ||
-        (u.daerah || "").toLowerCase().includes(q)
+        (u.daerah || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q) // ✅ Bisa mencari berdasarkan email juga
       );
     });
   }, [users, search]);
@@ -76,13 +79,10 @@ export default function ManageUsers() {
     if (result.isConfirmed) {
       try {
         Swal.fire({ title: "Menghapus...", didOpen: () => Swal.showLoading() });
-        const { data, error } = await supabase
-          .from("admins")
-          .delete()
-          .eq("id", id)
-          .select();
-        console.log("deleted:", data);
+        const { error } = await supabase.from("admins").delete().eq("id", id);
+
         if (error) throw error;
+
         await fetchUsers();
         Swal.fire({
           icon: "success",
@@ -138,7 +138,6 @@ export default function ManageUsers() {
     }
   };
 
-  // ✅ Fungsi untuk membuka modal edit
   const handleEditClick = (user: UserAdmin) => {
     setEditingUser(user);
     setIsEditModalOpen(true);
@@ -148,10 +147,7 @@ export default function ManageUsers() {
     <AdminLayout>
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-foreground">
-            Manage Users
-          </h1>
-
+          <h1 className="text-2xl font-black text-foreground">Manage Users</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Kelola daftar admin pusat dan admin cabang daerah.
           </p>
@@ -171,12 +167,11 @@ export default function ManageUsers() {
         {/* SEARCH BAR */}
         <div className="p-4 border-b border-border bg-muted/40">
           <input
-            placeholder="Cari admin..."
+            placeholder="Cari nama atau email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="px-3 py-2 border border-border rounded-lg text-sm
-      bg-background text-foreground
-      placeholder:text-muted-foreground
+      bg-background text-foreground placeholder:text-muted-foreground
       focus:outline-none focus:ring-2 focus:ring-emerald-500/30
       w-full max-w-xs"
           />
@@ -186,7 +181,7 @@ export default function ManageUsers() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs uppercase text-muted-foreground bg-muted border-b border-border">
               <tr>
-                <th className="px-6 py-4 font-semibold">Nama Admin</th>
+                <th className="px-6 py-4 font-semibold">Profil Admin</th>
                 <th className="px-6 py-4 font-semibold">Role</th>
                 <th className="px-6 py-4 font-semibold">Scope / Daerah</th>
                 <th className="px-6 py-4 font-semibold">Status</th>
@@ -203,15 +198,15 @@ export default function ManageUsers() {
                       <div className="h-4 bg-muted rounded w-40 mb-2" />
                       <div className="h-3 bg-muted rounded w-24" />
                     </td>
-
                     <td className="px-6 py-4">
                       <div className="h-4 bg-muted rounded w-16" />
                     </td>
-
                     <td className="px-6 py-4">
                       <div className="h-4 bg-muted rounded w-32" />
                     </td>
-
+                    <td className="px-6 py-4">
+                      <div className="h-8 bg-muted rounded w-24" />
+                    </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <div className="h-7 w-7 bg-muted rounded" />
@@ -225,7 +220,7 @@ export default function ManageUsers() {
               {!loading && filteredUsers.length === 0 && (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     className="text-center py-12 text-muted-foreground"
                   >
                     Tidak ada admin ditemukan
@@ -240,13 +235,20 @@ export default function ManageUsers() {
                     key={u.id}
                     className="border-b border-border last:border-0 hover:bg-muted/40 transition"
                   >
-                    <td className="px-6 py-4 font-medium text-foreground">
-                      {u.name}
+                    <td className="px-6 py-4 text-foreground">
+                      <div className="font-medium text-sm">{u.name}</div>
+
+                      {/* ✅ Tampilkan Email di sini */}
+                      {u.email && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {u.email}
+                        </div>
+                      )}
 
                       {u.brand_name && (
-                        <span className="block text-xs font-normal text-muted-foreground mt-0.5">
+                        <div className="text-[11px] font-medium text-emerald-600/80 mt-1">
                           {u.brand_name}
-                        </span>
+                        </div>
                       )}
                     </td>
 
@@ -279,8 +281,7 @@ export default function ManageUsers() {
                       <select
                         value={u.status}
                         onChange={(e) => updateStatus(u.id, e.target.value)}
-                        className={`text-xs px-2 py-1 rounded border border-border
-                  bg-background
+                        className={`text-xs px-2 py-1.5 rounded border border-border bg-background cursor-pointer outline-none
                   ${
                     u.status === "active"
                       ? "text-green-600"
@@ -303,6 +304,7 @@ export default function ManageUsers() {
                         <button
                           onClick={() => handleEditClick(u)}
                           className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
+                          title="Edit Admin"
                         >
                           <Edit size={16} />
                         </button>
@@ -310,6 +312,7 @@ export default function ManageUsers() {
                         <button
                           onClick={() => handleDelete(u.id, u.name)}
                           className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
+                          title="Hapus Admin"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -332,7 +335,7 @@ export default function ManageUsers() {
         }}
       />
 
-      {/* ✅ MODAL EDIT USER BARU DITAMBAHKAN */}
+      {/* MODAL EDIT USER */}
       <EditUserModal
         isOpen={isEditModalOpen}
         userData={editingUser}

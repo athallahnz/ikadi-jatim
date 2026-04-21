@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/upload";
+import { useAdmin } from "@/hooks/useAdmin"; // ✅ Import useAdmin
 import Swal from "sweetalert2";
 import {
   Trash2,
   UploadCloud,
   Plus,
-  Image as ImageIcon,
-  X,
   Edit3,
   Filter,
+  Globe,
+  MapPin,
 } from "lucide-react";
 
 type GalleryItem = {
@@ -18,16 +19,17 @@ type GalleryItem = {
   title: string;
   image_url: string;
   category: string;
+  scope: string; // ✅ Tambahkan scope
   created_at: string;
 };
 
 export default function Gallery() {
+  const { admin } = useAdmin(); // ✅ Ambil data admin login
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("Semua");
 
-  // Form & Edit States
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Kegiatan");
@@ -37,22 +39,27 @@ export default function Gallery() {
 
   const categories = ["Semua", "Kegiatan", "Agenda", "Dokumentasi"];
 
-  const fetchGallery = async () => {
+  const fetchGallery = useCallback(async () => {
+    if (!admin) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("gallery")
-      .select("*")
-      .order("created_at", { ascending: false });
+
+    let query = supabase.from("gallery").select("*");
+
+    if (admin.scope !== "jatim") {
+      query = query.eq("scope", admin.scope);
+    }
+
+    const { data } = await query.order("created_at", { ascending: false });
+
     setItems(data || []);
     setFilteredItems(data || []);
     setLoading(false);
-  };
+  }, [admin]); // Fungsi ini hanya berubah jika data admin berubah
 
   useEffect(() => {
     fetchGallery();
-  }, []);
+  }, [fetchGallery]); // ✅ Sekarang aman memasukkan fetchGallery ke sini
 
-  // Handle Filtering
   useEffect(() => {
     if (activeFilter === "Semua") {
       setFilteredItems(items);
@@ -63,6 +70,8 @@ export default function Gallery() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!admin) return;
+
     const newErrors: { [key: string]: boolean } = {};
     if (!title.trim()) newErrors.title = true;
     if (!file && !editingId) newErrors.file = true;
@@ -85,16 +94,22 @@ export default function Gallery() {
         if (!finalImageUrl) throw new Error("Gagal mengunggah gambar.");
       }
 
+      // ✅ PAYLOAD dengan tambahan Scope
+      const payload = {
+        title,
+        category,
+        image_url: finalImageUrl,
+        scope: admin.scope, // Memastikan scope yang dikirim sesuai dengan identitas admin      };
+      };
+
       if (editingId) {
         const { error } = await supabase
           .from("gallery")
-          .update({ title, category, image_url: finalImageUrl })
+          .update(payload)
           .eq("id", editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("gallery")
-          .insert({ title, category, image_url: finalImageUrl });
+        const { error } = await supabase.from("gallery").insert(payload);
         if (error) throw error;
       }
 
@@ -107,14 +122,9 @@ export default function Gallery() {
       resetForm();
       fetchGallery();
     } catch (error: unknown) {
-      // Mengatasi ESLint @typescript-eslint/no-explicit-any
       const errorMessage =
         error instanceof Error ? error.message : "Terjadi kesalahan.";
-
       Swal.fire({ icon: "error", title: "Gagal", text: errorMessage });
-
-      // Kosongkan form field ketika error
-      resetForm();
     } finally {
       setIsSaving(false);
     }
@@ -124,14 +134,11 @@ export default function Gallery() {
     setEditingId(item.id);
     setTitle(item.title);
     setCategory(item.category);
-    setFile(null); // Reset file input saat edit
+    setFile(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const resetForm = () => {
-    // Tambahkan cleanup URL jika perlu (opsional)
-    if (file) URL.revokeObjectURL(URL.createObjectURL(file));
-
     setEditingId(null);
     setTitle("");
     setCategory("Kegiatan");
@@ -142,6 +149,7 @@ export default function Gallery() {
   const handleDelete = async (item: GalleryItem) => {
     const res = await Swal.fire({
       title: "Hapus Foto?",
+      text: "Data akan dihapus permanen dari galeri Anda.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -163,15 +171,29 @@ export default function Gallery() {
   return (
     <AdminLayout>
       <div className="mb-6">
-        {/* HEADER */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-foreground">
-            Management Gallery
-          </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight">
+              Management Gallery
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {admin?.scope === "jatim"
+                ? "Mengelola semua galeri wilayah Jawa Timur."
+                : `Mengelola galeri khusus wilayah ${admin?.daerah || admin?.scope}.`}
+            </p>
+          </div>
 
-          <p className="text-sm text-muted-foreground mt-1">
-            Kelola foto kegiatan dan dokumentasi organisasi.
-          </p>
+          {/* BADGE SCOPE */}
+          <div className="flex items-center gap-2 bg-muted px-4 py-2 rounded-2xl border border-border w-fit">
+            {admin?.scope === "jatim" ? (
+              <Globe size={16} className="text-emerald-500" />
+            ) : (
+              <MapPin size={16} className="text-amber-500" />
+            )}
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              Scope: {admin?.scope}
+            </span>
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -182,24 +204,21 @@ export default function Gallery() {
                 {editingId ? <Edit3 size={18} /> : <Plus size={18} />}
                 {editingId ? "Edit Foto" : "Tambah Foto Baru"}
               </span>
-
               {editingId && (
                 <button
                   onClick={resetForm}
-                  className="text-[10px] bg-muted px-2 py-1 rounded text-foreground hover:bg-muted/70"
+                  className="text-[10px] bg-muted px-2 py-1 rounded hover:bg-muted/70"
                 >
-                  Batal Edit
+                  Batal
                 </button>
               )}
             </h3>
 
             <div className="space-y-4">
-              {/* TITLE */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase">
                   Judul Photo
                 </label>
-
                 <input
                   type="text"
                   className={`w-full border border-border bg-background text-foreground p-2.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500/20 ${
@@ -207,16 +226,14 @@ export default function Gallery() {
                   }`}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Judul Photo"
+                  placeholder="Masukkan judul foto..."
                 />
               </div>
 
-              {/* CATEGORY */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase">
                   Kategori
                 </label>
-
                 <select
                   className="w-full border border-border bg-background text-foreground p-2.5 rounded-xl text-sm outline-none"
                   value={category}
@@ -232,12 +249,10 @@ export default function Gallery() {
                 </select>
               </div>
 
-              {/* FILE */}
               <div className="space-y-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase">
                   File Gambar
                 </label>
-
                 <div
                   className={`border-2 border-dashed rounded-2xl p-4 transition-colors ${
                     errors.file
@@ -256,7 +271,6 @@ export default function Gallery() {
                         className="w-full h-32 object-cover rounded-xl border border-border"
                         alt="Preview"
                       />
-
                       <label
                         htmlFor="gal-upload"
                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs cursor-pointer rounded-xl transition-opacity"
@@ -270,12 +284,9 @@ export default function Gallery() {
                       className="cursor-pointer flex flex-col items-center py-4 text-muted-foreground"
                     >
                       <UploadCloud size={30} className="mb-1" />
-                      <p className="text-[10px] font-bold">
-                        Pilih atau Drag Foto
-                      </p>
+                      <p className="text-[10px] font-bold">Klik untuk Unggah</p>
                     </label>
                   )}
-
                   <input
                     type="file"
                     accept="image/*"
@@ -284,24 +295,17 @@ export default function Gallery() {
                     onChange={(e) => setFile(e.target.files?.[0] || null)}
                   />
                 </div>
-
-                {editingId && (
-                  <p className="text-[10px] text-muted-foreground italic mt-1">
-                    *Kosongkan jika tidak ingin mengganti gambar
-                  </p>
-                )}
               </div>
 
-              {/* BUTTON */}
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-sm transition hover:bg-emerald-700 active:scale-[0.98]"
+                className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               >
                 {isSaving
-                  ? "Proses..."
+                  ? "Menyimpan..."
                   : editingId
-                    ? "Update Data"
+                    ? "Update Foto"
                     : "Simpan ke Galeri"}
               </button>
             </div>
@@ -309,7 +313,6 @@ export default function Gallery() {
 
           {/* LIST */}
           <div className="lg:col-span-2 space-y-6">
-            {/* FILTER */}
             <div className="flex flex-wrap items-center gap-2 bg-muted p-1.5 rounded-2xl border border-border">
               <div className="flex items-center gap-2 px-3 text-muted-foreground border-r border-border mr-1">
                 <Filter size={14} />
@@ -317,24 +320,21 @@ export default function Gallery() {
                   Filter
                 </span>
               </div>
-
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setActiveFilter(cat)}
-                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-colors
-            ${
-              activeFilter === cat
-                ? "bg-background text-foreground shadow-sm border border-border"
-                : "text-muted-foreground hover:bg-muted/70"
-            }`}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                    activeFilter === cat
+                      ? "bg-background text-foreground shadow-sm border border-border"
+                      : "text-muted-foreground hover:bg-muted/70"
+                  }`}
                 >
                   {cat}
                 </button>
               ))}
             </div>
 
-            {/* GRID */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {loading
                 ? [...Array(6)].map((_, i) => (
@@ -354,15 +354,20 @@ export default function Gallery() {
                         alt={item.title}
                       />
 
+                      {/* SCOPE INDICATOR ON CARD */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <span className="bg-black/50 backdrop-blur-md text-white text-[8px] px-2 py-1 rounded-full border border-white/20">
+                          {item.scope}
+                        </span>
+                      </div>
+
                       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
                         <span className="text-[10px] font-black text-emerald-400 uppercase">
                           {item.category}
                         </span>
-
                         <p className="text-white text-xs font-bold leading-tight mb-3 line-clamp-2">
                           {item.title}
                         </p>
-
                         <div className="flex gap-2">
                           <button
                             onClick={() => startEdit(item)}
@@ -370,7 +375,6 @@ export default function Gallery() {
                           >
                             <Edit3 size={14} />
                           </button>
-
                           <button
                             onClick={() => handleDelete(item)}
                             className="flex-1 py-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition flex items-center justify-center"
@@ -385,7 +389,7 @@ export default function Gallery() {
 
             {filteredItems.length === 0 && !loading && (
               <div className="text-center py-20 bg-muted rounded-2xl border border-dashed border-border text-muted-foreground">
-                <p className="text-sm">Tidak ada foto dalam kategori ini.</p>
+                <p className="text-sm">Tidak ada foto ditemukan.</p>
               </div>
             )}
           </div>

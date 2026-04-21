@@ -3,8 +3,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/upload";
 import { useAdmin } from "@/hooks/useAdmin";
-import * as LucideIcons from "lucide-react"; // TAMBAHKAN INI
-import { Trash2, Plus, Edit3, Save, CheckCircle, Share2 } from "lucide-react";
+import { Trash2, Plus, Edit3, Save, CheckCircle } from "lucide-react";
 import Swal from "sweetalert2";
 
 type SettingsMap = Record<string, string>;
@@ -53,6 +52,19 @@ export default function Settings() {
 
   const [qrisFile, setQrisFile] = useState<File | null>(null);
   const [qrisPreview, setQrisPreview] = useState<string | null>(null);
+  
+  useEffect(() => {
+    loadStats();
+    loadSettings();
+    loadSocials();
+  }, []);
+
+  useEffect(() => {
+    if (admin) {
+      setBrandName(admin.brand_name || "");
+      setLogoUrl(admin.brand_logo || null);
+    }
+  }, [admin]);
 
   const loadSocials = async () => {
     const { data } = await supabase
@@ -61,8 +73,6 @@ export default function Settings() {
       .order("order_num", { ascending: true });
     if (data) setSocials(data as SocialRow[]);
   };
-
-  // Panggil loadSocials() di useEffect [] bersama loadStats & loadSettings
 
   const addNewSocial = () => {
     setSocials([
@@ -113,10 +123,34 @@ export default function Settings() {
           url: s.url,
           order_num: s.order_num,
         };
+
         if (s.id) {
-          await supabase.from("social_links").update(payload).eq("id", s.id);
+          // ✅ PERBAIKAN: Tambah .select() untuk mengecek apakah RLS memblokir update
+          const { data, error } = await supabase
+            .from("social_links")
+            .update(payload)
+            .eq("id", s.id)
+            .select();
+
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            throw new Error(
+              `Update diblokir oleh RLS untuk platform: ${s.platform}`,
+            );
+          }
         } else {
-          await supabase.from("social_links").insert(payload);
+          // ✅ PERBAIKAN: Tambah .select() untuk proses Insert
+          const { data, error } = await supabase
+            .from("social_links")
+            .insert(payload)
+            .select();
+
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            throw new Error(
+              `Insert diblokir oleh RLS untuk platform: ${s.platform}`,
+            );
+          }
         }
       }
 
@@ -125,11 +159,16 @@ export default function Settings() {
       Swal.fire({
         icon: "success",
         title: "Berhasil!",
+        text: "Link Media Sosial telah diperbarui.",
         timer: 1500,
         showConfirmButton: false,
       });
-    } catch (error) {
-      Swal.fire("Gagal", "Terjadi kesalahan saat menyimpan data.", "error");
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan data.";
+      Swal.fire("Gagal Menyimpan", errorMessage, "error");
     } finally {
       setSavingSocials(false);
     }
@@ -155,19 +194,6 @@ export default function Settings() {
       setQrisPreview(map.qris || null); // ← TAMBAH
     }
   };
-
-  useEffect(() => {
-    loadStats();
-    loadSettings();
-    loadSocials();
-  }, []);
-
-  useEffect(() => {
-    if (admin) {
-      setBrandName(admin.brand_name || "");
-      setLogoUrl(admin.brand_logo || null);
-    }
-  }, [admin]);
 
   /* ================= HANDLERS ================= */
   const updateSetting = (key: string, value: string) => {
@@ -198,10 +224,17 @@ export default function Settings() {
         value,
       }));
 
-      const { error } = await supabase.from("settings").upsert(updates);
+      // ✅ PERBAIKAN DI SINI: Tambahkan { onConflict: "key" }
+      const { error } = await supabase
+        .from("settings")
+        .upsert(updates, { onConflict: "key" });
+
       if (error) throw error;
 
       setQrisPreview(qrisUrl);
+
+      // ✅ PERBAIKAN DI SINI: Refresh state agar data terbaru merender ulang form
+      await loadSettings();
 
       Swal.fire({
         icon: "success",
@@ -228,14 +261,28 @@ export default function Settings() {
     try {
       setSavingBrand(true);
       let brand_logo = logoUrl;
+
       if (logoFile) brand_logo = await uploadImage(logoFile);
-      const { error } = await supabase
+
+      // ✅ PERBAIKAN: Tambahkan .select()
+      const { data, error } = await supabase
         .from("admins")
         .update({ brand_name: brandName, brand_logo })
-        .eq("id", admin.id);
+        .eq("id", admin.id)
+        .select(); // <--- TAMBAHKAN INI
+
       if (error) throw error;
+
+      // Jika RLS memblokir, data array akan kosong (0 baris terupdate)
+      if (!data || data.length === 0) {
+        throw new Error(
+          "Update diblokir oleh keamanan database (RLS) atau ID tidak ditemukan.",
+        );
+      }
+
       setLogoUrl(brand_logo);
       setLogoFile(null);
+
       Swal.fire({
         icon: "success",
         title: "Berhasil",
@@ -243,11 +290,13 @@ export default function Settings() {
         timer: 1500,
         showConfirmButton: false,
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Gagal memperbarui identitas.";
       Swal.fire({
         icon: "error",
         title: "Gagal",
-        text: "Gagal memperbarui identitas brand.",
+        text: errorMessage,
       });
     } finally {
       setSavingBrand(false);

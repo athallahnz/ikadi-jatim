@@ -1,21 +1,22 @@
-"use client";
-
 import { useLocation, useNavigate } from "react-router-dom";
 import { adminMenu } from "./adminMenu";
 import Dock, { DockItemData } from "@/components/ui/dock";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAdmin } from "@/hooks/useAdmin";
 
 export default function AdminMobileNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { admin } = useAdmin();
   const pathname = location.pathname;
 
   const [openSettings, setOpenSettings] = useState(false);
 
-  const settingsMenu = adminMenu.find((m) => m.label === "Settings");
+  // Normalisasi scope untuk pengecekan
+  const currentScope = admin?.scope?.toLowerCase() || "";
 
-  // close sheet when route changes
+  // Close sheet when route changes
   useEffect(() => {
     setOpenSettings(false);
   }, [pathname]);
@@ -23,51 +24,39 @@ export default function AdminMobileNav() {
   const isChildActive = useCallback(
     (to?: string) => {
       if (!to) return false;
-
-      // exact match only
       return pathname === to;
     },
     [pathname],
   );
 
-  const { items, activeIndex } = useMemo(() => {
+  // ✅ LOGIKAL FILTER: Memisahkan menu yang boleh dilihat berdasarkan scope
+  const { items, activeIndex, filteredSettingsMenu } = useMemo(() => {
     let activeIndex = -1;
 
-    const items: DockItemData[] = adminMenu.map((menu, index) => {
+    // 1. Filter Menu Utama
+    const filteredMainMenu = adminMenu.filter((menu) => {
+      if (!menu.scopes) return true;
+      return menu.scopes.includes(currentScope);
+    });
+
+    // 2. Siapkan data untuk Dock
+    const dockItems: DockItemData[] = filteredMainMenu.map((menu, index) => {
       const Icon = menu.icon;
 
-      const childActive =
+      // Cek apakah ada anak yang aktif (untuk menu Settings)
+      const hasActiveChild =
         menu.children?.some((child) => isChildActive(child.to)) ?? false;
 
-      const routeActive =
+      // Cek apakah route utama aktif
+      const isRouteActive =
         menu.to === "/admin"
           ? pathname === "/admin"
           : menu.to
             ? pathname.startsWith(menu.to)
             : false;
 
-      const isActive = childActive || routeActive;
-
+      const isActive = hasActiveChild || isRouteActive;
       if (isActive) activeIndex = index;
-
-      if (menu.children) {
-        return {
-          icon: (
-            <Icon
-              size={24}
-              className={
-                isActive ? "text-emerald-500" : "text-muted-foreground"
-              }
-            />
-          ),
-          label: menu.label,
-          active: isActive,
-          onClick: () => {
-            navigator.vibrate?.(10);
-            setOpenSettings(true);
-          },
-        };
-      }
 
       return {
         icon: (
@@ -80,19 +69,36 @@ export default function AdminMobileNav() {
         active: isActive,
         onClick: () => {
           navigator.vibrate?.(10);
-          if (menu.to) navigate(menu.to);
+          if (menu.children) {
+            setOpenSettings(true);
+          } else if (menu.to) {
+            navigate(menu.to);
+          }
         },
       };
     });
 
-    return { items, activeIndex };
-  }, [pathname, navigate, isChildActive]);
+    // 3. Filter khusus untuk isi di dalam Bottom Sheet Settings
+    const settingsObj = adminMenu.find((m) => m.label === "Settings");
+    const filteredSettings =
+      settingsObj?.children?.filter((child) => {
+        if (!child.scopes) return true;
+        return child.scopes.includes(currentScope);
+      }) || [];
+
+    return {
+      items: dockItems,
+      activeIndex,
+      filteredSettingsMenu: filteredSettings,
+    };
+  }, [pathname, navigate, isChildActive, currentScope]);
 
   return (
     <>
+      {/* NAVIGATION DOCK */}
       <Dock items={items} activeIndex={activeIndex} />
 
-      {/* SETTINGS SHEET */}
+      {/* SETTINGS SHEET (BOTTOM DRAWER) */}
       <AnimatePresence>
         {openSettings && (
           <>
@@ -107,19 +113,21 @@ export default function AdminMobileNav() {
 
             {/* BOTTOM SHEET */}
             <motion.div
-              initial={{ y: 400 }}
+              initial={{ y: "100%" }}
               animate={{ y: 0 }}
-              exit={{ y: 400 }}
-              transition={{ type: "spring", stiffness: 260, damping: 25 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t rounded-t-2xl p-4 pb-8"
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t rounded-t-2xl p-4 pb-10 shadow-2xl"
             >
-              {/* drag handle */}
+              {/* Drag Handle Visual */}
               <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-muted" />
 
-              <h3 className="text-sm font-semibold mb-3">Settings</h3>
+              <h3 className="text-sm font-bold text-foreground mb-4 px-1">
+                Pengaturan Akun & Web
+              </h3>
 
               <div className="space-y-1">
-                {settingsMenu?.children?.map((child) => {
+                {filteredSettingsMenu.map((child) => {
                   const Icon = child.icon;
                   const active = isChildActive(child.to);
 
@@ -132,20 +140,22 @@ export default function AdminMobileNav() {
                         if (child.to) navigate(child.to);
                       }}
                       className={`
-                        flex items-center gap-3 w-full rounded-lg px-3 py-2 transition
+                        flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all
                         ${
                           active
-                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                            : "text-muted-foreground hover:bg-muted"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                            : "text-muted-foreground hover:bg-muted active:scale-95"
                         }
                       `}
                     >
                       <Icon size={20} />
-
-                      <span>{child.label}</span>
+                      <span className="text-sm">{child.label}</span>
 
                       {active && (
-                        <span className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                        <motion.span
+                          layoutId="activeDot"
+                          className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full"
+                        />
                       )}
                     </button>
                   );
