@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Share2, Copy, Check } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 
 /* ================= TYPES ================= */
 

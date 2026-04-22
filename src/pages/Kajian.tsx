@@ -136,13 +136,6 @@ export default function Kajian() {
   }, [categorySlug, debouncedSearch]);
 
   /* ================= PAGINATION RANGE ================= */
-  const getPageNumbers = () => {
-    const pages = [];
-    const max = Math.min(totalPages, 5);
-
-    for (let i = 1; i <= max; i++) pages.push(i);
-    return pages;
-  };
 
   const getSmartPages = (current: number, total: number) => {
     const pages: (number | string)[] = [];

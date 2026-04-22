@@ -1,19 +1,27 @@
 {
   "rewrites": [
     {
-      "source": "/kajian/:category/:slug",
+      "source": "/kabar/daerah/:daerah/:slug",
       "has": [
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot)"
+          "value": ".*(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot).*"
         }
       ],
-      "destination": "/api/og/kajian?slug=:slug&category=:category"
+      "destination": "https://[PROJECT_ID].supabase.co/functions/v1/render-meta?slug=:slug&type=event"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
+      "source": "/kajian/:scope/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot).*"
+        }
+      ],
+      "destination": "https://[PROJECT_ID].supabase.co/functions/v1/render-meta?slug=:slug&type=article"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
