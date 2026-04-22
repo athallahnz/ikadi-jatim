@@ -69,8 +69,7 @@ serve(async (req) => {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${data.title} | IKADI Jatim</title>
+    <title>${data.title}</title>
     <meta name="description" content="${data.desc}..." />
     <meta property="og:title" content="${data.title}" />
     <meta property="og:description" content="${data.desc}..." />
@@ -79,16 +78,20 @@ serve(async (req) => {
     <meta property="og:type" content="article" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="${data.image}" />
-    <meta name="twitter:title" content="${data.title}" />
     <meta http-equiv="refresh" content="0;url=${data.url}">
 </head>
 <body>
-    <p>Sedang mengalihkan ke <a href="${data.url}">${data.title}</a></p>
+    Sedang mengalihkan ke <a href="${data.url}">${data.title}</a>
 </body>
 </html>`;
 
     return new Response(botHtml, {
-      headers: { "Content-Type": "text/html; charset=UTF-8" },
+      headers: {
+        "Content-Type": "text/html; charset=UTF-8",
+        // TAMBAHKAN CACHE CONTROL
+        // Agar WhatsApp tidak terus-menerus bertanya ke server jika link yang sama dibagikan lagi
+        "Cache-Control": "public, max-age=3600",
+      },
     });
   }
 
