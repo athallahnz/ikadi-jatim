@@ -9,7 +9,7 @@
           "value": ".*(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot).*"
         }
       ],
-      "destination": "https://[PROJECT_ID].supabase.co/functions/v1/render-meta?slug=:slug&type=event"
+      "destination": "https://adutxuaoypeddcstmyvw.supabase.co/functions/v1/render-meta?slug=:slug&type=event"
     },
     {
       "source": "/kajian/:scope/:slug",
@@ -20,7 +20,7 @@
           "value": ".*(facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot).*"
         }
       ],
-      "destination": "https://[PROJECT_ID].supabase.co/functions/v1/render-meta?slug=:slug&type=article"
+      "destination": "https://adutxuaoypeddcstmyvw.supabase.co/functions/v1/render-meta?slug=:slug&type=article"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
