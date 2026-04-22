@@ -85,20 +85,30 @@ serve(async (req) => {
   let html = await response.text();
 
   if (meta.title) {
+    // 1. Bersihkan metadata bawaan yang bersifat global agar tidak duplikat
+    html = html.replace(/<title>.*?<\/title>/g, "");
+    html = html.replace(/<meta property="og:title".*?\/>/g, "");
+    html = html.replace(/<meta property="og:description".*?\/>/g, "");
+    html = html.replace(/<meta property="og:image".*?\/>/g, "");
+    html = html.replace(/<meta property="og:url".*?\/>/g, "");
+    html = html.replace(/<meta name="description".*?\/>/g, "");
+
     const metaTags = `
       <title>${meta.title} | IKADI Jatim</title>
+      <meta name="description" content="${meta.description}..." />
       <meta property="og:title" content="${meta.title}" />
       <meta property="og:description" content="${meta.description}..." />
       <meta property="og:image" content="${meta.image}" />
       <meta property="og:url" content="${meta.fullUrl}" />
+      <meta property="og:type" content="article" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content="${meta.title}" />
       <meta name="twitter:description" content="${meta.description}..." />
       <meta name="twitter:image" content="${meta.image}" />
     `;
 
-    // Inject sebelum </head>
-    html = html.replace("</head>", `${metaTags}</head>`);
+    // 2. Inject di paling atas setelah <head> agar dibaca duluan oleh bot
+    html = html.replace("<head>", `<head>${metaTags}`);
   }
 
   return new Response(html, {
