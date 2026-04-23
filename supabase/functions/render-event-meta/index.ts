@@ -69,7 +69,7 @@ serve(async (req) => {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>${data.title}</title>
+    <title>${data.title} | IKADI Jatim</title>
     <meta name="description" content="${data.desc}..." />
     <meta property="og:title" content="${data.title}" />
     <meta property="og:description" content="${data.desc}..." />
@@ -78,19 +78,19 @@ serve(async (req) => {
     <meta property="og:type" content="article" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta http-equiv="refresh" content="0;url=${data.url}">
-    <script type="text/javascript">
-      window.location.href = "${data.url}";
-    </script>
 </head>
-<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <p>Sedang mengalihkan ke <a href="${data.url}">${data.title}</a>...</p>
+<body>
+    <p>Mengalihkan ke <a href="${data.url}">${data.title}</a>...</p>
 </body>
 </html>`;
 
     return new Response(botHtml, {
       headers: {
         "Content-Type": "text/html; charset=UTF-8",
-        "Cache-Control": "public, max-age=3600",
+        // Paksa Facebook untuk tidak menyimpan cache redirect yang salah
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   }
