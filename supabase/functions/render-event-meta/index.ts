@@ -77,19 +77,19 @@ serve(async (req) => {
     <meta property="og:url" content="${data.url}" />
     <meta property="og:type" content="article" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="${data.image}" />
     <meta http-equiv="refresh" content="0;url=${data.url}">
+    <script type="text/javascript">
+      window.location.href = "${data.url}";
+    </script>
 </head>
-<body>
-    Sedang mengalihkan ke <a href="${data.url}">${data.title}</a>
+<body style="font-family: sans-serif; text-align: center; padding-top: 50px;">
+    <p>Sedang mengalihkan ke <a href="${data.url}">${data.title}</a>...</p>
 </body>
 </html>`;
 
     return new Response(botHtml, {
       headers: {
         "Content-Type": "text/html; charset=UTF-8",
-        // TAMBAHKAN CACHE CONTROL
-        // Agar WhatsApp tidak terus-menerus bertanya ke server jika link yang sama dibagikan lagi
         "Cache-Control": "public, max-age=3600",
       },
     });
