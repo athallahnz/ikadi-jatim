@@ -113,7 +113,7 @@ const ArticlesSection = () => {
               </div>
             ))
           ) : articles.length > 0 ? (
-            articles.map((article, i) => (
+            articles.map((article) => (
               <article
                 key={article.id}
                 className="bg-card rounded-2xl border border-border overflow-hidden hover:border-gold/30 hover:shadow-xl transition-colors duration-300 group flex flex-col shadow-sm"

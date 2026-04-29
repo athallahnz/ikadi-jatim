@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import { Helmet } from "react-helmet-async"; // 1. Import Helmet
 
 /* ================= TYPES ================= */
 
@@ -41,6 +42,13 @@ type Social = {
 
 type SettingsMap = Record<string, string>;
 
+/* Utility untuk menghapus tag HTML dari konten (untuk deskripsi) */
+function stripHtml(html: string) {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+}
+
 /* ================= ICON RENDER ================= */
 
 function renderIcon(platform: string) {
@@ -55,7 +63,7 @@ function renderIcon(platform: string) {
   if (p.includes("linkedin")) return <i className="fa-brands fa-linkedin-in" />;
 
   return <i className="fa-solid fa-link" />;
-} 
+}
 
 /* ================= COMPONENT ================= */
 
@@ -71,6 +79,10 @@ export default function KabarDetail() {
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  // Buat deskripsi singkat (max 150 karakter)
+  const plainTextDesc = artikel
+    ? stripHtml(artikel.content).substring(0, 150) + "..."
+    : "";
   const handleCopy = async () => {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -183,6 +195,32 @@ export default function KabarDetail() {
 
   return (
     <section className="pt-28 pb-24 bg-background relative">
+      {/* 2. INJEKSI META TAGS KE HEAD UNTUK SOSIAL MEDIA */}
+      {artikel && (
+        <Helmet>
+          <title>{artikel.title} | IKADI Jatim</title>
+          <meta name="description" content={plainTextDesc} />
+
+          {/* Open Graph (Facebook, WhatsApp, LinkedIn) */}
+          <meta property="og:type" content="article" />
+          <meta property="og:url" content={shareUrl} />
+          <meta property="og:title" content={artikel.title} />
+          <meta property="og:description" content={plainTextDesc} />
+          {artikel.cover && (
+            <meta property="og:image" content={artikel.cover} />
+          )}
+
+          {/* Twitter Card */}
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:url" content={shareUrl} />
+          <meta name="twitter:title" content={artikel.title} />
+          <meta name="twitter:description" content={plainTextDesc} />
+          {artikel.cover && (
+            <meta name="twitter:image" content={artikel.cover} />
+          )}
+        </Helmet>
+      )}
+      
       <div className="absolute inset-0 islamic-pattern opacity-5 pointer-events-none" />
 
       <div className="container mx-auto py-12 relative">

@@ -68,20 +68,33 @@ export default function Navbar() {
 
     return () => clearTimeout(timer);
   }, [showCTA]);
-
+  
   /* ===== Hero observer ===== */
   useEffect(() => {
-    const hero = document.getElementById("hero");
-    if (!hero) return;
+    // Beri jeda sedikit agar halaman di bawah Navbar selesai me-render DOM
+    const timer = setTimeout(() => {
+      const hero = document.getElementById("hero");
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowCTA(!entry.isIntersecting),
-      { threshold: 0.3 },
-    );
+      // Jika halaman saat ini tidak memiliki #hero (misal: halaman Tentang/Galeri),
+      // maka CTA harus selalu ditampilkan.
+      if (!hero) {
+        setShowCTA(true);
+        return;
+      }
 
-    observer.observe(hero);
-    return () => observer.disconnect();
-  }, []);
+      const observer = new IntersectionObserver(
+        ([entry]) => setShowCTA(!entry.isIntersecting),
+        { threshold: 0.3 },
+      );
+
+      observer.observe(hero);
+
+      // Cleanup
+      return () => observer.disconnect();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]); // <--- Penting: re-run efek ini setiap URL berubah
 
   /* ===== Scroll ===== */
   useEffect(() => {
@@ -230,10 +243,10 @@ export default function Navbar() {
       {isOpen && (
         <div
           className="xl:hidden fixed inset-x-0 top-20 
-             bg-background/95 backdrop-blur-xl
-             px-6 pt-6 pb-12
-             shadow-xl
-             overflow-y-auto"
+              bg-background/95 backdrop-blur-xl
+              px-6 pt-6 pb-12
+              shadow-xl
+              overflow-y-auto"
           style={{
             height: "calc(100dvh - 5rem)",
             paddingBottom: "env(safe-area-inset-bottom)",

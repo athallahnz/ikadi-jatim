@@ -1,14 +1,28 @@
 import { useEffect, useState } from "react";
 
 /* ================================
-   HIJRI DATE
+   TYPES & CONSTANTS
 ================================ */
-export type HijriDate = {
+export interface HijriDate {
   day: number;
   month: number;
   monthName: string;
   year: number;
-};
+}
+
+export type HijriEvent =
+  | "ramadan_last10"
+  | "eid_fitr"
+  | "eid_adha"
+  | "arafah"
+  | "ayyamul_bidh"
+  | "monday"
+  | "thursday";
+
+export interface IslamicBadge {
+  icon: string;
+  text: string;
+}
 
 const HIJRI_MONTHS = [
   "Muharram",
@@ -23,62 +37,75 @@ const HIJRI_MONTHS = [
   "Syawal",
   "Dzulkaidah",
   "Dzulhijjah",
-];
+] as const;
 
-export function getHijriDate(date = new Date()): HijriDate {
-  const formatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+/* ================================
+   1. CORE: HIJRI CONVERTER
+================================ */
+export function getHijriDate(inputDate: Date = new Date()): HijriDate {
+  try {
+    // STANDARISASI 1: Gunakan kalender Umm al-Qura (standar paling akurat)
+    // STANDARISASI 2: Kunci zona waktu ke WIB agar konsisten se-Indonesia
+    // STANDARISASI 3: Paksa output menjadi numeric untuk hari, bulan, tahun
+    const formatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
+      timeZone: "Asia/Jakarta",
+      day: "numeric",
+      month: "numeric",
+      year: "numeric",
+    });
 
-  const parts = formatter.formatToParts(date);
+    const parts = formatter.formatToParts(inputDate);
 
-  const day = Number(parts.find((p) => p.type === "day")?.value);
-  const monthName = parts.find((p) => p.type === "month")?.value || "";
-  const year = Number(parts.find((p) => p.type === "year")?.value);
+    const dayStr = parts.find((p) => p.type === "day")?.value;
+    const monthStr = parts.find((p) => p.type === "month")?.value;
+    const yearStr = parts.find((p) => p.type === "year")?.value;
 
-  const month =
-    HIJRI_MONTHS.findIndex((m) =>
-      monthName.toLowerCase().includes(m.toLowerCase()),
-    ) + 1;
+    const day = dayStr ? parseInt(dayStr, 10) : 1;
+    const monthNumeric = monthStr ? parseInt(monthStr, 10) : 1;
+    const year = yearStr ? parseInt(yearStr, 10) : 1445;
 
-  return { day, month, monthName, year };
+    // Mapping angka bulan (1-12) ke nama bulan lokal yang baku
+    const monthName = HIJRI_MONTHS[monthNumeric - 1] || "Muharram";
+
+    return { day, month: monthNumeric, monthName, year };
+  } catch (error) {
+    // Fallback ekstrem jika browser pengguna sangat kuno dan tidak dukung Intl Islamic
+    console.error("Gagal mengkonversi tanggal Hijriah:", error);
+    return { day: 1, month: 1, monthName: "Muharram", year: 1445 };
+  }
 }
 
 /* ================================
-   HIJRI MONTH LENGTH (29/30)
+   2. HIJRI MONTH LENGTH (29/30)
 ================================ */
-export function getHijriMonthLength(date = new Date()) {
-  const h = getHijriDate(date);
-
+export function getHijriMonthLength(date: Date = new Date()): number {
+  const currentHijri = getHijriDate(date);
   let lastDay = 29;
 
-  for (let i = 29; i <= 30; i++) {
-    const test = new Date(date);
-    test.setDate(date.getDate() + (i - h.day));
-    const th = getHijriDate(test);
-    if (th.month === h.month) lastDay = i;
+  // Kita cek apakah hari ke-30 masih di bulan yang sama
+  const testDate = new Date(date.getTime());
+  testDate.setDate(date.getDate() + (30 - currentHijri.day));
+
+  const testHijri = getHijriDate(testDate);
+
+  if (testHijri.month === currentHijri.month) {
+    lastDay = 30;
   }
 
   return lastDay;
 }
 
 /* ================================
-   EVENTS
+   3. EVENT DETECTOR
 ================================ */
-export type HijriEvent =
-  | "ramadan_last10"
-  | "eid_fitr"
-  | "eid_adha"
-  | "arafah"
-  | "ayyamul_bidh"
-  | "monday"
-  | "thursday";
-
-export function detectHijriEvents(date = new Date()): HijriEvent[] {
+export function detectHijriEvents(date: Date = new Date()): HijriEvent[] {
   const h = getHijriDate(date);
-  const weekday = date.getDay();
+
+  // Ambil hari dari tanggal masehi dengan timezone WIB untuk puasa sunnah
+  const wibDate = new Date(
+    date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
+  );
+  const weekday = wibDate.getDay(); // 0 = Minggu, 1 = Senin, 4 = Kamis
 
   const events: HijriEvent[] = [];
 
@@ -94,76 +121,80 @@ export function detectHijriEvents(date = new Date()): HijriEvent[] {
 }
 
 /* ================================
-   BADGE PRIORITY
+   4. BADGE RENDERER
 ================================ */
-export type IslamicBadge = {
-  icon: string;
-  text: string;
-};
-
 export function getIslamicBadge(
   h: HijriDate,
   events: HijriEvent[],
 ): IslamicBadge {
-  if (events.includes("eid_fitr"))
+  // Pengecekan berurutan berdasarkan prioritas
+  if (events.includes("eid_fitr")) {
     return { icon: "🎉", text: "Idul Fitri 1 Syawal" };
-
-  if (events.includes("eid_adha"))
+  }
+  if (events.includes("eid_adha")) {
     return { icon: "🐄", text: "Idul Adha 10 Dzulhijjah" };
-
-  if (events.includes("arafah"))
+  }
+  if (events.includes("arafah")) {
     return { icon: "🕋", text: "Puasa Arafah 9 Dzulhijjah" };
-
-  if (events.includes("ramadan_last10"))
+  }
+  if (events.includes("ramadan_last10")) {
     return { icon: "🌙", text: `10 malam terakhir Ramadhan • ${h.day}` };
-
-  if (events.includes("ayyamul_bidh"))
+  }
+  if (events.includes("ayyamul_bidh")) {
     return { icon: "🌿", text: `Puasa Ayyamul Bidh ${h.day}` };
-
+  }
   if (events.includes("monday")) return { icon: "🌿", text: "Puasa Senin" };
-
   if (events.includes("thursday")) return { icon: "🌿", text: "Puasa Kamis" };
 
   return {
     icon: "🕌",
-    text: `${h.day} ${h.monthName}`,
+    text: `${h.day} ${h.monthName} ${h.year} H`,
   };
 }
 
 /* ================================
-   HOOK
+   5. REACT HOOK
 ================================ */
-export function useIslamicCalendar() {
-  const [state, setState] = useState(() => {
-    const h = getHijriDate();
-    const events = detectHijriEvents();
-    const badge = getIslamicBadge(h, events);
+export interface IslamicCalendarState extends HijriDate {
+  monthLength: number;
+  events: HijriEvent[];
+  badge: IslamicBadge;
+}
+
+export function useIslamicCalendar(): IslamicCalendarState {
+  const [state, setState] = useState<IslamicCalendarState>(() => {
+    const now = new Date();
+    const h = getHijriDate(now);
+    const events = detectHijriEvents(now);
 
     return {
       ...h,
-      monthLength: getHijriMonthLength(),
+      monthLength: getHijriMonthLength(now),
       events,
-      badge,
+      badge: getIslamicBadge(h, events),
     };
   });
 
   useEffect(() => {
     const update = () => {
-      const h = getHijriDate();
-      const events = detectHijriEvents();
-      const badge = getIslamicBadge(h, events);
+      const now = new Date();
+      const h = getHijriDate(now);
+      const events = detectHijriEvents(now);
 
       setState({
         ...h,
-        monthLength: getHijriMonthLength(),
+        monthLength: getHijriMonthLength(now),
         events,
-        badge,
+        badge: getIslamicBadge(h, events),
       });
     };
 
+    // Update state saat komponen di-mount untuk memastikan sinkronisasi SSR vs Client
     update();
-    const i = setInterval(update, 1000 * 60 * 60);
-    return () => clearInterval(i);
+
+    // Set interval untuk mengecek pergantian hari (cek setiap 1 jam)
+    const interval = setInterval(update, 1000 * 60 * 60);
+    return () => clearInterval(interval);
   }, []);
 
   return state;

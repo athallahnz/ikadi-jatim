@@ -73,12 +73,24 @@ function App() {
   return (
     <HelmetProvider>
       {/* Global SEO Injection */}
-      <Helmet>
-        <title>IKADI Jawa Timur - Menebar Rahmat Melalui Dakwah</title>
+      <Helmet
+        defaultTitle="IKADI Jawa Timur - Menebar Rahmat Melalui Dakwah"
+        titleTemplate="%s | IKADI Jawa Timur"
+      >
         <meta
           name="description"
           content="Ikatan Da'i Indonesia (IKADI) wilayah Jawa Timur. Pusat kajian Islam, pembinaan da'i, dan konsultasi syariah."
         />
+
+        {/* Open Graph Global Default */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="IKADI Jawa Timur" />
+        <meta property="og:url" content="https://ikadijatim.org" />
+        <meta
+          property="og:image"
+          content="https://ikadijatim.org/assets/logo-ikadi.png"
+        />
+
         <script type="application/ld+json">
           {JSON.stringify(organizationData)}
         </script>

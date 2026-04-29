@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Copy, Check } from "lucide-react";
+import { Helmet } from "react-helmet-async"; // 1. Import Helmet
 
 /* ================= TYPES ================= */
 
@@ -53,6 +54,13 @@ type Social = {
 };
 
 type SettingsMap = Record<string, string>;
+
+// 2. Tambahkan Utility untuk menghapus tag HTML dari konten (untuk deskripsi meta)
+function stripHtml(html: string) {
+  const tmp = document.createElement("DIV");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+}
 
 /* ================= ICON RENDER ================= */
 
@@ -232,8 +240,34 @@ export default function KajianDetail() {
 
   /* ================= RENDER ================= */
 
+  const plainTextDesc = stripHtml(article.content).substring(0, 150) + "...";
+
   return (
     <section className="pt-28 pb-24 bg-background relative">
+      <Helmet>
+        {/* Title tidak perlu embel-embel IKADI karena sudah di-handle oleh titleTemplate di App.tsx */}
+        <title>{article.title}</title>
+        <meta name="description" content={plainTextDesc} />
+
+        {/* Open Graph (Facebook, WhatsApp, LinkedIn) */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:title" content={article.title} />
+        <meta property="og:description" content={plainTextDesc} />
+        {article.cover_url && (
+          <meta property="og:image" content={article.cover_url} />
+        )}
+
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={shareUrl} />
+        <meta name="twitter:title" content={article.title} />
+        <meta name="twitter:description" content={plainTextDesc} />
+        {article.cover_url && (
+          <meta name="twitter:image" content={article.cover_url} />
+        )}
+      </Helmet>
+      
       <div className="absolute inset-0 islamic-pattern opacity-5 pointer-events-none" />
 
       <div className="container mx-auto py-12 relative">
@@ -404,7 +438,7 @@ export default function KajianDetail() {
           </aside>
         </div>
       </div>
-      
+
       {/* ================= FLOATING SHARE (MOBILE) ================= */}
       <div className="lg:hidden fixed right-3 top-2/3 -translate-y-1/2 z-50">
         <div
