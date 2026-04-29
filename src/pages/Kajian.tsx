@@ -1,29 +1,41 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
-import { Link, useParams } from "react-router-dom";
+import { SearchX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
+/* ================= TYPES ================= */
 type Category = {
   id: string;
   name: string;
   slug: string;
 };
 
-type ArticleRow = {
+type Article = {
   id: string;
   title: string;
   slug: string;
   content: string;
   cover_url: string | null;
   publish_at: string;
-  category: Category | null;
+  category: Category; // Dijamin ada setelah normalisasi
 };
 
-type Article = ArticleRow;
+interface SupabaseArticleRow {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  cover_url: string | null;
+  publish_at: string;
+  categories: Category | Category[] | null;
+}
 
 const PAGE_SIZE = 6;
 
 export default function Kajian() {
   const { categorySlug } = useParams();
+  const navigate = useNavigate();
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,9 +46,6 @@ export default function Kajian() {
   const [loading, setLoading] = useState(false);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  const activeCategory = categories.find((c) => c.slug === categorySlug);
-  const title = activeCategory?.name ?? categorySlug;
 
   const getExcerpt = (html: string, max = 120) => {
     const text = html.replace(/<[^>]+>/g, "");
@@ -58,285 +67,255 @@ export default function Kajian() {
       .then(({ data }) => setCategories((data as Category[]) || []));
   }, []);
 
-  /* ================= FETCH ARTICLES ================= */
-  useEffect(() => {
-    const fetchArticles = async () => {
-      setLoading(true);
-
+  /* ================= FETCH DATA (OPTIMIZED) ================= */
+  const fetchArticles = useCallback(async () => {
+    setLoading(true);
+    try {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      /* ===== DATA QUERY ===== */
-      let dataQuery = supabase
+      // 1. Kunci Filter: Gunakan !inner jika categorySlug aktif
+      const isFiltering = !!categorySlug && categorySlug !== "semua";
+      const relation = isFiltering
+        ? "categories!inner(id, name, slug)"
+        : "categories(id, name, slug)";
+
+      let query = supabase
         .from("articles")
         .select(
           `
-      id,
-      title,
-      slug,
-      cover_url,
-      content,
-      publish_at,
-      category:categories (
-        id,
-        name,
-        slug
-      )
-    `,
-        )
+          id, title, slug, content, cover_url, publish_at,
+          ${relation}
+        `,
+          { count: "exact" },
+        ) // Ambil count sekaligus
         .eq("published", true);
 
-      if (categorySlug) dataQuery = dataQuery.eq("category.slug", categorySlug);
-      if (debouncedSearch)
-        dataQuery = dataQuery.ilike("title", `%${debouncedSearch}%`);
+      // 2. Terapkan Filter
+      if (isFiltering) query = query.eq("categories.slug", categorySlug);
+      if (debouncedSearch) query = query.ilike("title", `%${debouncedSearch}%`);
 
-      const { data, error } = await dataQuery
+      const { data, count, error } = await query
         .order("publish_at", { ascending: false })
         .range(from, to);
 
-      /* ===== COUNT QUERY ===== */
-      let countQuery = supabase
-        .from("articles")
-        .select("id", { count: "exact", head: true })
-        .eq("published", true);
+      if (error) throw error;
 
-      if (categorySlug) {
-        const cat = categories.find((c) => c.slug === categorySlug);
-        if (cat) countQuery = countQuery.eq("category_id", cat.id);
-      }
+      // 3. Normalisasi Data (Anti-Undefined)
+      const rawData = data as unknown as SupabaseArticleRow[];
+      const normalized: Article[] = (rawData || []).map((item) => {
+        const cat = Array.isArray(item.categories)
+          ? item.categories[0]
+          : item.categories;
+        return {
+          ...item,
+          category: {
+            id: cat?.id || "default",
+            name: cat?.name || "Umum",
+            slug: cat?.slug && cat.slug !== "undefined" ? cat.slug : "umum",
+          },
+        };
+      });
 
-      if (debouncedSearch)
-        countQuery = countQuery.ilike("title", `%${debouncedSearch}%`);
-
-      const { count } = await countQuery;
-      if (error) {
-        console.error(error.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!data) {
-        setArticles([]);
-        setTotal(0);
-        setLoading(false);
-        return;
-      }
-
-      setArticles(data as unknown as Article[]);
+      setArticles(normalized);
       setTotal(count || 0);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
       setLoading(false);
-    };
+    }
+  }, [categorySlug, debouncedSearch, page]);
 
+  useEffect(() => {
     fetchArticles();
-  }, [categories, categorySlug, debouncedSearch, page]);
+  }, [fetchArticles]);
 
-  /* RESET PAGE WHEN FILTER */
+  /* RESET PAGE WHEN FILTER CHANGES */
   useEffect(() => {
     setPage(1);
   }, [categorySlug, debouncedSearch]);
 
   /* ================= PAGINATION RANGE ================= */
-
   const getSmartPages = (current: number, total: number) => {
     const pages: (number | string)[] = [];
-
     if (total <= 7) {
       for (let i = 1; i <= total; i++) pages.push(i);
       return pages;
     }
-
     pages.push(1);
-
     if (current > 3) pages.push("...");
-
     const start = Math.max(2, current - 1);
     const end = Math.min(total - 1, current + 1);
-
     for (let i = start; i <= end; i++) pages.push(i);
-
     if (current < total - 2) pages.push("...");
-
     pages.push(total);
-
     return pages;
   };
 
   return (
-    <section className="pt-24 pb-24 md:pt-28 bg-background islamic-pattern overflow-hidden">
-      <div className="container">
-        <div className="container mx-auto pt-12 px-6 mb-16 text-center">
-          {/* TITLE */}
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-            {categorySlug ? `Kajian ${title}` : "Kajian IKADI"}
-          </h2>
-
+    <section className="pt-24 pb-24 md:pt-32 bg-background islamic-pattern min-h-screen">
+      <div className="container mx-auto px-6">
+        {/* HEADER */}
+        <header className="text-center mb-14 md:mb-16 lg:mb-20 mt-6">
+          <h1 className="text-3xl md:text-5xl font-display font-bold text-foreground mb-4">
+            {categorySlug
+              ? `Kajian ${categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1)}`
+              : "Semua Kajian"}
+          </h1>
           <div className="gold-divider mx-auto mb-8" />
 
           {/* SEARCH */}
           <div className="max-w-md mx-auto mb-8">
             <input
-              placeholder="Cari kajian..."
+              placeholder="Cari judul kajian..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-4 py-2 rounded-full border border-border bg-background shadow-sm focus:ring-2 focus:ring-primary outline-none"
+              className="w-full px-5 py-3 rounded-full border border-border bg-card shadow-sm focus:ring-2 focus:ring-primary outline-none transition-all"
             />
           </div>
 
-          {/* TAB FILTER */}
-          <div className="flex flex-wrap gap-2 mb-10 justify-center">
+          {/* CATEGORY TABS */}
+          <nav className="flex flex-wrap gap-2 justify-center">
             <Link
               to="/kajian"
-              className={`px-4 py-2 rounded-full text-sm ${
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                 !categorySlug
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
               }`}
             >
               Semua
             </Link>
-
             {categories.map((c) => (
               <Link
                 key={c.id}
                 to={`/kajian/${c.slug}`}
-                className={`px-4 py-2 rounded-full text-sm ${
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-colors ${
                   categorySlug === c.slug
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
                 {c.name}
               </Link>
             ))}
-          </div>
-        </div>
-        {/* GRID */}
+          </nav>
+        </header>
+
+        {/* GRID CONTENT */}
         {loading ? (
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden animate-pulse"
-              >
-                <div className="h-44 bg-muted" />
-                <div className="p-5 space-y-3">
-                  <div className="h-3 bg-muted rounded w-1/3" />
-                  <div className="h-4 bg-muted rounded w-2/3" />
-                  <div className="h-3 bg-muted rounded w-full" />
-                  <div className="h-3 bg-muted rounded w-5/6" />
-                </div>
-              </div>
+                className="bg-card rounded-2xl border border-border h-[420px] animate-pulse"
+              />
             ))}
           </div>
         ) : articles.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-primary font-display font-bold text-lg mb-2">
-              Tidak ditemukan
-            </div>
-            <div className="text-muted-foreground text-sm">
-              Coba kata kunci lain.
-            </div>
+          <div className="flex flex-col items-center justify-center py-20 bg-card/50 rounded-3xl border border-dashed border-border">
+            <SearchX className="w-16 h-16 text-muted-foreground mb-4 opacity-30" />
+            <h3 className="text-xl font-semibold">Tidak ditemukan hasil</h3>
+            <p className="text-muted-foreground mt-2 text-center max-w-xs">
+              Maaf, kami tidak menemukan kajian untuk filter ini. Coba kata
+              kunci atau kategori lain.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-6"
+              onClick={() => navigate("/kajian")}
+            >
+              Lihat Semua Kajian
+            </Button>
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {articles.map((a) => (
-                <div
+                <article
                   key={a.id}
-                  className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-lg transition overflow-hidden flex flex-col"
+                  className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col group"
                 >
-                  {a.cover_url ? (
-                    <img
-                      src={a.cover_url}
-                      className="w-full h-44 object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-44 bg-muted flex items-center justify-center">
-                      <span className="text-primary font-display text-lg px-6 text-center">
+                  <div className="relative h-48 overflow-hidden bg-muted">
+                    {a.cover_url ? (
+                      <img
+                        src={a.cover_url}
+                        alt={a.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center p-6 text-center text-primary font-display">
                         {a.title}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="p-5 flex flex-col flex-1">
-                    <div className="flex justify-between mb-2">
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(a.publish_at).toLocaleDateString()}
                       </div>
-                      {a.category && (
-                        <span className="text-xs px-2 py-1 rounded bg-accent/20 text-accent-foreground">
-                          {a.category.name}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="font-display font-semibold mb-2 line-clamp-2">
-                      {a.title}
-                    </div>
-
-                    <div className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                      {getExcerpt(a.content)}
-                    </div>
-
-                    <div className="mt-auto">
-                      <Link
-                        to={`/kajian/${a.category?.slug}/${a.slug}`}
-                        className="text-sm font-medium text-primary hover:text-accent transition"
-                      >
-                        Baca Selengkapnya →
-                      </Link>
-                    </div>
+                    )}
+                    <span className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm text-primary text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded border border-border shadow-sm">
+                      {a.category.name}
+                    </span>
                   </div>
-                </div>
+
+                  <div className="p-6 flex flex-col flex-1">
+                    <time className="text-xs text-muted-foreground mb-3 block">
+                      {new Date(a.publish_at).toLocaleDateString("id-ID", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </time>
+
+                    <h3 className="text-lg font-display font-bold mb-3 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                      {a.title}
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground mb-6 line-clamp-3 leading-relaxed">
+                      {getExcerpt(a.content)}
+                    </p>
+
+                    <Link
+                      to={`/kajian/${a.category.slug}/${a.slug}`}
+                      className="mt-auto inline-flex items-center text-sm font-bold text-primary hover:text-gold transition-colors"
+                    >
+                      Baca Selengkapnya
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </div>
+                </article>
               ))}
             </div>
 
             {/* PAGINATION */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-10 gap-2">
-                {/* PREV */}
+              <div className="flex justify-center items-center mt-16 gap-2">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="px-3 py-1 rounded bg-backgroundg-white disabled:opacity-40"
+                  className="p-2 rounded-full border bg-card hover:bg-muted disabled:opacity-30 transition-all"
                 >
-                  Prev
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
 
-                {/* NUMBERS */}
-                {getSmartPages(page, totalPages).map((p, i) => {
-                  const key = typeof p === "number" ? `page-${p}` : `dots-${i}`;
-
-                  if (p === "...") {
-                    return (
-                      <span key={key} className="px-2 text-muted-foreground">
-                        …
-                      </span>
-                    );
-                  }
-
-                  return (
+                <div className="flex gap-2">
+                  {getSmartPages(page, totalPages).map((p, i) => (
                     <button
-                      key={key}
+                      key={i}
+                      disabled={p === "..."}
                       onClick={() => typeof p === "number" && setPage(p)}
-                      className={`px-3 py-1 rounded border border-border ${
+                      className={`min-w-[40px] h-[40px] rounded-lg border font-medium transition-all ${
                         page === p
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-background hover:bg-muted"
-                      }`}
+                          ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20"
+                          : "bg-card border-border hover:bg-muted"
+                      } ${p === "..." ? "border-transparent bg-transparent cursor-default" : ""}`}
                     >
                       {p}
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
 
-                {/* NEXT */}
                 <button
                   disabled={page === totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-1 rounded border bg-background disabled:opacity-40"
+                  className="p-2 rounded-full border bg-card hover:bg-muted disabled:opacity-30 transition-all"
                 >
-                  Next
+                  <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
             )}
