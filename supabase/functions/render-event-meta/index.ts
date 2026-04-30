@@ -31,6 +31,7 @@ serve(async (req) => {
   let data: MetaData | null = null;
 
   try {
+    /* ================= EVENT ================= */
     if (type === "event") {
       const { data: event } = await supabase
         .from("events")
@@ -43,26 +44,47 @@ serve(async (req) => {
           title: event.title,
           desc: cleanText(event.content),
           image: resolveImage(event.cover),
-          url: event.scope === "daerah"
-            ? `${BASE_URL}/kabar/daerah/${event.daerah_slug}/${event.slug}`
-            : `${BASE_URL}/kabar/jatim/${event.slug}`,
+          url:
+            event.scope === "daerah"
+              ? `${BASE_URL}/kabar/daerah/${event.daerah_slug}/${event.slug}`
+              : `${BASE_URL}/kabar/jatim/${event.slug}`,
         };
       }
-    } else {
+    }
+
+    /* ================= ARTICLE ================= */
+    else {
       const { data: article } = await supabase
         .from("articles")
-        .select("title, content, cover_url, slug, scope, daerah_slug")
+        .select(`
+          title,
+          content,
+          cover_url,
+          slug,
+          scope,
+          daerah_slug,
+          categories ( slug )
+        `)
         .eq("slug", slug)
         .maybeSingle();
 
       if (article) {
+        // 🔥 HANDLE CATEGORY AMAN (ARRAY / OBJECT / NULL)
+        const cat = Array.isArray(article.categories)
+          ? article.categories[0]
+          : article.categories;
+
+        const categorySlug =
+          cat?.slug && cat.slug !== "undefined" ? cat.slug : "umum";
+
         data = {
           title: article.title,
           desc: cleanText(article.content),
           image: resolveImage(article.cover_url),
-          url: article.scope === "daerah"
-            ? `${BASE_URL}/kajian/daerah/${article.daerah_slug}/${article.slug}`
-            : `${BASE_URL}/kajian/${article.slug}`,
+          url:
+            article.scope === "daerah"
+              ? `${BASE_URL}/kajian/daerah/${article.daerah_slug}/${article.slug}`
+              : `${BASE_URL}/kajian/${categorySlug}/${article.slug}`,
         };
       }
     }
@@ -74,19 +96,19 @@ serve(async (req) => {
     return new Response("Not found", { status: 404 });
   }
 
+  /* ================= BOT DETECTION ================= */
   const ua = req.headers.get("user-agent") || "";
   const isBot =
-    /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i
-      .test(
-        ua,
-      );
+    /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i.test(
+      ua,
+    );
 
-  // 👤 USER → langsung ke SPA
+  /* ================= USER ================= */
   if (!isBot) {
     return Response.redirect(data.url, 302);
   }
 
-  // 🤖 BOT → OG HTML
+  /* ================= BOT (OG HTML) ================= */
   const html = buildHtml(data);
 
   return new Response(html, {
@@ -110,7 +132,7 @@ function cleanText(html: string): string {
 function resolveImage(url?: string | null): string {
   if (!url || !url.startsWith("http")) return DEFAULT_OG;
 
-  // 🔥 Auto resize OG
+  // 🔥 WA-safe image
   return `${url}?width=1200&height=630&resize=cover`;
 }
 
