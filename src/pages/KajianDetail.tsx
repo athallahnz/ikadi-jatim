@@ -38,7 +38,6 @@ type Social = {
 
 type SettingsMap = Record<string, string>;
 
-// Interface khusus untuk data mentah dari Supabase (mencegah 'any')
 interface SupabaseArticleRow {
   slug: string;
   id: string;
@@ -48,13 +47,61 @@ interface SupabaseArticleRow {
   publish_at: string;
   categories: Category | Category[] | null;
 }
-/* ================= UTILS ================= */
+
+/* ================= HELPERS ================= */
+
+const DEFAULT_OG = "https://ikadijatim.org/default-og.jpg";
 
 function stripHtml(html: string) {
   if (typeof window === "undefined") return "";
   const tmp = document.createElement("DIV");
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || "";
+}
+
+function getOptimizedImage(url?: string | null) {
+  if (!url || !url.startsWith("http")) return DEFAULT_OG;
+  return `${url}?width=1200&height=630&resize=cover`;
+}
+
+function buildArticleSchema({
+  title,
+  description,
+  image,
+  url,
+  datePublished,
+}: {
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+  datePublished?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    image: [image],
+    author: {
+      "@type": "Organization",
+      name: "IKADI Jawa Timur",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "IKADI Jawa Timur",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://ikadijatim.org/logo.png",
+      },
+    },
+    datePublished,
+    dateModified: datePublished,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url,
+    },
+  };
 }
 
 function renderIcon(platform: string) {
@@ -82,15 +129,14 @@ export default function KajianDetail() {
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
-  /* ================= FETCHING LOGIC ================= */
+  /* ================= FETCH ================= */
 
   const loadData = useCallback(async () => {
     if (!slug) return;
     setLoading(true);
 
     try {
-      // 1. Fetch Main Article
-      const { data: artData, error: artError } = await supabase
+      const { data: artData, error } = await supabase
         .from("articles")
         .select(
           `
@@ -102,7 +148,7 @@ export default function KajianDetail() {
         .eq("published", true)
         .single();
 
-      if (artError || !artData) throw artError;
+      if (error || !artData) throw error;
 
       const row = artData as unknown as SupabaseArticleRow;
       const rawCat = Array.isArray(row.categories)
@@ -112,8 +158,7 @@ export default function KajianDetail() {
       const safeCategory: Category = {
         id: rawCat?.id || "default",
         name: rawCat?.name || "Umum",
-        slug:
-          rawCat?.slug && rawCat.slug !== "undefined" ? rawCat.slug : "umum",
+        slug: rawCat?.slug || "umum",
       };
 
       const currentArticle: Article = {
@@ -127,7 +172,6 @@ export default function KajianDetail() {
 
       setArticle(currentArticle);
 
-      // 2. Fetch Related Articles (Based on same category)
       const { data: relData } = await supabase
         .from("articles")
         .select(
@@ -143,32 +187,31 @@ export default function KajianDetail() {
         .limit(4);
 
       if (relData) {
-        // Casting ke interface yang tepat, bukan any[]
-        const rawRelated = relData as unknown as SupabaseArticleRow[];
+        const raw = relData as unknown as SupabaseArticleRow[];
 
-        const normalizedRelated: RelatedArticle[] = rawRelated.map((r) => {
-          const cat = Array.isArray(r.categories)
-            ? r.categories[0]
-            : r.categories;
+        setRelated(
+          raw.map((r) => {
+            const cat = Array.isArray(r.categories)
+              ? r.categories[0]
+              : r.categories;
 
-          return {
-            id: r.id,
-            title: r.title,
-            slug: r.slug,
-            cover_url: r.cover_url,
-            publish_at: r.publish_at,
-            category: {
-              id: cat?.id || "default",
-              name: cat?.name || "Umum",
-              slug: cat?.slug || "umum",
-            },
-          };
-        });
-
-        setRelated(normalizedRelated);
+            return {
+              id: r.id,
+              title: r.title,
+              slug: r.slug,
+              cover_url: r.cover_url,
+              publish_at: r.publish_at,
+              category: {
+                id: cat?.id || "default",
+                name: cat?.name || "Umum",
+                slug: cat?.slug || "umum",
+              },
+            };
+          }),
+        );
       }
     } catch (err) {
-      console.error("Error loading kajian detail:", err);
+      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -205,63 +248,45 @@ export default function KajianDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  /* ================= RENDER LOGIC ================= */
+  /* ================= RENDER ================= */
 
-  if (loading) {
-    return (
-      <section className="pt-24 pb-24 bg-background min-h-screen">
-        <div className="container mx-auto py-12 animate-pulse space-y-6 max-w-3xl">
-          <div className="h-4 w-32 bg-muted rounded" />
-          <div className="h-10 bg-muted rounded w-3/4" />
-          <div className="h-80 bg-muted rounded-2xl" />
-          <div className="space-y-3">
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-5/6" />
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  if (!article)
-    return (
-      <div className="pt-40 text-center font-display">
-        Kajian tidak ditemukan.
-      </div>
-    );
+  if (loading) return <div className="pt-40 text-center">Loading...</div>;
+  if (!article) return <div className="pt-40 text-center">Tidak ditemukan</div>;
 
   const seoDescription =
     stripHtml(article.content).substring(0, 160).trim() + "...";
 
+  const image = getOptimizedImage(article.cover_url);
+
+  const schema = buildArticleSchema({
+    title: article.title,
+    description: seoDescription,
+    image,
+    url: shareUrl,
+    datePublished: article.publish_at,
+  });
+
   return (
-    <section className="pt-28 pb-24 bg-background relative min-h-screen">
-      {/* ADVANCED SEO HELMET */}
+    <section className="pt-28 pb-24 bg-background">
       <Helmet>
-        <title>{article.title}</title>
+        <title>{article.title} | IKADI Jatim</title>
         <meta name="description" content={seoDescription} />
         <link rel="canonical" href={shareUrl} />
 
-        {/* Facebook / WA */}
         <meta property="og:type" content="article" />
         <meta property="og:url" content={shareUrl} />
-        <meta property="og:title" content={`${article.title} | IKADI Jatim`} />
+        <meta property="og:title" content={article.title} />
         <meta property="og:description" content={seoDescription} />
-        {article.cover_url && (
-          <meta property="og:image" content={article.cover_url} />
-        )}
-        <meta property="og:site_name" content="IKADI Jawa Timur" />
+        <meta property="og:image" content={image} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
 
-        {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={article.title} />
         <meta name="twitter:description" content={seoDescription} />
-        {article.cover_url && (
-          <meta name="twitter:image" content={article.cover_url} />
-        )}
+        <meta name="twitter:image" content={image} />
 
-        {/* Schema.org Article Data */}
-        <meta property="article:published_time" content={article.publish_at} />
-        <meta property="article:section" content={article.category.name} />
+        <script type="application/ld+json">{JSON.stringify(schema)}</script>
       </Helmet>
 
       <div className="absolute inset-0 islamic-pattern opacity-5 pointer-events-none" />

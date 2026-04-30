@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
-import { Helmet } from "react-helmet-async"; // 1. Import Helmet
+import { Helmet } from "react-helmet-async";
 
 /* ================= TYPES ================= */
 
@@ -42,14 +42,62 @@ type Social = {
 
 type SettingsMap = Record<string, string>;
 
-/* Utility untuk menghapus tag HTML dari konten (untuk deskripsi) */
+/* ================= HELPERS ================= */
+
+const DEFAULT_OG = "https://ikadijatim.org/default-og.jpg";
+
 function stripHtml(html: string) {
   const tmp = document.createElement("DIV");
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || "";
 }
 
-/* ================= ICON RENDER ================= */
+function getOptimizedImage(url?: string | null) {
+  if (!url || !url.startsWith("http")) return DEFAULT_OG;
+  return `${url}?width=1200&height=630&resize=cover`;
+}
+
+function buildArticleSchema({
+  title,
+  description,
+  image,
+  url,
+  datePublished,
+  author,
+}: {
+  title: string;
+  description: string;
+  image: string;
+  url: string;
+  datePublished?: string | null;
+  author?: string | null;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: title,
+    description,
+    image: [image],
+    author: {
+      "@type": "Organization",
+      name: author || "IKADI Jawa Timur",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "IKADI Jawa Timur",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://ikadijatim.org/logo.png",
+      },
+    },
+    datePublished,
+    dateModified: datePublished,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": url,
+    },
+  };
+}
 
 function renderIcon(platform: string) {
   const p = platform.toLowerCase();
@@ -77,12 +125,13 @@ export default function KabarDetail() {
   const [socials, setSocials] = useState<Social[]>([]);
   const [settings, setSettings] = useState<SettingsMap>({});
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl =
+    typeof window !== "undefined" ? window.location.href : "";
 
-  // Buat deskripsi singkat (max 150 karakter)
   const plainTextDesc = artikel
     ? stripHtml(artikel.content).substring(0, 150) + "..."
     : "";
+
   const handleCopy = async () => {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
@@ -113,7 +162,7 @@ export default function KabarDetail() {
       if (error) throw error;
       setArtikel(data);
 
-      const relQuery = supabase
+      const { data: rel } = await supabase
         .from("events")
         .select("id,title,cover,display_date,slug,scope,daerah,daerah_slug")
         .eq("published", true)
@@ -122,7 +171,6 @@ export default function KabarDetail() {
         .order("publish_at", { ascending: false })
         .limit(4);
 
-      const { data: rel } = await relQuery;
       setRelated(rel || []);
     } catch (err) {
       console.error(err);
@@ -132,11 +180,16 @@ export default function KabarDetail() {
   }, [slug]);
 
   useEffect(() => {
+    loadData();
+    window.scrollTo(0, 0);
+  }, [loadData]);
+
+  useEffect(() => {
     const fetchGlobal = async () => {
       const { data: socialData } = await supabase
         .from("social_links")
         .select("*")
-        .order("order_num", { ascending: true });
+        .order("order_num");
 
       if (socialData) setSocials(socialData);
 
@@ -156,12 +209,7 @@ export default function KabarDetail() {
     fetchGlobal();
   }, []);
 
-  useEffect(() => {
-    loadData();
-    window.scrollTo(0, 0);
-  }, [loadData]);
-
-  /* ================= SKELETON ================= */
+  /* ================= LOADING ================= */
 
   if (loading) {
     return (
@@ -170,11 +218,6 @@ export default function KabarDetail() {
           <div className="h-8 bg-muted rounded w-1/2" />
           <div className="h-6 bg-muted rounded w-1/3" />
           <div className="h-80 bg-muted rounded-xl" />
-          <div className="space-y-3">
-            <div className="h-4 bg-muted rounded" />
-            <div className="h-4 bg-muted rounded w-5/6" />
-            <div className="h-4 bg-muted rounded w-4/6" />
-          </div>
         </div>
       </section>
     );
@@ -191,35 +234,48 @@ export default function KabarDetail() {
     );
   }
 
+  /* ================= SEO ================= */
+
+  const image = getOptimizedImage(artikel.cover);
+
+  const schema = buildArticleSchema({
+    title: artikel.title,
+    description: plainTextDesc,
+    image,
+    url: shareUrl,
+    datePublished: artikel.publish_at,
+    author: artikel.admins?.[0]?.name || "IKADI Jawa Timur",
+  });
+
   /* ================= RENDER ================= */
 
   return (
     <section className="pt-28 pb-24 bg-background relative">
-      {/* 2. INJEKSI META TAGS KE HEAD UNTUK SOSIAL MEDIA */}
-      {artikel && (
-        <Helmet>
-          <title>{artikel.title} | IKADI Jatim</title>
-          <meta name="description" content={plainTextDesc} />
+      <Helmet>
+        <title>{artikel.title} | IKADI Jatim</title>
+        <meta name="description" content={plainTextDesc} />
+        <link rel="canonical" href={shareUrl} />
 
-          {/* Open Graph (Facebook, WhatsApp, LinkedIn) */}
-          <meta property="og:type" content="article" />
-          <meta property="og:url" content={shareUrl} />
-          <meta property="og:title" content={artikel.title} />
-          <meta property="og:description" content={plainTextDesc} />
-          {artikel.cover && (
-            <meta property="og:image" content={artikel.cover} />
-          )}
+        {/* OG */}
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={shareUrl} />
+        <meta property="og:title" content={artikel.title} />
+        <meta property="og:description" content={plainTextDesc} />
+        <meta property="og:image" content={image} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
 
-          {/* Twitter Card */}
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:url" content={shareUrl} />
-          <meta name="twitter:title" content={artikel.title} />
-          <meta name="twitter:description" content={plainTextDesc} />
-          {artikel.cover && (
-            <meta name="twitter:image" content={artikel.cover} />
-          )}
-        </Helmet>
-      )}
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={artikel.title} />
+        <meta name="twitter:description" content={plainTextDesc} />
+        <meta name="twitter:image" content={image} />
+
+        {/* JSON-LD */}
+        <script type="application/ld+json">
+          {JSON.stringify(schema)}
+        </script>
+      </Helmet>
       
       <div className="absolute inset-0 islamic-pattern opacity-5 pointer-events-none" />
 
