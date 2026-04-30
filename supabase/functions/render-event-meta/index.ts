@@ -11,16 +11,24 @@ interface MetaData {
 
 serve(async (req) => {
   const url = new URL(req.url);
-  const slug = url.searchParams.get("slug");
+  const slugParam = url.searchParams.get("slug");
   const type = url.searchParams.get("type");
+
+  if (!slugParam) {
+    return new Response("Missing slug", { status: 400 });
+  }
+
+  // Ambil slug terakhir (handle /kategori/slug)
+  const slugParts = slugParam.split("/");
+  const slug = slugParts[slugParts.length - 1];
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? "",
   );
 
-  let data: MetaData | null = null;
   const baseUrl = "https://ikadijatim.org";
+  let data: MetaData | null = null;
 
   try {
     if (type === "event") {
@@ -33,7 +41,7 @@ serve(async (req) => {
       if (event) {
         data = {
           title: event.title,
-          desc: event.content.replace(/<[^>]*>?/gm, "").substring(0, 155),
+          desc: cleanText(event.content),
           image: event.cover ?? "",
           url: event.scope === "daerah"
             ? `${baseUrl}/kabar/daerah/${event.daerah_slug}/${event.slug}`
@@ -50,11 +58,11 @@ serve(async (req) => {
       if (article) {
         data = {
           title: article.title,
-          desc: article.content.replace(/<[^>]*>?/gm, "").substring(0, 155),
+          desc: cleanText(article.content),
           image: article.cover_url ?? "",
           url: article.scope === "daerah"
             ? `${baseUrl}/kajian/daerah/${article.daerah_slug}/${article.slug}`
-            : `${baseUrl}/kajian/jatim/${article.slug}`,
+            : `${baseUrl}/kajian/${article.slug}`, // FIX: jangan pakai /jatim kalau tidak ada
         };
       }
     }
@@ -62,44 +70,65 @@ serve(async (req) => {
     console.error("DB Error:", e);
   }
 
-  // OPTIMASI iOS: Jika data ditemukan, jangan fetch index.html.
-  // Langsung kirim HTML minimalis khusus untuk crawler.
-  if (data) {
-    const botHtml = `<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>${data.title} | IKADI Jatim</title>
-    <meta name="description" content="${data.desc}..." />
-    <meta property="og:title" content="${data.title}" />
-    <meta property="og:description" content="${data.desc}..." />
-    <meta property="og:image" content="${data.image}" />
-    <meta property="og:url" content="${data.url}" />
-    <meta property="og:type" content="article" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta http-equiv="refresh" content="0;url=${data.url}">
-</head>
-<body>
-    <p>Mengalihkan ke <a href="${data.url}">${data.title}</a>...</p>
-</body>
-</html>`;
+  // 🔍 DETEKSI BOT
+  const ua = req.headers.get("user-agent") || "";
+  const isBot =
+    /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i
+      .test(
+        ua,
+      );
 
-    return new Response(botHtml, {
-      headers: {
-        "Content-Type": "text/html; charset=UTF-8",
-        // Paksa Facebook untuk tidak menyimpan cache redirect yang salah
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
-      },
-    });
+  // ❌ DATA TIDAK ADA
+  if (!data) {
+    return new Response("Not found", { status: 404 });
   }
 
-  // Fallback: Jika data tidak ditemukan, baru fetch index.html asli
-  const response = await fetch(`${baseUrl}/index.html`);
-  const fallbackHtml = await response.text();
+  // 👤 USER BIASA → redirect langsung (tidak lihat HTML OG)
+  if (!isBot) {
+    return Response.redirect(data.url, 302);
+  }
 
-  return new Response(fallbackHtml, {
-    headers: { "Content-Type": "text/html; charset=UTF-8" },
+  // 🤖 BOT → kirim HTML OG
+  const botHtml = buildHtml(data);
+
+  return new Response(botHtml, {
+    headers: {
+      "Content-Type": "text/html; charset=UTF-8",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
   });
 });
+
+/* ================= HELPERS ================= */
+
+function cleanText(html: string): string {
+  return html
+    .replace(/<[^>]*>?/gm, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .substring(0, 155);
+}
+
+function buildHtml(data: MetaData): string {
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>${data.title} | IKADI Jatim</title>
+
+<meta name="description" content="${data.desc}..." />
+
+<meta property="og:title" content="${data.title}" />
+<meta property="og:description" content="${data.desc}..." />
+<meta property="og:image" content="${data.image}" />
+<meta property="og:url" content="${data.url}" />
+<meta property="og:type" content="article" />
+
+<meta name="twitter:card" content="summary_large_image" />
+
+</head>
+<body>
+<p>${data.title}</p>
+</body>
+</html>`;
+}
