@@ -69,7 +69,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (article) {
-        // 🔥 HANDLE CATEGORY AMAN (ARRAY / OBJECT / NULL)
         const cat = Array.isArray(article.categories)
           ? article.categories[0]
           : article.categories;
@@ -96,22 +95,19 @@ serve(async (req) => {
     return new Response("Not found", { status: 404 });
   }
 
-  /* ================= BOT DETECTION ================= */
+  /* ================= BOT ONLY ================= */
   const ua = req.headers.get("user-agent") || "";
   const isBot =
     /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i.test(
       ua,
     );
 
-  /* ================= USER ================= */
   if (!isBot) {
-    return Response.redirect(data.url, 302);
+    return new Response("Not allowed", { status: 403 });
   }
 
-  /* ================= BOT (OG HTML) ================= */
-  const html = buildHtml(data);
-
-  return new Response(html, {
+  /* ================= RESPONSE ================= */
+  return new Response(buildHtml(data), {
     headers: {
       "Content-Type": "text/html; charset=UTF-8",
       "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -122,17 +118,18 @@ serve(async (req) => {
 /* ================= HELPERS ================= */
 
 function cleanText(html: string): string {
-  return html
+  const text = html
     .replace(/<[^>]*>?/gm, "")
     .replace(/\s+/g, " ")
-    .trim()
-    .substring(0, 155);
+    .trim();
+
+  return text.substring(0, 155) || "IKADI Jawa Timur";
 }
 
 function resolveImage(url?: string | null): string {
   if (!url || !url.startsWith("http")) return DEFAULT_OG;
 
-  // 🔥 WA-safe image
+  // WA-safe image
   return `${url}?width=1200&height=630&resize=cover`;
 }
 
@@ -143,16 +140,17 @@ function buildHtml(data: MetaData): string {
 <meta charset="UTF-8">
 <title>${escapeHtml(data.title)} | IKADI Jatim</title>
 
-<meta name="description" content="${escapeHtml(data.desc)}..." />
+<meta name="description" content="${escapeHtml(data.desc)}" />
 
 <meta property="og:title" content="${escapeHtml(data.title)}" />
-<meta property="og:description" content="${escapeHtml(data.desc)}..." />
+<meta property="og:description" content="${escapeHtml(data.desc)}" />
 <meta property="og:image" content="${data.image}" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:url" content="${data.url}" />
 <meta property="og:type" content="article" />
+<meta property="og:site_name" content="IKADI Jawa Timur" />
 
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -161,7 +159,7 @@ function buildHtml(data: MetaData): string {
 </html>`;
 }
 
-function escapeHtml(str: string): string {
+function escapeHtml(str: string = ""): string {
   return str
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")
