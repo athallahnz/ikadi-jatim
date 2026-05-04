@@ -3,8 +3,9 @@ import { supabase } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { ArrowRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Definisi tipe data yang lebih ketat
+/* ================= TYPES ================= */
 type Article = {
   id: string;
   title: string;
@@ -12,12 +13,15 @@ type Article = {
   content: string;
   cover_url: string | null;
   publish_at: string;
+  scope: "jatim" | "daerah";
+  daerah: string | null;
   categories: {
     name: string;
     slug: string;
   } | null;
 };
 
+// Interface untuk menangani kembalian data dari Join Table Supabase
 interface SupabaseArticleRow {
   id: string;
   title: string;
@@ -25,6 +29,8 @@ interface SupabaseArticleRow {
   content: string;
   cover_url: string | null;
   publish_at: string;
+  scope: "jatim" | "daerah";
+  daerah: string | null;
   categories:
     | { name: string; slug: string }
     | { name: string; slug: string }[]
@@ -40,6 +46,7 @@ const ArticlesSection = () => {
     return text.length > max ? text.slice(0, max) + "…" : text;
   };
 
+  /* ================= FETCHING ================= */
   useEffect(() => {
     const fetchLatestArticles = async () => {
       try {
@@ -48,7 +55,7 @@ const ArticlesSection = () => {
           .from("articles")
           .select(
             `
-            id, title, slug, cover_url, content, publish_at,
+            id, title, slug, cover_url, content, publish_at, scope, daerah,
             categories ( name, slug )
           `,
           )
@@ -58,6 +65,7 @@ const ArticlesSection = () => {
 
         if (error) throw error;
 
+        // Normalisasi data untuk menangani return object/array dari categories
         const rawData = data as unknown as SupabaseArticleRow[];
         const normalized: Article[] = rawData.map((item) => ({
           ...item,
@@ -98,17 +106,18 @@ const ArticlesSection = () => {
         {/* GRID */}
         <div className="grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 max-w-6xl xl:max-w-7xl mx-auto mb-12">
           {loading ? (
-            // SKELETON LOADER
+            /* SKELETON LOADER */
             [...Array(3)].map((_, i) => (
               <div
                 key={i}
-                className="flex flex-col bg-white rounded-2xl overflow-hidden border border-border shadow-sm h-[400px]"
+                className="flex flex-col bg-white rounded-2xl overflow-hidden border border-border shadow-sm h-[420px]"
               >
-                <div className="h-48 bg-slate-200 animate-pulse" />
+                <Skeleton className="h-48 w-full rounded-none" />
                 <div className="p-6 space-y-4">
-                  <div className="h-4 bg-slate-200 animate-pulse w-1/2 rounded" />
-                  <div className="h-6 bg-slate-200 animate-pulse w-full rounded" />
-                  <div className="h-20 bg-slate-200 animate-pulse w-full rounded" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-4 w-32" />
                 </div>
               </div>
             ))
@@ -116,9 +125,10 @@ const ArticlesSection = () => {
             articles.map((article) => (
               <article
                 key={article.id}
-                className="bg-card rounded-2xl border border-border overflow-hidden hover:border-gold/30 hover:shadow-xl transition-colors duration-300 group flex flex-col shadow-sm"
+                className="bg-card rounded-2xl border border-border overflow-hidden hover:border-gold/30 hover:shadow-xl transition-all duration-300 group flex flex-col shadow-sm hover:-translate-y-1"
               >
-                {/* IMAGE COVER */}
+
+                {/* IMAGE COVER SECTION */}
                 <div className="relative h-48 overflow-hidden bg-emerald-50">
                   {article.cover_url ? (
                     <img
@@ -127,17 +137,38 @@ const ArticlesSection = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-emerald-800 font-display p-6 text-center text-sm">
+                    <div className="w-full h-full flex items-center justify-center text-emerald-800 font-display p-6 text-center text-sm bg-emerald-100/50">
                       {article.title}
                     </div>
                   )}
-                  {article.categories && (
-                    <span className="absolute top-4 left-4 text-[10px] uppercase tracking-widest font-bold px-2 py-1 rounded bg-white/90 text-primary shadow-sm z-20">
-                      {article.categories.name}
+
+                  {/* BADGE POJOK KIRI ATAS: SCOPE */}
+                  <div className="absolute top-4 left-4 z-20">
+                    <span
+                      className={`text-[9px] md:text-[10px] uppercase tracking-widest font-black px-2.5 py-1 rounded shadow-md text-white ${
+                        article.scope === "jatim" ? "bg-gold" : "bg-emerald-700"
+                      }`}
+                    >
+                      {article.scope === "jatim"
+                        ? "IKADI Jatim"
+                        : `PD ${article.daerah}`}
                     </span>
+                  </div>
+
+                  {/* BADGE POJOK KANAN ATAS: CATEGORY */}
+                  {article.categories && (
+                    <div className="absolute top-4 right-4 z-20">
+                      <span className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded bg-white/90 text-primary shadow-sm backdrop-blur-sm border border-black/5">
+                        {article.categories.name}
+                      </span>
+                    </div>
                   )}
+
+                  {/* OVERLAY GRADIENT AGAR BADGE LEBIH TERBACA */}
+                  <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/20 to-transparent z-10" />
                 </div>
 
+                {/* CONTENT SECTION */}
                 <div className="p-6 md:p-7 flex flex-col flex-1">
                   <p className="text-xs text-muted-foreground mb-3 font-medium">
                     {new Date(article.publish_at).toLocaleDateString("id-ID", {
@@ -157,36 +188,37 @@ const ArticlesSection = () => {
 
                   <Link
                     to={`/kajian/${article.categories?.slug || "umum"}/${article.slug}`}
-                    className="mt-auto inline-flex items-center text-sm font-medium text-emerald-700 hover:text-gold transition-colors"
+                    className="mt-auto inline-flex items-center text-sm font-bold text-emerald-700 hover:text-gold transition-colors group/link"
                   >
                     Baca Selengkapnya
-                    <ArrowRight className="ml-1 h-4 w-4" />
+                    <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover/link:translate-x-1" />
                   </Link>
                 </div>
               </article>
             ))
           ) : (
-            // EMPTY STATE (Jika database kosong)
-            <div className="col-span-full text-center py-10 bg-white/50 rounded-2xl border border-dashed">
+            /* EMPTY STATE */
+            <div className="col-span-full text-center py-20 bg-white/50 rounded-2xl border border-dashed border-muted-foreground/30">
               <p className="text-muted-foreground italic">
-                Belum ada artikel yang diterbitkan.
+                Belum ada artikel yang diterbitkan untuk saat ini.
               </p>
             </div>
           )}
         </div>
 
-        {/* CTA */}
+        {/* CTA BUTTON */}
         <div className="text-center">
-          <Link to="/kajian">
-            <Button
-              variant="outline"
-              size="lg"
-              className="border-gold/40 text-gold hover:bg-gold-light transition-colors"
-            >
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="border-gold/40 text-gold hover:bg-gold hover:text-white transition-all duration-300 rounded-full px-8"
+          >
+            <Link to="/kajian">
               <Download className="mr-2 h-5 w-5" />
               Lihat Semua Kajian
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </section>

@@ -6,7 +6,7 @@ import { useAdmin } from "@/hooks/useAdmin";
 import Swal from "sweetalert2";
 import ArticlesDataTable from "./ArticlesDataTable";
 import CategoryModals from "./CategoryModals";
-import { Plus, PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 
 type Article = {
   id: string;

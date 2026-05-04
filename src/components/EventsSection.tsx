@@ -3,6 +3,7 @@ import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
   scope?: string;
@@ -27,24 +28,29 @@ type EventItem = {
 const EventsSection = ({ scope, compactTitle }: Props) => {
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [isLoading, setIsLoading] = useState(true);
 
   /* ================= FETCH SUPABASE ================= */
   useEffect(() => {
     const load = async () => {
-      let query = supabase
-        .from("events")
-        .select(
-          "id,title,excerpt,cover,date,display_date,slug,scope,daerah,daerah_slug,publish_at",
-        )
-        .eq("published", true)
-        .order("publish_at", { ascending: false });
+      try {
+        setIsLoading(true); // Mulai loading
+        let query = supabase
+          .from("events")
+          .select(
+            "id,title,excerpt,cover,date,display_date,slug,scope,daerah,daerah_slug,publish_at",
+          )
+          .eq("published", true)
+          .order("publish_at", { ascending: false });
 
-      if (scope === "jatim") query = query.eq("scope", "jatim");
-      if (scope === "daerah") query = query.eq("scope", "daerah");
+        if (scope === "jatim") query = query.eq("scope", "jatim");
+        if (scope === "daerah") query = query.eq("scope", "daerah");
 
-      const { data } = await query;
-
-      setAllEvents((data as EventItem[]) || []);
+        const { data } = await query;
+        setAllEvents((data as EventItem[]) || []);
+      } finally {
+        setIsLoading(false); // Selesai loading
+      }
     };
 
     load();
@@ -149,6 +155,23 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
   const cardWidth = 100 / visible;
   const translate = -index * cardWidth + (dragOffset / window.innerWidth) * 100;
 
+  const EventSkeleton = ({ cardWidth }: { cardWidth: number }) => (
+    <div className="flex-shrink-0 px-4 my-4" style={{ width: `${cardWidth}%` }}>
+      <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md h-full flex flex-col">
+        <Skeleton className="h-56 w-full" /> {/* Image placeholder */}
+        <div className="p-6 flex-1 space-y-3">
+          <Skeleton className="h-4 w-24" /> {/* Date placeholder */}
+          <Skeleton className="h-6 w-full" /> {/* Title placeholder */}
+          <Skeleton className="h-6 w-3/4" />
+          <div className="pt-2">
+            <Skeleton className="h-9 w-28 rounded-md" />{" "}
+            {/* Button placeholder */}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   /* ================= RENDER (UNCHANGED) ================= */
   return (
     <section className="py-14 bg-background">
@@ -161,35 +184,45 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
                 : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-2"
             }`}
           >
-            {" "}
             {title}
           </h2>
-
           <div className="gold-divider mx-auto" />
 
+          {/* FILTER BUTTONS */}
           <div className="flex flex-wrap justify-center gap-2 my-6">
-            {[
-              { key: "all", label: "Semua" },
-              { key: "today", label: "Hari Ini" },
-              { key: "week", label: "1 Pekan" },
-              { key: "month", label: "Bulan Ini" },
-            ].map((f) => (
+            {(["all", "today", "week", "month"] as const).map((f) => (
               <button
-                key={f.key}
-                onClick={() => setTimeFilter(f.key as TimeFilter)}
+                key={f}
+                onClick={() => setTimeFilter(f)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                  timeFilter === f.key
+                  timeFilter === f
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/70"
                 }`}
               >
-                {f.label}
+                {f === "all"
+                  ? "Semua"
+                  : f === "today"
+                    ? "Hari Ini"
+                    : f === "week"
+                      ? "1 Pekan"
+                      : "Bulan Ini"}
               </button>
             ))}
           </div>
         </div>
 
-        {events.length === 0 ? (
+        {isLoading ? (
+          /* ✅ LOADING STATE: SKELETON */
+          <div className="overflow-hidden">
+            <div className="flex">
+              {[...Array(visible)].map((_, i) => (
+                <EventSkeleton key={i} cardWidth={cardWidth} />
+              ))}
+            </div>
+          </div>
+        ) : events.length === 0 ? (
+          /* EMPTY STATE */
           <div className="text-center py-24">
             <div className="inline-flex flex-col items-center gap-3 text-muted-foreground">
               <CalendarDays className="h-8 w-8 opacity-40" />
@@ -197,6 +230,7 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
             </div>
           </div>
         ) : (
+          /* DATA STATE: CAROUSEL */
           <div className="overflow-hidden">
             <div
               className={`flex transition-transform duration-500 ${
@@ -217,7 +251,7 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
                   className="flex-shrink-0 px-4 my-4"
                   style={{ width: `${cardWidth}%` }}
                 >
-                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-colors duration-300 hover:-translate-y-2 h-full flex flex-col">
+                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 h-full flex flex-col">
                     {/* IMAGE */}
                     <div className="relative h-56 overflow-hidden group bg-muted">
                       {event.cover ? (
@@ -225,14 +259,12 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
                           src={event.cover}
                           alt={event.title}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          // Tambahan: handle jika URL ada tapi link mati (404)
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
                               "https://placehold.co/600x400?text=No+Image";
                           }}
                         />
                       ) : (
-                        // Tampilan Placeholder jika data cover memang null/kosong
                         <div className="w-full h-full flex flex-col items-center justify-center bg-muted text-muted-foreground">
                           <CalendarDays className="h-12 w-12 opacity-20 mb-2" />
                           <span className="text-xs opacity-50">
@@ -243,39 +275,36 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
 
                       {/* Label Overlay */}
                       <div className="absolute top-3 left-3 z-10">
-                        {event.scope === "jatim" ? (
-                          <span className="bg-gold text-foreground text-sm px-3 py-1 rounded-full font-semibold shadow">
-                            PW Jawa Timur
-                          </span>
-                        ) : (
-                          <span className="bg-primary text-primary-foreground text-sm px-3 py-1 rounded-full font-semibold shadow">
-                            PD {event.daerah}
-                          </span>
-                        )}
+                        <span
+                          className={`text-sm px-3 py-1 rounded-full font-semibold shadow ${
+                            event.scope === "jatim"
+                              ? "bg-gold text-foreground"
+                              : "bg-primary text-primary-foreground"
+                          }`}
+                        >
+                          {event.scope === "jatim"
+                            ? "PW Jawa Timur"
+                            : `PD ${event.daerah}`}
+                        </span>
                       </div>
-
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                     </div>
 
                     {/* CONTENT */}
                     <div className="p-6 flex flex-col flex-1">
-                      {/* DATE */}
                       <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
                         <CalendarDays className="h-4 w-4" />
                         {event.display_date}
                       </div>
 
-                      {/* TITLE */}
-                      <h3 className="font-display font-semibold mb-2 line-clamp-2">
+                      <h3 className="font-display font-semibold mb-2 line-clamp-2 text-foreground">
                         {event.title}
                       </h3>
 
-                      {/* EXCERPT */}
                       <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
                         {event.excerpt}
                       </p>
 
-                      {/* BUTTON — PUSH BOTTOM */}
                       <div className="mt-auto">
                         <Button asChild variant="outline" size="sm">
                           <Link

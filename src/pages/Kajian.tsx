@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { SearchX, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /* ================= TYPES ================= */
 type Category = {
@@ -18,7 +19,9 @@ type Article = {
   content: string;
   cover_url: string | null;
   publish_at: string;
-  category: Category; // Dijamin ada setelah normalisasi
+  scope: "jatim" | "daerah";
+  daerah: string | null;
+  category: Category;
 };
 
 interface SupabaseArticleRow {
@@ -28,6 +31,8 @@ interface SupabaseArticleRow {
   content: string;
   cover_url: string | null;
   publish_at: string;
+  scope: "jatim" | "daerah";
+  daerah: string | null;
   categories: Category | Category[] | null;
 }
 
@@ -74,7 +79,6 @@ export default function Kajian() {
       const from = (page - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      // 1. Kunci Filter: Gunakan !inner jika categorySlug aktif
       const isFiltering = !!categorySlug && categorySlug !== "semua";
       const relation = isFiltering
         ? "categories!inner(id, name, slug)"
@@ -84,14 +88,13 @@ export default function Kajian() {
         .from("articles")
         .select(
           `
-          id, title, slug, content, cover_url, publish_at,
+          id, title, slug, content, cover_url, publish_at, scope, daerah,
           ${relation}
         `,
           { count: "exact" },
-        ) // Ambil count sekaligus
+        )
         .eq("published", true);
 
-      // 2. Terapkan Filter
       if (isFiltering) query = query.eq("categories.slug", categorySlug);
       if (debouncedSearch) query = query.ilike("title", `%${debouncedSearch}%`);
 
@@ -101,7 +104,6 @@ export default function Kajian() {
 
       if (error) throw error;
 
-      // 3. Normalisasi Data (Anti-Undefined)
       const rawData = data as unknown as SupabaseArticleRow[];
       const normalized: Article[] = (rawData || []).map((item) => {
         const cat = Array.isArray(item.categories)
@@ -130,12 +132,10 @@ export default function Kajian() {
     fetchArticles();
   }, [fetchArticles]);
 
-  /* RESET PAGE WHEN FILTER CHANGES */
   useEffect(() => {
     setPage(1);
   }, [categorySlug, debouncedSearch]);
 
-  /* ================= PAGINATION RANGE ================= */
   const getSmartPages = (current: number, total: number) => {
     const pages: (number | string)[] = [];
     if (total <= 7) {
@@ -208,8 +208,16 @@ export default function Kajian() {
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-card rounded-2xl border border-border h-[420px] animate-pulse"
-              />
+                className="flex flex-col bg-card rounded-2xl border border-border h-[420px] overflow-hidden"
+              >
+                <Skeleton className="h-48 w-full rounded-none" />
+                <div className="p-6 space-y-4">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-7 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </div>
             ))}
           </div>
         ) : articles.length === 0 ? (
@@ -244,13 +252,30 @@ export default function Kajian() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center p-6 text-center text-primary font-display">
+                      <div className="w-full h-full flex items-center justify-center p-6 text-center text-primary font-display bg-emerald-100/50">
                         {a.title}
                       </div>
                     )}
-                    <span className="absolute top-4 left-4 bg-background/90 backdrop-blur-sm text-primary text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded border border-border shadow-sm">
-                      {a.category.name}
-                    </span>
+
+                    {/* POJOK KIRI: SCOPE BADGE */}
+                    <div className="absolute top-4 left-4 z-20">
+                      <span
+                        className={`text-[9px] md:text-[10px] uppercase tracking-widest font-black px-2.5 py-1 rounded shadow-md text-white ${
+                          a.scope === "jatim" ? "bg-gold" : "bg-emerald-700"
+                        }`}
+                      >
+                        {a.scope === "jatim" ? "IKADI Jatim" : `PD ${a.daerah}`}
+                      </span>
+                    </div>
+
+                    {/* POJOK KANAN: CATEGORY BADGE */}
+                    <div className="absolute top-4 right-4 z-20">
+                      <span className="text-[9px] md:text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded bg-white/90 text-primary shadow-sm backdrop-blur-sm border border-black/5">
+                        {a.category.name}
+                      </span>
+                    </div>
+
+                    <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-black/20 to-transparent z-10" />
                   </div>
 
                   <div className="p-6 flex flex-col flex-1">
