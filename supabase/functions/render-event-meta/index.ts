@@ -31,7 +31,6 @@ serve(async (req) => {
   let data: MetaData | null = null;
 
   try {
-    /* ================= EVENT ================= */
     if (type === "event") {
       const { data: event } = await supabase
         .from("events")
@@ -44,46 +43,26 @@ serve(async (req) => {
           title: event.title,
           desc: cleanText(event.content),
           image: resolveImage(event.cover),
-          url:
-            event.scope === "daerah"
-              ? `${BASE_URL}/kabar/daerah/${event.daerah_slug}/${event.slug}`
-              : `${BASE_URL}/kabar/jatim/${event.slug}`,
+          url: event.scope === "daerah"
+            ? `${BASE_URL}/kabar/daerah/${event.daerah_slug}/${event.slug}`
+            : `${BASE_URL}/kabar/jatim/${event.slug}`,
         };
       }
-    }
-
-    /* ================= ARTICLE ================= */
-    else {
+    } else {
       const { data: article } = await supabase
         .from("articles")
-        .select(`
-          title,
-          content,
-          cover_url,
-          slug,
-          scope,
-          daerah_slug,
-          categories ( slug )
-        `)
+        .select("title, content, cover_url, slug, scope, daerah_slug")
         .eq("slug", slug)
         .maybeSingle();
 
       if (article) {
-        const cat = Array.isArray(article.categories)
-          ? article.categories[0]
-          : article.categories;
-
-        const categorySlug =
-          cat?.slug && cat.slug !== "undefined" ? cat.slug : "umum";
-
         data = {
           title: article.title,
           desc: cleanText(article.content),
           image: resolveImage(article.cover_url),
-          url:
-            article.scope === "daerah"
-              ? `${BASE_URL}/kajian/daerah/${article.daerah_slug}/${article.slug}`
-              : `${BASE_URL}/kajian/${categorySlug}/${article.slug}`,
+          url: article.scope === "daerah"
+            ? `${BASE_URL}/kajian/daerah/${article.daerah_slug}/${article.slug}`
+            : `${BASE_URL}/kajian/${article.slug}`,
         };
       }
     }
@@ -95,19 +74,22 @@ serve(async (req) => {
     return new Response("Not found", { status: 404 });
   }
 
-  /* ================= BOT ONLY ================= */
   const ua = req.headers.get("user-agent") || "";
   const isBot =
-    /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i.test(
-      ua,
-    );
+    /facebookexternalhit|Twitterbot|WhatsApp|Slackbot|Discordbot|LinkedInBot|TelegramBot|bingbot|googlebot/i
+      .test(
+        ua,
+      );
 
+  // 👤 USER → langsung ke SPA
   if (!isBot) {
-    return new Response("Not allowed", { status: 403 });
+    return Response.redirect(data.url, 302);
   }
 
-  /* ================= RESPONSE ================= */
-  return new Response(buildHtml(data), {
+  // 🤖 BOT → OG HTML
+  const html = buildHtml(data);
+
+  return new Response(html, {
     headers: {
       "Content-Type": "text/html; charset=UTF-8",
       "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -118,18 +100,17 @@ serve(async (req) => {
 /* ================= HELPERS ================= */
 
 function cleanText(html: string): string {
-  const text = html
+  return html
     .replace(/<[^>]*>?/gm, "")
     .replace(/\s+/g, " ")
-    .trim();
-
-  return text.substring(0, 155) || "IKADI Jawa Timur";
+    .trim()
+    .substring(0, 155);
 }
 
 function resolveImage(url?: string | null): string {
   if (!url || !url.startsWith("http")) return DEFAULT_OG;
 
-  // WA-safe image
+  // 🔥 Auto resize OG
   return `${url}?width=1200&height=630&resize=cover`;
 }
 
@@ -140,17 +121,16 @@ function buildHtml(data: MetaData): string {
 <meta charset="UTF-8">
 <title>${escapeHtml(data.title)} | IKADI Jatim</title>
 
-<meta name="description" content="${escapeHtml(data.desc)}" />
+<meta name="description" content="${escapeHtml(data.desc)}..." />
 
 <meta property="og:title" content="${escapeHtml(data.title)}" />
-<meta property="og:description" content="${escapeHtml(data.desc)}" />
+<meta property="og:description" content="${escapeHtml(data.desc)}..." />
 <meta property="og:image" content="${data.image}" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:type" content="image/jpeg" />
 <meta property="og:url" content="${data.url}" />
 <meta property="og:type" content="article" />
-<meta property="og:site_name" content="IKADI Jawa Timur" />
 
 <meta name="twitter:card" content="summary_large_image" />
 
@@ -159,7 +139,7 @@ function buildHtml(data: MetaData): string {
 </html>`;
 }
 
-function escapeHtml(str: string = ""): string {
+function escapeHtml(str: string): string {
   return str
     .replace(/&/g, "&amp;")
     .replace(/"/g, "&quot;")

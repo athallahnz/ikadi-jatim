@@ -24,6 +24,13 @@ type Props = {
   event?: Event | null;
 };
 
+interface PostgrestError {
+  code: string;
+  message: string;
+  details: string | null;
+  hint: string | null;
+}
+
 const formatDisplayDate = (iso: string) => {
   if (!iso) return "";
   const d = new Date(iso);
@@ -158,24 +165,47 @@ export default function EventForm({ onSaved, event }: Props) {
         showConfirmButton: false,
       });
 
-      // ✅ RESET FORM FIELD DISINI
       if (!event) {
-        // Jika mode "Tambah Baru", kosongkan semua field
+        // Reset fields logic...
         setTitle("");
         setContent("");
+        setExcerpt("");
+        setLocation("");
+        setDate("");
         setCoverFile(null);
         setExistingCoverUrl(null);
         setPublished(false);
         setPublishAt("");
-        setErrors({}); // Bersihkan tanda merah error
+        setErrors({});
       }
 
       onSaved();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Terjadi kesalahan yang tidak diketahui.";
+      console.error("Error saving data:", error);
+
+      let errorMessage = "Terjadi kesalahan yang tidak diketahui.";
+
+      // Type guard untuk PostgrestError (Supabase/Postgres)
+      if (typeof error === "object" && error !== null && "code" in error) {
+        const pgError = error as PostgrestError;
+
+        switch (pgError.code) {
+          case "23505": // Unique Violation
+            errorMessage = `Gagal menyimpan: Judul event sudah digunakan. Silakan gunakan judul lain agar URL (slug) tidak duplikat.`;
+            break;
+          case "42P01":
+            errorMessage = "Tabel 'events' tidak ditemukan di database.";
+            break;
+          case "23503":
+            errorMessage =
+              "Data terkait (Author/Scope) tidak valid atau telah dihapus.";
+            break;
+          default:
+            errorMessage = pgError.message || errorMessage;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
       Swal.fire({
         icon: "error",

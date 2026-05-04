@@ -26,6 +26,13 @@ type Category = {
   name: string;
 };
 
+interface PostgrestError {
+  code: string;
+  message: string;
+  details: string | null;
+  hint: string | null;
+}
+
 export default function ArticleForm({ onSaved, article }: Props) {
   const { admin } = useAdmin();
   const [title, setTitle] = useState("");
@@ -174,20 +181,38 @@ export default function ArticleForm({ onSaved, article }: Props) {
 
       onSaved();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Terjadi kesalahan yang tidak diketahui.";
+      console.error("Error saving data:", error);
+
+      let errorMessage = "Terjadi kesalahan yang tidak diketahui.";
+
+      // Type guarding untuk memastikan error sesuai dengan interface PostgrestError
+      if (typeof error === "object" && error !== null && "code" in error) {
+        const pgError = error as PostgrestError;
+
+        switch (pgError.code) {
+          case "23505":
+            errorMessage = `Gagal menyimpan: Judul atau Slug "${slugify(title)}" sudah digunakan. Silakan gunakan judul lain.`;
+            break;
+          case "42P01":
+            errorMessage = "Tabel tidak ditemukan di database.";
+            break;
+          case "23503":
+            errorMessage =
+              "Pelanggaran relasi (Foreign Key): Kategori atau Author tidak valid.";
+            break;
+          default:
+            errorMessage = pgError.message || errorMessage;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
       Swal.fire({
         icon: "error",
         title: "Gagal Menyimpan",
         text: errorMessage,
       });
-
-      console.error("Error saving data:", error);
     } finally {
-      // 2. Apapun hasilnya (sukses/gagal), kembalikan isSaving ke false
       setIsSaving(false);
     }
   };
