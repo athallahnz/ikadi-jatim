@@ -59,6 +59,13 @@ export const adminMenu: AdminMenuItem[] = [
   },
 
   {
+    to: "/admin/consultations",
+    label: "Konsultasi",
+    icon: MessageSquareText,
+    scopes: ["jatim"],
+  },
+
+  {
     label: "Settings",
     icon: Settings,
     children: [

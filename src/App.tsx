@@ -15,6 +15,7 @@ import KabarDetail from "@/pages/KabarDetail";
 import Galeri from "@/pages/Galeri";
 import Kolaborasi from "@/pages/Kolaborasi";
 import Konsultasi from "@/pages/Konsultasi";
+import KonsultasiDetail from "./pages/KonsultasiDetail";
 import ProgramKuliahAgamaIslam from "@/pages/ProgramKuliahAgamaIslam";
 import ProgramPembinaanDai from "@/pages/ProgramPembinaanDai";
 import ProgramKonsultasi from "@/pages/ProgramKonsultasi";
@@ -32,6 +33,7 @@ import Blocked from "./pages/admin/Blocked";
 
 // Styles
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import PortalKonsultasi from "./components/PortalKonsultasi";
 
 /* ================= TYPES & INTERFACES ================= */
 // Mendefinisikan struktur Schema agar type-safe
@@ -138,6 +140,8 @@ function App() {
           <Route path="galeri" element={<Galeri />} />
           <Route path="kolaborasi" element={<Kolaborasi />} />
           <Route path="konsultasi" element={<Konsultasi />} />
+          <Route path="konsultasi/portal" element={<PortalKonsultasi />} />
+          <Route path="/konsultasi/:slug" element={<KonsultasiDetail />} />
 
           {/* Fallback 404 */}
           <Route path="*" element={<NotFound />} />

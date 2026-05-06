@@ -12,6 +12,7 @@ import ManageUsers from "./ManageUsers";
 import ProfilAdmin from "./Profile";
 import RunningTexts from "./RunningTexts";
 import Invitations from "./Invitations";
+import AdminConsultations from "./AdminConsultations";
 
 type Role = "jatim" | "daerah";
 
@@ -80,6 +81,15 @@ export default function AdminRoutes() {
           element={
             <RoleRoute allow={allAccess}>
               <Invitations />
+            </RoleRoute>
+          }
+        />
+
+        <Route
+          path="consultations"
+          element={
+            <RoleRoute allow={["jatim"]}>
+              <AdminConsultations />
             </RoleRoute>
           }
         />

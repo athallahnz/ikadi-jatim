@@ -1,7 +1,12 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
   "compilerOptions": {
+    "composite": true,        // Wajib untuk Project References
+    "noEmit": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
@@ -12,6 +17,6 @@
     "allowJs": true,
     "noUnusedLocals": false,
     "strictNullChecks": false
-  }
-  
+  },
+  "include": ["src", "server", "types", "scripts"]
 }

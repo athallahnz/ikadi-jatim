@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
-export type Admin = {
+// Interface spesifik sesuai struktur tabel admins
+export interface Admin {
   id: string;
   name: string;
   role: "admin" | "editor";
@@ -12,28 +13,29 @@ export type Admin = {
   daerah_slug?: string | null;
   brand_name?: string | null;
   brand_logo?: string | null;
-};
+}
 
 export function useAdmin() {
   const { session } = useAuth();
-
   const [admin, setAdmin] = useState<Admin | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const userId = session?.user?.id;
   const email = session?.user?.email;
 
-  /* ================= LOAD ADMIN ================= */
-
   useEffect(() => {
+    // Jika tidak ada session, hentikan proses
     if (!userId) {
       setAdmin(null);
       setLoading(false);
       return;
     }
 
-    const loadAdmin = async () => {
+    const loadAdminData = async () => {
       try {
+        setLoading(true);
+
+        // 1. Ambil data admin berdasarkan ID user yang login
         const { data, error } = await supabase
           .from("admins")
           .select("*")
@@ -42,13 +44,13 @@ export function useAdmin() {
 
         if (error) throw error;
 
-        // ================= AUTO REGISTER =================
         if (!data) {
+          // 2. Registrasi otomatis jika data belum ada di tabel admins
           const { data: newAdmin, error: insertError } = await supabase
             .from("admins")
             .insert({
               id: userId,
-              name: email,
+              name: email || "User Baru",
               role: "editor",
               scope: "daerah",
               status: "pending",
@@ -57,76 +59,26 @@ export function useAdmin() {
             .single();
 
           if (insertError) throw insertError;
-
-          setAdmin(newAdmin);
+          setAdmin(newAdmin as Admin);
         } else {
-          setAdmin(data);
+          // 3. Set data admin jika ditemukan
+          setAdmin(data as Admin);
 
-          // ================= STATUS SECURITY =================
-
-          if (data.status === "blocked") {
+          // 4. Proteksi Keamanan: Kick user jika status diblokir atau ditolak
+          if (data.status === "blocked" || data.status === "rejected") {
             await supabase.auth.signOut();
-            window.location.href = "/admin/blocked";
-            return;
-          }
-
-          if (data.status === "rejected") {
-            await supabase.auth.signOut();
-            window.location.href = "/admin/rejected";
-            return;
+            window.location.replace(`/admin/${data.status}`);
           }
         }
       } catch (err) {
-        console.error("Admin load error:", err);
+        console.error("Gagal memuat profil admin:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadAdmin();
+    loadAdminData();
   }, [userId, email]);
-
-  /* ================= REALTIME STATUS WATCH ================= */
-
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel("admin-status-watch")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "admins",
-          filter: `id=eq.${userId}`,
-        },
-        async (payload) => {
-          const newStatus = payload.new.status;
-
-          console.log("Realtime status change:", newStatus);
-
-          if (newStatus === "active") {
-            window.location.href = "/admin";
-          }
-
-          if (newStatus === "blocked") {
-            await supabase.auth.signOut();
-            window.location.href = "/admin/blocked";
-          }
-
-          if (newStatus === "rejected") {
-            await supabase.auth.signOut();
-            window.location.href = "/admin/rejected";
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
 
   return { admin, loading };
 }
