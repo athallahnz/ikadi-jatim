@@ -6,7 +6,7 @@ import { generateUstadzResponse } from "./rag-service";
 import type { AskUstadzPayload, AskUstadzResponse } from "../src/types/api";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 // Di server/index.ts atau app.ts
 app.use(cors({
@@ -22,7 +22,7 @@ app.use(cors({
 
 app.use(express.json());
 
-app.post(
+app.post(   
     "/api/chat",
     async (
         // Menggunakan unknown alih-alih {} untuk menghindari error ESLint
@@ -51,6 +51,6 @@ app.post(
     },
 );
 
-app.listen(PORT, () => {
-    console.log(`🚀 RAG Server IKADI berjalan di http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Backend RAG Aktif di Port ${PORT}`);
 });
