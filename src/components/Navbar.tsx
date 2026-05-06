@@ -68,7 +68,7 @@ export default function Navbar() {
 
     return () => clearTimeout(timer);
   }, [showCTA]);
-  
+
   /* ===== Hero observer ===== */
   useEffect(() => {
     // Beri jeda sedikit agar halaman di bawah Navbar selesai me-render DOM
@@ -287,6 +287,7 @@ export default function Navbar() {
 
           <NavLink
             to="/konsultasi"
+            onClick={() => setIsOpen(false)}
             className="block mt-8 px-6 py-3 rounded-md border border-primary text-primary text-center font-semibold"
           >
             konsultasisyariah.net
@@ -297,7 +298,11 @@ export default function Navbar() {
             className="mt-6 w-full py-6 flex items-center gap-2"
             asChild
           >
-            <NavLink to="/" className="flex items-center justify-center gap-2">
+            <NavLink
+              to="/"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center justify-center gap-2"
+            >
               <UserPlus size={18} />
               Bergabung
             </NavLink>

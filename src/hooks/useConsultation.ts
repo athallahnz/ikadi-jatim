@@ -38,19 +38,16 @@ export const useConsultation = (
     page: number = 1,
     limit: number = 10,
     categorySlug: string | null = null,
-    searchQuery: string = "", // Parameter baru untuk fitur search
+    searchQuery: string = "",
 ) => {
     const [data, setData] = useState<Consultation[]>([]);
     const [categories, setCategories] = useState<CategoryWithCount[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
-
-    // Loading state dipisah untuk mencegah UI flickering pada komponen yang tidak perlu render ulang
     const [loading, setLoading] = useState<boolean>(true);
     const [loadingCategories, setLoadingCategories] = useState<boolean>(true);
-
     const [error, setError] = useState<string | null>(null);
 
-    // 1. FETCH CATEGORIES (Hanya dijalankan sekali di awal)
+    // 1. FETCH CATEGORIES (Optimized with error handling)
     const fetchCategories = useCallback(async () => {
         setLoadingCategories(true);
         try {
@@ -62,13 +59,16 @@ export const useConsultation = (
             if (catErr) throw catErr;
 
             if (catData) {
-                const rawCats = catData as unknown as RawCategoryResponse[];
-                const normalizedCats = rawCats.map((cat) => ({
-                    id: cat.id,
-                    name: cat.name,
-                    slug: cat.slug,
-                    count: cat.consultations[0]?.count || 0,
-                }));
+                // Mapping aman untuk menghindari 'undefined'
+                const normalizedCats =
+                    (catData as unknown as RawCategoryResponse[]).map((
+                        cat,
+                    ) => ({
+                        id: cat.id,
+                        name: cat.name,
+                        slug: cat.slug,
+                        count: cat.consultations?.[0]?.count || 0,
+                    }));
                 setCategories(normalizedCats);
             }
         } catch (err) {
@@ -78,7 +78,7 @@ export const useConsultation = (
         }
     }, []);
 
-    // 2. FETCH CONSULTATIONS (Dijalankan saat page, filter, atau search berubah)
+    // 2. FETCH CONSULTATIONS (Improved Performance)
     const fetchConsultations = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -86,39 +86,33 @@ export const useConsultation = (
             const from = (page - 1) * limit;
             const to = from + limit - 1;
 
-            // Inisialisasi query dasar
             let query = supabase
                 .from("consultations")
                 .select(
                     `id, author_name, title, slug, question, answer, created_at, status, consultation_categories!inner ( name, slug )`,
                     { count: "exact" },
                 )
-                .eq("status", 1); // Hanya ambil yang sudah dijawab/dipublish
+                .eq("status", 1);
 
-            // Filter berdasarkan Kategori
             if (categorySlug) {
                 query = query.eq("consultation_categories.slug", categorySlug);
             }
 
-            // Filter berdasarkan Pencarian (Search)
             if (searchQuery && searchQuery.trim() !== "") {
                 const keyword = `%${searchQuery.trim()}%`;
-                // Mencari teks di dalam title ATAU question
+                // Gunakan .or dengan bungkus tanda kurung jika diperlukan di filter kompleks
                 query = query.or(
                     `title.ilike.${keyword},question.ilike.${keyword}`,
                 );
             }
 
-            // Eksekusi Sorting dan Pagination
             const { data: results, error: err, count } = await query
-                .order("id", { ascending: false })
+                .order("created_at", { ascending: false }) // Gunakan created_at untuk sorting arsip
                 .range(from, to);
 
             if (err) throw err;
 
-            if (results) {
-                setData(results as unknown as Consultation[]);
-            }
+            setData((results as unknown as Consultation[]) || []);
             setTotalCount(count || 0);
         } catch (err) {
             setError(
@@ -127,9 +121,8 @@ export const useConsultation = (
         } finally {
             setLoading(false);
         }
-    }, [page, limit, categorySlug, searchQuery]); // Query di-refresh otomatis jika state ini berubah
+    }, [page, limit, categorySlug, searchQuery]);
 
-    // 3. FETCH SINGLE CONSULTATION (Untuk halaman detail)
     const fetchConsultationBySlug = useCallback(async (slug: string) => {
         try {
             setLoading(true);
@@ -143,23 +136,16 @@ export const useConsultation = (
             if (err) throw err;
             return singleData as Consultation;
         } catch (err) {
-            setError(
-                err instanceof Error ? err.message : "Data tidak ditemukan",
-            );
             return null;
         } finally {
             setLoading(false);
         }
     }, []);
 
-    // --- USE EFFECTS ---
-
-    // Effect 1: Ambil kategori HANYA saat hook pertama kali dipanggil (On Mount)
     useEffect(() => {
         fetchCategories();
     }, [fetchCategories]);
 
-    // Effect 2: Ambil data konsultasi setiap kali page, limit, kategori, atau pencarian berubah
     useEffect(() => {
         fetchConsultations();
     }, [fetchConsultations]);

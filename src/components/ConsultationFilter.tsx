@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react"; // Tambahkan icon untuk error state
 
 interface Category {
   id: string | number;
@@ -13,6 +14,8 @@ interface ConsultationFilterProps {
   selectedCategorySlug: string | null;
   onSelectCategory: (slug: string | null) => void;
   isLoading?: boolean;
+  isError?: boolean; // Tambahkan prop isError untuk menangani timeout
+  onRetry?: () => void; // Fungsi untuk mencoba fetch ulang
 }
 
 const ConsultationFilter = ({
@@ -20,6 +23,8 @@ const ConsultationFilter = ({
   selectedCategorySlug,
   onSelectCategory,
   isLoading = false,
+  isError = false,
+  onRetry,
 }: ConsultationFilterProps) => {
   return (
     <div className="bg-white dark:bg-emerald-950/80 backdrop-blur-xl rounded-[2.5rem] border border-emerald-100 dark:border-emerald-900/50 p-8 sticky top-32 shadow-xl shadow-emerald-900/5 transition-all duration-500">
@@ -34,13 +39,29 @@ const ConsultationFilter = ({
 
       <div className="space-y-3">
         {isLoading ? (
-          /* SKELETON LOADING STATE: Placeholder tanpa loader icon */
-          Array.from({ length: 6 }).map((_, i) => (
+          /* SKELETON LOADING STATE */
+          Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
               className="w-full h-[54px] rounded-2xl bg-emerald-50/50 dark:bg-emerald-900/20 animate-pulse border border-emerald-50/10 dark:border-emerald-800/20"
             />
           ))
+        ) : isError ? (
+          /* ERROR STATE: Menangani Timeout (Error 57014) */
+          <div className="text-center py-8 px-4 bg-red-50/50 dark:bg-red-950/20 rounded-3xl border border-red-100 dark:border-red-900/30">
+            <AlertCircle className="h-6 w-6 text-red-500 mx-auto mb-3 opacity-70" />
+            <p className="text-[11px] text-red-700 dark:text-red-400 font-bold uppercase tracking-tight mb-4">
+              Gagal Memuat Kategori
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRetry}
+              className="h-8 text-[10px] rounded-full border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900 text-red-700 dark:text-red-400 font-black"
+            >
+              <RefreshCw className="h-3 w-3 mr-2" /> COBA LAGI
+            </Button>
+          </div>
         ) : (
           /* CATEGORY LIST */
           <>
@@ -72,12 +93,12 @@ const ConsultationFilter = ({
                       : "bg-emerald-100/50 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800"
                   }`}
                 >
-                  {cat.count}
+                  {Number(cat.count || 0).toLocaleString("id-ID")}
                 </Badge>
               </button>
             ))}
 
-            {/* EMPTY STATE: Clean text-only approach */}
+            {/* EMPTY STATE */}
             {categories.length === 0 && (
               <div className="text-center py-10 px-4 border border-dashed border-emerald-100 dark:border-emerald-900 rounded-3xl">
                 <p className="text-xs text-emerald-600/50 dark:text-emerald-400/40 font-medium italic">
@@ -89,7 +110,7 @@ const ConsultationFilter = ({
         )}
 
         {/* RESET FILTER BUTTON */}
-        {selectedCategorySlug && !isLoading && (
+        {selectedCategorySlug && !isLoading && !isError && (
           <Button
             variant="ghost"
             size="sm"

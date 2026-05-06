@@ -24,7 +24,7 @@ const Konsultasi = () => {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [searchInput, setSearchInput] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [searchParams] = useSearchParams(); // Hook untuk membaca query param (?tab=...)
+  const [searchParams] = useSearchParams();   
 
   const itemsPerPage = 10;
 
@@ -63,10 +63,10 @@ const Konsultasi = () => {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam && tabs.some(t => t.id === tabParam)) {
+    if (tabParam && tabs.some((t) => t.id === tabParam)) {
       setActiveTab(tabParam);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleSearch = (e: FormEvent) => {
@@ -277,6 +277,7 @@ const Konsultasi = () => {
             <ConsultationFilter
               categories={categories}
               selectedCategorySlug={selectedCategorySlug}
+              isLoading={loading}
               onSelectCategory={(slug) => {
                 setSelectedCategorySlug(slug);
                 setSearchQuery("");
