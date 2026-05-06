@@ -8,7 +8,17 @@ import type { AskUstadzPayload, AskUstadzResponse } from "../src/types/api";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// Di server/index.ts atau app.ts
+app.use(cors({
+    origin: [
+        "https://ikadijatim.org",
+        "https://www.ikadijatim.org",
+        "http://localhost:5173", // Tetap izinkan untuk testing lokal
+    ],
+    methods: ["POST", "GET"],
+    credentials: true,
+}));
+
 app.use(express.json());
 
 app.post(
