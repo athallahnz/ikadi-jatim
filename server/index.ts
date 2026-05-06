@@ -13,6 +13,7 @@ app.use(cors({
     origin: [
         "https://ikadijatim.org",
         "https://www.ikadijatim.org",
+        "https://ikadi-jatim.vercel.app",
         "http://localhost:5173", // Tetap izinkan untuk testing lokal
     ],
     methods: ["POST", "GET"],

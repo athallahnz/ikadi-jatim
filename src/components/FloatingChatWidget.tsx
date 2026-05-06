@@ -102,11 +102,14 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     setIsSending(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userText }),
-      });
+      const response = await fetch(
+        "https://ikadi-jatim-production.up.railway.app/api/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userText }),
+        },
+      );
 
       if (!response.ok) throw new Error("Gagal terhubung ke Server RAG");
 
@@ -317,7 +320,9 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               </Button>
             </div>
             <div className="mt-3 text-[11px] text-emerald-600 dark:text-emerald-400 italic font-medium text-center">
-              AI Assistant kami menggunakan teknologi <strong>RAG</strong> (Retrieval-Augmented Generation) untuk memberikan jawaban yang lebih akurat dan relevan berdasarkan data syariah terkini.
+              AI Assistant kami menggunakan teknologi <strong>RAG</strong>{" "}
+              (Retrieval-Augmented Generation) untuk memberikan jawaban yang
+              lebih akurat dan relevan berdasarkan data syariah terkini.
             </div>
           </footer>
         </div>
