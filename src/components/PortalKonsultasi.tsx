@@ -44,44 +44,41 @@ const PortalKonsultasi: React.FC = () => {
 
   // --- Logic: Auth ---
   const handleLogin = async (): Promise<void> => {
-    if (!phoneNumber.trim()) return;
+    
+    const cleanPhone = phoneNumber.trim().replace(/[^0-9]/g, "");
+
+    if (!cleanPhone) return;
     setIsLoading(true);
 
     try {
+      // Debugging untuk Safari:
+      console.log("Mencoba login dengan nomor:", cleanPhone);
+
       const { data, error } = await supabase
         .from("inbox_consultations")
-        .select(
-          `
-    *,
-    categories:category_id (name)
-  `,
-        )
-        .eq("contact_info", phoneNumber)
+        .select(`*, categories:category_id (name)`)
+        .eq("contact_info", cleanPhone) // Gunakan nomor yang sudah dibersihkan total
         .not("status", "eq", "trashed")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const ticketData = data as ConsultationTicket[];
 
-      if (ticketData && ticketData.length > 0) {
-        setTickets(ticketData);
+      if (data && data.length > 0) {
+        setTickets(data as ConsultationTicket[]);
         setIsLoggedIn(true);
+        setPhoneNumber(cleanPhone); // Update state dengan nomor yang bersih
       } else {
+        // Jika masuk ke sini di Safari tapi tidak di Desktop,
+        // artinya query .eq() tidak menemukan kecocokan yang persis.
         Swal.fire({
           icon: "error",
           title: "Tidak Ditemukan",
-          text: "Belum ada pertanyaan yang diajukan menggunakan nomor ini.",
+          text: `Nomor ${cleanPhone} tidak terdaftar di sistem kami.`,
           confirmButtonColor: "#047857",
         });
       }
     } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Terjadi kesalahan koneksi.",
-        confirmButtonColor: "#047857",
-      });
+      console.error("Login Error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -132,10 +129,10 @@ const PortalKonsultasi: React.FC = () => {
           });
         },
       )
-      .subscribe((status) => {
-        // Perbaikan Error TS2367
-        if ((status as string) === "SUBSCRIPTION_ERROR") {
-          console.error("Koneksi realtime bermasalah di Safari.");
+      .subscribe((status: unknown) => {
+        // Paksa menjadi any di parameter
+        if (status === "SUBSCRIPTION_ERROR" || status === "CHANNEL_ERROR") {
+          console.error("Koneksi realtime Safari bermasalah.");
         }
       });
 
@@ -143,7 +140,7 @@ const PortalKonsultasi: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [isLoggedIn, phoneNumber]);
-  
+
   // --- Render: Login View ---
   if (!isLoggedIn) {
     return (
