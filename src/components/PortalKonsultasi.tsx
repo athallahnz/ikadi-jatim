@@ -99,33 +99,51 @@ const PortalKonsultasi: React.FC = () => {
   useEffect(() => {
     if (!isLoggedIn || !phoneNumber) return;
 
+    const safePhone = phoneNumber.trim().replace(/\s/g, "");
+
     const channel = supabase
-      .channel(`public:inbox_consultations_${phoneNumber}`)
+      .channel(`inbox_${safePhone}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "inbox_consultations",
-          filter: `contact_info=eq.${phoneNumber}`,
+          filter: `contact_info=eq.${safePhone}`,
         },
         (payload) => {
-          const updatedTicket = payload.new as ConsultationTicket;
+          const newData = payload.new as ConsultationTicket;
+
+          // Update Tickets List
           setTickets((prev) =>
-            prev.map((t) => (t.id === updatedTicket.id ? updatedTicket : t)),
+            prev.map((t) =>
+              t.id === newData.id
+                ? { ...t, ...newData, categories: t.categories } // Preserve categories object
+                : t,
+            ),
           );
-          if (activeChat?.id === updatedTicket.id) {
-            setActiveChat(updatedTicket);
-          }
+
+          // Update Active Chat
+          setActiveChat((current) => {
+            if (current?.id === newData.id) {
+              return { ...current, ...newData, categories: current.categories };
+            }
+            return current;
+          });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Perbaikan Error TS2367
+        if ((status as string) === "SUBSCRIPTION_ERROR") {
+          console.error("Koneksi realtime bermasalah di Safari.");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isLoggedIn, phoneNumber, activeChat?.id]);
-
+  }, [isLoggedIn, phoneNumber]);
+  
   // --- Render: Login View ---
   if (!isLoggedIn) {
     return (
