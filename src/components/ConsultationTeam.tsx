@@ -8,8 +8,16 @@ const ConsultationTeam = () => {
       image: "/pakar1.png", // Ganti dengan path foto H. Agung Cahyadi
     },
     {
-      name: "Ust. Amin Syukroni, Lc",
+      name: "Ust. Dr. H. M. Baihaqi, Lc, MA.",
       image: "/pakar2.png", // Ganti dengan path foto Amin Syukroni
+    },
+    {
+      name: "Ust. H. M. Nidzom Anshori, SH., MH.",
+      image: "/pakar3.png", // Ganti dengan path foto Amin Syukroni
+    },
+    {
+      name: "Ust. Amin Syukroni, Lc",
+      image: "/pakar4.png", // Ganti dengan path foto Amin Syukroni
     },
   ];
 
