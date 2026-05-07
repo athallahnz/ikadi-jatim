@@ -44,20 +44,17 @@ const PortalKonsultasi: React.FC = () => {
 
   // --- Logic: Auth ---
   const handleLogin = async (): Promise<void> => {
-    
-    const cleanPhone = phoneNumber.trim().replace(/[^0-9]/g, "");
+    // Membersihkan nomor telepon secara total dari karakter non-angka
+    const cleanPhone = phoneNumber.replace(/\D/g, "");
 
     if (!cleanPhone) return;
     setIsLoading(true);
 
     try {
-      // Debugging untuk Safari:
-      console.log("Mencoba login dengan nomor:", cleanPhone);
-
       const { data, error } = await supabase
         .from("inbox_consultations")
         .select(`*, categories:category_id (name)`)
-        .eq("contact_info", cleanPhone) // Gunakan nomor yang sudah dibersihkan total
+        .eq("contact_info", cleanPhone)
         .not("status", "eq", "trashed")
         .order("created_at", { ascending: false });
 
@@ -66,19 +63,19 @@ const PortalKonsultasi: React.FC = () => {
       if (data && data.length > 0) {
         setTickets(data as ConsultationTicket[]);
         setIsLoggedIn(true);
-        setPhoneNumber(cleanPhone); // Update state dengan nomor yang bersih
+        setPhoneNumber(cleanPhone);
       } else {
-        // Jika masuk ke sini di Safari tapi tidak di Desktop,
-        // artinya query .eq() tidak menemukan kecocokan yang persis.
+        // Jika RLS sudah benar tapi tetap masuk sini,
+        // dipastikan nomor memang tidak ada di DB.
         Swal.fire({
           icon: "error",
-          title: "Tidak Ditemukan",
-          text: `Nomor ${cleanPhone} tidak terdaftar di sistem kami.`,
+          title: "Data Tidak Ditemukan",
+          text: "Pastikan nomor WA yang dimasukkan sama saat bertanya.",
           confirmButtonColor: "#047857",
         });
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error("Portal Error:", err);
     } finally {
       setIsLoading(false);
     }
