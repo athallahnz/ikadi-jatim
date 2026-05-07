@@ -1,4 +1,4 @@
-import { Info, InfoIcon, Trash2 } from "lucide-react";
+import { InfoIcon, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import DetailInvitation from "@/components/admin/DetailInvitation";
 

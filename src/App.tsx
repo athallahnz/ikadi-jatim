@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Helmet, HelmetProvider } from "react-helmet-async";
 
 // Layouts
@@ -100,6 +100,7 @@ function App() {
 
       <Routes>
         {/* ================= AUTH & ADMIN SPECIAL ROUTES ================= */}
+        <Route path="/login" element={<Navigate to="/admin/login" replace />} />
         <Route path="/admin/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/auth/reset-password" element={<ResetPassword />} />

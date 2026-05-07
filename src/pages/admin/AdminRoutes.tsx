@@ -13,8 +13,10 @@ import ProfilAdmin from "./Profile";
 import RunningTexts from "./RunningTexts";
 import Invitations from "./Invitations";
 import AdminConsultations from "./AdminConsultations";
+import Consultations from "./Consultations";
 
-type Role = "jatim" | "daerah";
+// Definisi tipe Role yang eksplisit
+export type Role = "jatim" | "daerah";
 
 export default function AdminRoutes() {
   const allAccess: Role[] = ["jatim", "daerah"];
@@ -85,11 +87,21 @@ export default function AdminRoutes() {
           }
         />
 
+        {/* PERBAIKAN: path disamakan dengan URL di menu admin */}
+        <Route
+          path="jawab-konsultasi"
+          element={
+            <RoleRoute allow={["jatim"]}>
+              <AdminConsultations />
+            </RoleRoute>
+          }
+        />
+
         <Route
           path="consultations"
           element={
             <RoleRoute allow={["jatim"]}>
-              <AdminConsultations />
+              <Consultations />
             </RoleRoute>
           }
         />
