@@ -320,8 +320,9 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               </Button>
             </div>
             <div className="mt-2 text-[10px] md:text-[11px] text-emerald-600 dark:text-emerald-400 italic font-medium text-center leading-snug">
-              Menggunakan teknologi <strong>RAG</strong> untuk jawaban akurat
-              berdasarkan data syariah.
+              Al Assistant kami menggunakan teknologi <strong>RAG</strong> (Retrieval-Augmented
+              Generation) untuk memberikan jawaban yang lebih akurat dan relevan
+              berdasarkan data syariah terkini.
             </div>
           </footer>
         </div>

@@ -29,19 +29,22 @@ export default function AdminMobileNav() {
     [pathname],
   );
 
-  // ✅ LOGIKAL FILTER: Memisahkan menu yang boleh dilihat berdasarkan scope
+  // ✅ LOGIKAL FILTER: Memisahkan menu yang boleh dilihat berdasarkan scope dan jenis item
   const { items, activeIndex, filteredSettingsMenu } = useMemo(() => {
     let activeIndex = -1;
 
     // 1. Filter Menu Utama
     const filteredMainMenu = adminMenu.filter((menu) => {
+      // PENTING: Jangan tampilkan label teks sebagai tombol di Dock Bawah
+      if (menu.isLabel) return false;
       if (!menu.scopes) return true;
       return menu.scopes.includes(currentScope);
     });
 
     // 2. Siapkan data untuk Dock
     const dockItems: DockItemData[] = filteredMainMenu.map((menu, index) => {
-      const Icon = menu.icon;
+      // Kita bisa menggunakan '!' karena isLabel (yang tidak punya ikon) sudah difilter di atas
+      const Icon = menu.icon!;
 
       // Cek apakah ada anak yang aktif (untuk menu Settings)
       const hasActiveChild =
@@ -82,6 +85,7 @@ export default function AdminMobileNav() {
     const settingsObj = adminMenu.find((m) => m.label === "Settings");
     const filteredSettings =
       settingsObj?.children?.filter((child) => {
+        if (child.isLabel) return false; // Jaga-jaga jika sub-menu suatu saat diberi label
         if (!child.scopes) return true;
         return child.scopes.includes(currentScope);
       }) || [];
@@ -128,7 +132,7 @@ export default function AdminMobileNav() {
 
               <div className="space-y-1">
                 {filteredSettingsMenu.map((child) => {
-                  const Icon = child.icon;
+                  const Icon = child.icon!;
                   const active = isChildActive(child.to);
 
                   return (

@@ -12,7 +12,7 @@ import ManageUsers from "./ManageUsers";
 import ProfilAdmin from "./Profile";
 import RunningTexts from "./RunningTexts";
 import Invitations from "./Invitations";
-import AdminConsultations from "./AdminConsultations";
+import AdminConsultations from "./ConsultationsQuestion";
 import Consultations from "./Consultations";
 
 // Definisi tipe Role yang eksplisit

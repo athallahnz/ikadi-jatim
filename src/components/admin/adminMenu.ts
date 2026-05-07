@@ -1,11 +1,11 @@
 import {
   CalendarDays,
-  FileText, // Tambahan Icon
-  HelpCircle, // Tambahan Icon
+  FileText,
+  HelpCircle,
   Image,
   Layers,
   LayoutDashboard,
-  Mail, // Tambahan Icon
+  Mail,
   MessageSquareText,
   Newspaper,
   Settings,
@@ -17,14 +17,19 @@ import type { LucideIcon } from "lucide-react";
 export type AdminScope = "jatim" | string;
 
 export interface AdminMenuItem {
+  isLabel?: boolean; // Penanda bahwa item ini adalah teks pembatas divisi
   to?: string;
   label: string;
-  icon: LucideIcon;
+  icon?: LucideIcon; // Dibuat opsional untuk mendukung isLabel
   scopes?: AdminScope[];
   children?: AdminMenuItem[];
 }
 
 export const adminMenu: AdminMenuItem[] = [
+  {
+    isLabel: true,
+    label: "Menu Utama",
+  },
   {
     to: "/admin",
     label: "Dashboard",
@@ -54,14 +59,21 @@ export const adminMenu: AdminMenuItem[] = [
   {
     to: "/admin/runningtexts",
     label: "Running Text",
-    icon: FileText, // Ikon diperbarui
+    icon: FileText,
     scopes: ["jatim"],
   },
   {
     to: "/admin/invitations",
     label: "Undangan",
-    icon: Mail, // Ikon diperbarui agar tidak sama dengan Programs
+    icon: Mail,
     scopes: ["jatim"],
+  },
+
+  // --- PEMBATAS MENU KONSULTASI ---
+  {
+    isLabel: true,
+    label: "Ruang Konsultasi",
+    scopes: ["jatim"], // Akan disembunyikan jika user bukan jatim
   },
   {
     to: "/admin/consultations",
@@ -72,8 +84,14 @@ export const adminMenu: AdminMenuItem[] = [
   {
     to: "/admin/jawab-konsultasi",
     label: "Jawab Konsultasi",
-    icon: HelpCircle, // Ikon diperbarui agar tidak sama dengan Dashboard Konsultasi
+    icon: HelpCircle,
     scopes: ["jatim"],
+  },
+
+  // --- PEMBATAS SISTEM (Opsional, agar rapi) ---
+  {
+    isLabel: true,
+    label: "Sistem",
   },
   {
     label: "Settings",

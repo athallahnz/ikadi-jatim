@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   MessageSquare,
-  Phone,
   ArrowRight,
   LogOut,
   User,
@@ -11,6 +10,7 @@ import {
   BadgeCheck,
   CheckCircle2,
   Clock,
+  Mail, // Tambahan icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -24,6 +24,7 @@ export interface ConsultationTicket {
   id: string;
   name: string | null;
   contact_info: string;
+  email: string | null; // Tambahkan email sesuai skema DB
   subject: string | null;
   message: string;
   reply_message: string | null;
@@ -33,10 +34,17 @@ export interface ConsultationTicket {
   answered_at?: string | null;
 }
 
+// Tipe data untuk melacak jenis kredensial yang aktif
+type AuthColumn = "email" | "contact_info";
+
 const PortalKonsultasi: React.FC = () => {
   // --- States ---
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [phoneNumber, setPhoneNumber] = useState<string>("");
+  const [loginInput, setLoginInput] = useState<string>(""); // Menggantikan phoneNumber
+  const [activeCredential, setActiveCredential] = useState<{
+    column: AuthColumn;
+    value: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [tickets, setTickets] = useState<ConsultationTicket[]>([]);
   const [activeChat, setActiveChat] = useState<ConsultationTicket | null>(null);
@@ -44,17 +52,37 @@ const PortalKonsultasi: React.FC = () => {
 
   // --- Logic: Auth ---
   const handleLogin = async (): Promise<void> => {
-    // Membersihkan nomor telepon secara total dari karakter non-angka
-    const cleanPhone = phoneNumber.replace(/\D/g, "");
+    const rawInput = loginInput.trim();
+    if (!rawInput) return;
 
-    if (!cleanPhone) return;
     setIsLoading(true);
+
+    // 1. Deteksi Email vs Nomor Telepon
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawInput);
+    let searchColumn: AuthColumn;
+    let searchValue: string;
+
+    if (isEmail) {
+      searchColumn = "email";
+      searchValue = rawInput.toLowerCase();
+    } else {
+      searchColumn = "contact_info";
+      // 2. Pembersihan Nomor Global:
+      // Hapus semua karakter non-angka KECUALI tanda '+' di paling awal.
+      searchValue = rawInput.replace(/(?!^\+)[^\d]/g, "");
+    }
+
+    // Jika setelah dibersihkan string kosong, batalkan
+    if (!searchValue) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from("inbox_consultations")
         .select(`*, categories:category_id (name)`)
-        .eq("contact_info", cleanPhone)
+        .eq(searchColumn, searchValue)
         .not("status", "eq", "trashed")
         .order("created_at", { ascending: false });
 
@@ -63,14 +91,12 @@ const PortalKonsultasi: React.FC = () => {
       if (data && data.length > 0) {
         setTickets(data as ConsultationTicket[]);
         setIsLoggedIn(true);
-        setPhoneNumber(cleanPhone);
+        setActiveCredential({ column: searchColumn, value: searchValue });
       } else {
-        // Jika RLS sudah benar tapi tetap masuk sini,
-        // dipastikan nomor memang tidak ada di DB.
         Swal.fire({
           icon: "error",
           title: "Data Tidak Ditemukan",
-          text: "Pastikan nomor WA yang dimasukkan sama saat bertanya.",
+          text: `Pastikan ${isEmail ? "Email" : "Nomor WA"} yang dimasukkan sama saat bertanya.`,
           confirmButtonColor: "#047857",
         });
       }
@@ -85,25 +111,25 @@ const PortalKonsultasi: React.FC = () => {
     setIsLoggedIn(false);
     setTickets([]);
     setActiveChat(null);
-    setPhoneNumber("");
+    setLoginInput("");
+    setActiveCredential(null);
     setShowMobileList(true);
   };
 
   // --- Realtime Sync ---
   useEffect(() => {
-    if (!isLoggedIn || !phoneNumber) return;
-
-    const safePhone = phoneNumber.trim().replace(/\s/g, "");
+    if (!isLoggedIn || !activeCredential) return;
 
     const channel = supabase
-      .channel(`inbox_${safePhone}`)
+      .channel(`inbox_${activeCredential.value}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
           table: "inbox_consultations",
-          filter: `contact_info=eq.${safePhone}`,
+          // Filter disesuaikan dengan kolom login (email atau contact_info)
+          filter: `${activeCredential.column}=eq.${activeCredential.value}`,
         },
         (payload) => {
           const newData = payload.new as ConsultationTicket;
@@ -112,7 +138,7 @@ const PortalKonsultasi: React.FC = () => {
           setTickets((prev) =>
             prev.map((t) =>
               t.id === newData.id
-                ? { ...t, ...newData, categories: t.categories } // Preserve categories object
+                ? { ...t, ...newData, categories: t.categories }
                 : t,
             ),
           );
@@ -127,7 +153,6 @@ const PortalKonsultasi: React.FC = () => {
         },
       )
       .subscribe((status: unknown) => {
-        // Paksa menjadi any di parameter
         if (status === "SUBSCRIPTION_ERROR" || status === "CHANNEL_ERROR") {
           console.error("Koneksi realtime Safari bermasalah.");
         }
@@ -136,7 +161,7 @@ const PortalKonsultasi: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isLoggedIn, phoneNumber]);
+  }, [isLoggedIn, activeCredential]);
 
   // --- Render: Login View ---
   if (!isLoggedIn) {
@@ -150,24 +175,25 @@ const PortalKonsultasi: React.FC = () => {
             Cek Jawaban Anda
           </h1>
           <p className="text-sm text-muted-foreground mb-8">
-            Masukkan nomor WhatsApp Anda untuk melihat riwayat konsultasi.
+            Masukkan Nomor WhatsApp atau Email Anda untuk melihat riwayat
+            konsultasi.
           </p>
           <div className="relative mb-6 text-left">
             <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <input
                 type="text"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                value={loginInput}
+                onChange={(e) => setLoginInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="Contoh: 0812..."
+                placeholder="Contoh: +62812... atau email@anda.com"
                 className="w-full bg-emerald-50/50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-2xl pl-12 pr-4 py-4 text-sm focus:border-emerald-500 outline-none"
               />
             </div>
           </div>
           <Button
             onClick={handleLogin}
-            disabled={isLoading || !phoneNumber.trim()}
+            disabled={isLoading || !loginInput.trim()}
             className="w-full h-14 rounded-2xl bg-emerald-700 hover:bg-emerald-800 shadow-lg"
           >
             {isLoading ? <Loader2 className="animate-spin" /> : "Masuk"}
@@ -202,14 +228,13 @@ const PortalKonsultasi: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <p className="text-[11px] font-bold font-mono text-emerald-600/70 tracking-tighter">
-              {phoneNumber}
+            <p className="text-[11px] font-bold font-mono text-emerald-600/70 tracking-tighter truncate max-w-[200px]">
+              {activeCredential?.value}
             </p>
           </div>
         </div>
 
         {/* List Riwayat Scrollable */}
-        {/* --- SIDEBAR ITEM (Update Categories) --- */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar min-h-0">
           {tickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center opacity-40">
@@ -237,7 +262,6 @@ const PortalKonsultasi: React.FC = () => {
                 >
                   <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-1.5">
-                      {/* Icon Status */}
                       <div
                         className={`p-1 rounded-full ${isActive ? "bg-white/20" : isAnswered ? "bg-emerald-100 dark:bg-emerald-800" : "bg-amber-100 dark:bg-amber-900/40"}`}
                       >
@@ -265,7 +289,6 @@ const PortalKonsultasi: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Label Kategori menggantikan Subject */}
                   <div className="mb-2">
                     <span
                       className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-tighter ${
@@ -274,12 +297,10 @@ const PortalKonsultasi: React.FC = () => {
                           : "bg-emerald-50 dark:bg-emerald-900/50 text-emerald-600"
                       }`}
                     >
-                      {/* Mengambil name dari relasi category_id */}
                       {ticket.categories?.name || "Umum"}
                     </span>
                   </div>
 
-                  {/* Cuplikan Pesan */}
                   <p
                     className={`text-[11px] line-clamp-2 leading-relaxed ${isActive ? "text-emerald-50" : "text-muted-foreground"}`}
                   >
@@ -313,7 +334,6 @@ const PortalKonsultasi: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-sm md:text-base truncate">
-                  {/* Judul tetap menggunakan subjek jika ada, atau fallback ke nama kategori */}
                   {activeChat.subject ||
                     activeChat.categories?.name ||
                     "Konsultasi Umum"}

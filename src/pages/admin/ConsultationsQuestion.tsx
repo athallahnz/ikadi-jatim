@@ -27,7 +27,7 @@ export interface ConsultationCategory {
 export interface ConsultationTicket {
   id: string;
   name: string | null;
-  contact_info: string;
+  contact_info: string | null;
   subject: string | null;
   message: string;
   reply_message: string | null;
@@ -143,9 +143,14 @@ const AdminConsultations: React.FC = () => {
   // --- Filtering & Searching ---
   const filteredTickets = tickets.filter((t) => {
     const search = searchQuery.toLowerCase();
+
+    // Gunakan optional chaining dan fallback string kosong
     const matchesSearch =
       (t.name?.toLowerCase() || "").includes(search) ||
-      t.contact_info.toLowerCase().includes(search);
+      (t.contact_info?.toLowerCase() || "").includes(search) ||
+      (t.subject?.toLowerCase() || "").includes(search) ||
+      (t.message?.toLowerCase() || "").includes(search) ||
+      (t.reply_message?.toLowerCase() || "").includes(search);
 
     const matchesStatus =
       filter === "all" ? t.status !== "trashed" : t.status === filter;
@@ -215,16 +220,17 @@ const AdminConsultations: React.FC = () => {
         <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-              <MessageSquare className="text-emerald-600" /> Inbox Konsultasi
+              Inbox Konsultasi
             </h1>
-            <p className="text-xs text-muted-foreground uppercase font-bold tracking-widest mt-1">
-              Management Portal
+            <p className="text-sm text-muted-foreground mt-1">
+              Management Portal untuk Pertanyaan & Konsultasi Asatidz kepada
+              Ikadi Jatim.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             {/* Custom Category Dropdown */}
-            <div className="relative group min-w-[160px]">
+            <div className="relative group w-full sm:w-auto sm:min-w-[160px]">
               <select
                 value={selectedCategoryId}
                 onChange={(e) => {
@@ -299,7 +305,7 @@ const AdminConsultations: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   type="text"
-                  placeholder="Cari jamaah..."
+                  placeholder="Cari Pertanyaan..."
                   className="w-full pl-11 pr-4 py-3 text-sm bg-muted/50 dark:bg-emerald-900/10 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none"
                 />
               </div>
