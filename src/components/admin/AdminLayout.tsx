@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: Props) {
 
         {/* Content */}
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6">
-          <div className="mx-auto w-full max-w-5xl">{children}</div>
+          <div className="mx-auto w-full max-w-full">{children}</div>
         </main>
       </div>
     </div>

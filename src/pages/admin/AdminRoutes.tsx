@@ -15,120 +15,127 @@ import Invitations from "./Invitations";
 import AdminConsultations from "./ConsultationsQuestion";
 import Consultations from "./Consultations";
 
-// Definisi tipe Role yang eksplisit
-export type Role = "jatim" | "daerah";
+// Definisi tipe yang akurat sesuai database
+export type AdminScope = "jatim" | string;
+export type AdminRole = "admin" | "editor" | "konsultan";
 
 export default function AdminRoutes() {
-  const allAccess: Role[] = ["jatim", "daerah"];
+  const allScopes: AdminScope[] = ["jatim", "daerah"];
+  const staffRoles: AdminRole[] = ["admin", "editor"]; // Role yang mengurus konten
+  const adminPusat: AdminRole[] = ["admin"];
 
   return (
     <ProtectedRoute>
       <Routes>
+        {/* DASHBOARD & KONTEN: Hanya Admin & Editor */}
         <Route
           index
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={allScopes} allowRole={staffRoles}>
               <Dashboard />
             </RoleRoute>
           }
         />
-
         <Route
           path="articles"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={allScopes} allowRole={staffRoles}>
               <Articles />
             </RoleRoute>
           }
         />
-
         <Route
           path="events"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={allScopes} allowRole={staffRoles}>
               <Events />
             </RoleRoute>
           }
         />
-
         <Route
           path="gallery"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={allScopes} allowRole={staffRoles}>
               <Gallery />
             </RoleRoute>
           }
         />
 
+        {/* KHUSUS ADMIN PUSAT */}
         <Route
           path="programs"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={["jatim"]} allowRole={adminPusat}>
               <Programs />
             </RoleRoute>
           }
         />
-
         <Route
           path="runningtexts"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={["jatim"]} allowRole={adminPusat}>
               <RunningTexts />
             </RoleRoute>
           }
         />
-
         <Route
           path="invitations"
           element={
-            <RoleRoute allow={allAccess}>
+            <RoleRoute allowScope={["jatim"]} allowRole={adminPusat}>
               <Invitations />
             </RoleRoute>
           }
         />
 
-        {/* PERBAIKAN: path disamakan dengan URL di menu admin */}
+        {/* RUANG KONSULTASI: Admin & Konsultan */}
         <Route
           path="jawab-konsultasi"
           element={
-            <RoleRoute allow={["jatim"]}>
+            <RoleRoute
+              allowScope={["jatim"]}
+              allowRole={["admin", "konsultan"]}
+            >
               <AdminConsultations />
             </RoleRoute>
           }
         />
-
         <Route
           path="consultations"
           element={
-            <RoleRoute allow={["jatim"]}>
+            <RoleRoute
+              allowScope={["jatim"]}
+              allowRole={["admin", "konsultan"]}
+            >
               <Consultations />
             </RoleRoute>
           }
         />
 
+        {/* SISTEM */}
         <Route
-          path="settings"
+          path="settings/profile"
           element={
-            <RoleRoute allow={allAccess}>
-              <Settings />
+            <RoleRoute
+              allowScope={allScopes}
+              allowRole={["admin", "editor", "konsultan"]}
+            >
+              <ProfilAdmin />
             </RoleRoute>
           }
         />
-
         <Route
           path="settings/users"
           element={
-            <RoleRoute allow={["jatim"]}>
+            <RoleRoute allowScope={["jatim"]} allowRole={adminPusat}>
               <ManageUsers />
             </RoleRoute>
           }
         />
-
         <Route
-          path="settings/profile"
+          path="settings"
           element={
-            <RoleRoute allow={allAccess}>
-              <ProfilAdmin />
+            <RoleRoute allowScope={["jatim"]} allowRole={adminPusat}>
+              <Settings />
             </RoleRoute>
           }
         />

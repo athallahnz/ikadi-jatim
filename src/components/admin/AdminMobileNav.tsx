@@ -1,56 +1,77 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { adminMenu } from "./adminMenu";
 import Dock, { DockItemData } from "@/components/ui/dock";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { AdminMenuItem } from "./adminMenu";
 import { useAdmin } from "@/hooks/useAdmin";
 
-export default function AdminMobileNav() {
+type Props = {
+  menuItems: AdminMenuItem[];
+};
+
+export default function AdminMobileNav({ menuItems }: Props) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { admin } = useAdmin();
+  const { loading: authLoading } = useAdmin();
   const pathname = location.pathname;
 
   const [openSettings, setOpenSettings] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  // Normalisasi scope untuk pengecekan
-  const currentScope = admin?.scope?.toLowerCase() || "";
-
-  // Close sheet when route changes
   useEffect(() => {
     setOpenSettings(false);
+    setIsNavigating(false);
   }, [pathname]);
 
   const isChildActive = useCallback(
-    (to?: string) => {
-      if (!to) return false;
-      return pathname === to;
-    },
+    (to?: string) => (to ? pathname === to : false),
     [pathname],
   );
 
-  // ✅ LOGIKAL FILTER: Memisahkan menu yang boleh dilihat berdasarkan scope dan jenis item
+  const handleNavigation = useCallback(
+    (to: string) => {
+      if (pathname === to) {
+        setOpenSettings(false);
+        return;
+      }
+      if (navigator.vibrate) navigator.vibrate(5);
+      setIsNavigating(true);
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          navigate(to);
+        }, 100);
+      });
+    },
+    [pathname, navigate],
+  );
+
+  const isLoading = authLoading || isNavigating;
+
   const { items, activeIndex, filteredSettingsMenu } = useMemo(() => {
-    let activeIndex = -1;
+    let currentIdx = -1;
 
-    // 1. Filter Menu Utama
-    const filteredMainMenu = adminMenu.filter((menu) => {
-      // PENTING: Jangan tampilkan label teks sebagai tombol di Dock Bawah
-      if (menu.isLabel) return false;
-      if (!menu.scopes) return true;
-      return menu.scopes.includes(currentScope);
-    });
+    // Jika sedang loading, buat 5 item dummy untuk skeleton di Dock
+    if (isLoading && menuItems.length === 0) {
+      const skeletonItems: DockItemData[] = [...Array(5)].map(() => ({
+        icon: <div className="w-6 h-6 rounded-full bg-muted animate-pulse" />,
+        label: "...",
+        active: false,
+        onClick: () => {},
+      }));
+      return {
+        items: skeletonItems,
+        activeIndex: -1,
+        filteredSettingsMenu: [],
+      };
+    }
 
-    // 2. Siapkan data untuk Dock
-    const dockItems: DockItemData[] = filteredMainMenu.map((menu, index) => {
-      // Kita bisa menggunakan '!' karena isLabel (yang tidak punya ikon) sudah difilter di atas
+    const mainItems = menuItems.filter((m) => !m.isLabel);
+
+    const dockItems: DockItemData[] = mainItems.map((menu, index) => {
       const Icon = menu.icon!;
-
-      // Cek apakah ada anak yang aktif (untuk menu Settings)
       const hasActiveChild =
         menu.children?.some((child) => isChildActive(child.to)) ?? false;
-
-      // Cek apakah route utama aktif
       const isRouteActive =
         menu.to === "/admin"
           ? pathname === "/admin"
@@ -59,111 +80,137 @@ export default function AdminMobileNav() {
             : false;
 
       const isActive = hasActiveChild || isRouteActive;
-      if (isActive) activeIndex = index;
+      if (isActive) currentIdx = index;
 
       return {
         icon: (
-          <Icon
-            size={24}
-            className={isActive ? "text-emerald-500" : "text-muted-foreground"}
-          />
+          <div className="relative">
+            {/* SKELETON ICON JIKA SEDANG NAVIGASI */}
+            {isLoading && isActive ? (
+              <div className="w-6 h-6 rounded-full bg-emerald-500/20 animate-pulse flex items-center justify-center">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+              </div>
+            ) : (
+              <Icon
+                size={22}
+                className={`transition-colors duration-300 ${
+                  isActive ? "text-emerald-500" : "text-muted-foreground/70"
+                }`}
+              />
+            )}
+
+            {isActive && !isLoading && (
+              <motion.div
+                layoutId="dockActiveGlow"
+                className="absolute -inset-2 bg-emerald-500/10 blur-lg rounded-full -z-10"
+              />
+            )}
+          </div>
         ),
         label: menu.label,
         active: isActive,
         onClick: () => {
-          navigator.vibrate?.(10);
           if (menu.children) {
+            if (navigator.vibrate) navigator.vibrate(5);
             setOpenSettings(true);
           } else if (menu.to) {
-            navigate(menu.to);
+            handleNavigation(menu.to);
           }
         },
       };
     });
 
-    // 3. Filter khusus untuk isi di dalam Bottom Sheet Settings
-    const settingsObj = adminMenu.find((m) => m.label === "Settings");
-    const filteredSettings =
-      settingsObj?.children?.filter((child) => {
-        if (child.isLabel) return false; // Jaga-jaga jika sub-menu suatu saat diberi label
-        if (!child.scopes) return true;
-        return child.scopes.includes(currentScope);
-      }) || [];
+    const settingsObj = menuItems.find((m) => m.label === "Settings");
+    const filteredSettings = settingsObj?.children || [];
 
     return {
       items: dockItems,
-      activeIndex,
+      activeIndex: currentIdx,
       filteredSettingsMenu: filteredSettings,
     };
-  }, [pathname, navigate, isChildActive, currentScope]);
+  }, [pathname, isChildActive, menuItems, handleNavigation, isLoading]);
 
   return (
     <>
-      {/* NAVIGATION DOCK */}
+      {/* DOCK DENGAN STATE LOADING INTERNAL */}
       <Dock items={items} activeIndex={activeIndex} />
 
-      {/* SETTINGS SHEET (BOTTOM DRAWER) */}
       <AnimatePresence>
         {openSettings && (
           <>
-            {/* BACKDROP */}
             <motion.div
-              className="fixed inset-0 bg-black/40 z-40"
+              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpenSettings(false)}
             />
 
-            {/* BOTTOM SHEET */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t rounded-t-2xl p-4 pb-10 shadow-2xl"
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed bottom-0 left-0 right-0 z-[9999] bg-background/95 backdrop-blur-xl border-t border-border rounded-t-[2.5rem] p-4 pb-12 shadow-2xl"
             >
-              {/* Drag Handle Visual */}
-              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-muted" />
+              <div className="mx-auto mb-6 h-1.5 w-12 rounded-full bg-muted-foreground/20" />
 
-              <h3 className="text-sm font-bold text-foreground mb-4 px-1">
-                Pengaturan Akun & Web
-              </h3>
+              <div className="px-2 mb-6">
+                <h3 className="text-lg font-bold text-foreground">
+                  Pengaturan
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Kelola profil dan preferensi sistem Anda
+                </p>
+              </div>
 
-              <div className="space-y-1">
-                {filteredSettingsMenu.map((child) => {
-                  const Icon = child.icon!;
-                  const active = isChildActive(child.to);
+              <div className="space-y-1.5">
+                {isLoading
+                  ? /* SKELETON DALAM DRAWER */
+                    [...Array(3)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 px-4 py-3.5 rounded-2xl bg-muted/10 animate-pulse"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-muted" />
+                        <div className="h-4 bg-muted rounded-md w-1/2" />
+                      </div>
+                    ))
+                  : filteredSettingsMenu.map((child) => {
+                      const Icon = child.icon!;
+                      const active = isChildActive(child.to);
 
-                  return (
-                    <button
-                      key={child.label}
-                      onClick={() => {
-                        navigator.vibrate?.(10);
-                        setOpenSettings(false);
-                        if (child.to) navigate(child.to);
-                      }}
-                      className={`
-                        flex items-center gap-3 w-full rounded-xl px-4 py-3 transition-all
-                        ${
-                          active
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
-                            : "text-muted-foreground hover:bg-muted active:scale-95"
-                        }
-                      `}
-                    >
-                      <Icon size={20} />
-                      <span className="text-sm">{child.label}</span>
-
-                      {active && (
-                        <motion.span
-                          layoutId="activeDot"
-                          className="ml-auto w-1.5 h-1.5 bg-emerald-500 rounded-full"
-                        />
-                      )}
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={child.label}
+                          onClick={() => {
+                            if (child.to) handleNavigation(child.to);
+                          }}
+                          className={`flex items-center gap-4 w-full rounded-2xl px-4 py-3.5 transition-all duration-200 active:scale-[0.97] ${
+                            active
+                              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold"
+                              : "text-muted-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <div
+                            className={`p-2 rounded-xl transition-colors ${active ? "bg-emerald-500/20" : "bg-muted"}`}
+                          >
+                            <Icon size={20} />
+                          </div>
+                          <span className="text-sm font-medium">
+                            {child.label}
+                          </span>
+                          {active && (
+                            <motion.div
+                              layoutId="activeIndicator"
+                              className="ml-auto"
+                            >
+                              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+                            </motion.div>
+                          )}
+                        </button>
+                      );
+                    })}
               </div>
             </motion.div>
           </>

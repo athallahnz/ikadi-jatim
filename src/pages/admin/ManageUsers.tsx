@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
 import { supabase } from "@/lib/supabase";
+import { UserPlus, Trash2, Edit } from "lucide-react";
+import AdminLayout from "@/components/admin/AdminLayout";
 import CreateUser from "./CreateUser";
 import EditUserModal from "./EditUserModal";
-import { UserPlus, Trash2, Edit } from "lucide-react";
 import Swal from "sweetalert2";
 
 // ✅ Sesuaikan tipe data dengan EditUserModal (tambahkan email)
@@ -237,14 +237,11 @@ export default function ManageUsers() {
                   >
                     <td className="px-6 py-4 text-foreground">
                       <div className="font-medium text-sm">{u.name}</div>
-
-                      {/* ✅ Tampilkan Email di sini */}
                       {u.email && (
                         <div className="text-xs text-muted-foreground mt-0.5">
                           {u.email}
                         </div>
                       )}
-
                       {u.brand_name && (
                         <div className="text-[11px] font-medium text-emerald-600/80 mt-1">
                           {u.brand_name}
@@ -254,12 +251,13 @@ export default function ManageUsers() {
 
                     <td className="px-6 py-4 capitalize">
                       <span
-                        className={`px-2.5 py-1 rounded text-xs font-medium
-                  ${
-                    u.role === "admin"
-                      ? "bg-purple-500/10 text-purple-600"
-                      : "bg-blue-500/10 text-blue-600"
-                  }`}
+                        className={`px-2.5 py-1 rounded text-xs font-medium ${
+                          u.role === "admin"
+                            ? "bg-purple-500/10 text-purple-600"
+                            : u.role === "konsultan"
+                              ? "bg-emerald-500/10 text-emerald-600" // Warna khusus Konsultan
+                              : "bg-blue-500/10 text-blue-600"
+                        }`}
                       >
                         {u.role}
                       </span>
@@ -276,21 +274,19 @@ export default function ManageUsers() {
                         </span>
                       )}
                     </td>
-
                     <td className="px-6 py-4">
                       <select
                         value={u.status}
                         onChange={(e) => updateStatus(u.id, e.target.value)}
-                        className={`text-xs px-2 py-1.5 rounded border border-border bg-background cursor-pointer outline-none
-                  ${
-                    u.status === "active"
-                      ? "text-green-600"
-                      : u.status === "pending"
-                        ? "text-yellow-600"
-                        : u.status === "blocked"
-                          ? "text-red-600"
-                          : "text-muted-foreground"
-                  }`}
+                        className={`text-xs px-2 py-1.5 rounded border border-border bg-background cursor-pointer outline-none ${
+                          u.status === "active"
+                            ? "text-green-600"
+                            : u.status === "pending"
+                              ? "text-yellow-600"
+                              : u.status === "blocked"
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                        }`}
                       >
                         <option value="pending">Pending</option>
                         <option value="active">Active</option>
@@ -298,21 +294,17 @@ export default function ManageUsers() {
                         <option value="blocked">Blocked</option>
                       </select>
                     </td>
-
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleEditClick(u)}
                           className="p-2 rounded-lg bg-muted text-foreground hover:bg-muted/70 transition"
-                          title="Edit Admin"
                         >
                           <Edit size={16} />
                         </button>
-
                         <button
                           onClick={() => handleDelete(u.id, u.name)}
                           className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition"
-                          title="Hapus Admin"
                         >
                           <Trash2 size={16} />
                         </button>

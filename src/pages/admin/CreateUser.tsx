@@ -289,19 +289,13 @@ export default function CreateUser({ isOpen, onClose, onSuccess }: Props) {
                 Nama Lengkap <span className="text-red-500">*</span>
               </label>
               <input
-                className={`w-full border bg-background text-foreground p-2.5 rounded-lg placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition ${
-                  errors.name
-                    ? "border-red-500 focus:ring-red-500/30"
-                    : "border-border focus:ring-emerald-500/30"
-                }`}
-                placeholder="Misal: Ahmad Fulan"
+                className={`w-full border bg-background text-foreground p-2.5 rounded-lg focus:outline-none focus:ring-2 transition ${errors.name ? "border-red-500 focus:ring-red-500/30" : "border-border focus:ring-emerald-500/30"}`}
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value);
                   clearError("name");
                 }}
               />
-              {/* Pesan Error Nama */}
               {errors.name && (
                 <p className="text-red-500 text-xs mt-1 font-medium">
                   {errors.name}
@@ -319,6 +313,7 @@ export default function CreateUser({ isOpen, onClose, onSuccess }: Props) {
                 onChange={(e) => setRole(e.target.value)}
               >
                 <option value="editor">Editor</option>
+                <option value="konsultan">Konsultan (Asatidz)</option>{" "}
                 <option value="admin">Admin</option>
               </select>
             </div>

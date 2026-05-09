@@ -499,17 +499,22 @@ const AdminConsultations: React.FC = () => {
                 </div>
 
                 <div className="p-4 lg:p-6 bg-card border-t border-emerald-50 dark:border-emerald-900">
-                  <div className="max-w-4xl mx-auto bg-muted/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800 rounded-[2rem] p-3 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300">
-                    {/* Di bagian Input Area (Textarea) */}
+                  {/* Container Input: max-w-4xl diubah menjadi max-w-full */}
+                  <div className="max-w-full mx-auto bg-muted/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800 rounded-[2rem] p-3 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300">
                     <textarea
-                      disabled={activeChat.status === "trashed"} // Disable jika di sampah
+                      disabled={activeChat.status === "trashed"}
+                      value={replyText} // Pastikan menggunakan value agar reaktif
                       onChange={(e) => setReplyText(e.target.value)}
                       placeholder={
                         activeChat.status === "trashed"
                           ? "Kembalikan pesan ini untuk membalas..."
                           : "Ketik jawaban syar'i..."
                       }
-                      className={`w-full bg-transparent ... ${activeChat.status === "trashed" ? "opacity-50 cursor-not-allowed" : ""}`}
+                      className={`w-full bg-transparent p-3 outline-none min-h-[100px] resize-none text-sm leading-relaxed ${
+                        activeChat.status === "trashed"
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                     />
                     <div className="flex justify-between items-center p-2 border-t border-emerald-100/50 mt-2 gap-4">
                       <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full">

@@ -284,6 +284,7 @@ export default function EditUserModal({
                 onChange={(e) => setRole(e.target.value)}
               >
                 <option value="editor">Editor</option>
+                <option value="konsultan">Konsultan (Asatidz)</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

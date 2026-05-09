@@ -1,28 +1,28 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { PanelLeft, ChevronDown, ChevronRight } from "lucide-react";
-import { adminMenu } from "./adminMenu";
 import { useAdmin } from "@/hooks/useAdmin";
+import { AdminMenuItem } from "./adminMenu";
 
+// ✅ UPDATE: Tambahkan menuItems ke dalam tipe Props
 type Props = {
   collapsed: boolean;
   toggleCollapse: () => void;
+  menuItems: AdminMenuItem[]; // Menerima menu yang sudah difilter oleh parent
 };
 
 export default function AdminDesktopSidebar({
   collapsed,
   toggleCollapse,
+  menuItems, // Ambil dari props
 }: Props) {
   const location = useLocation();
-
-  // ✅ DIPERBAIKI: Menggunakan 'loading' sesuai dengan return dari useAdmin
   const { admin, loading } = useAdmin();
 
+  // State untuk mengontrol dropdown settings
   const [openSettings, setOpenSettings] = useState(
     location.pathname.startsWith("/admin/settings"),
   );
-
-  const scope = admin?.scope?.toLowerCase();
 
   return (
     <aside
@@ -39,7 +39,6 @@ export default function AdminDesktopSidebar({
           collapsed ? "justify-center h-20" : "justify-center h-24"
         }`}
       >
-        {/* COLLAPSED MODE */}
         {collapsed && (
           <button
             onClick={toggleCollapse}
@@ -49,11 +48,9 @@ export default function AdminDesktopSidebar({
           </button>
         )}
 
-        {/* EXPANDED MODE */}
         {!collapsed && (
           <>
             {loading ? (
-              /* SKELETON HEADER */
               <div className="h-8 w-40 bg-muted/60 dark:bg-muted rounded-lg animate-pulse" />
             ) : admin?.brand_logo ? (
               <img
@@ -70,15 +67,9 @@ export default function AdminDesktopSidebar({
               </div>
             )}
 
-            {/* FLOAT COLLAPSE BTN */}
             <button
               onClick={toggleCollapse}
-              className="
-          absolute -right-3 top-1/2 -translate-y-1/2
-          bg-card border border-border
-          rounded-full shadow-sm p-1.5
-          hover:scale-110 transition
-        "
+              className="absolute -right-3 top-1/2 -translate-y-1/2 bg-card border border-border rounded-full shadow-sm p-1.5 hover:scale-110 transition"
             >
               <PanelLeft size={16} />
             </button>
@@ -89,7 +80,7 @@ export default function AdminDesktopSidebar({
       {/* MENU */}
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
         {loading ? (
-          /* SKELETON MENU ITEMS */
+          /* SKELETON LOADING */
           <div className="space-y-2 mt-2">
             {[...Array(8)].map((_, i) => (
               <div
@@ -110,116 +101,102 @@ export default function AdminDesktopSidebar({
             ))}
           </div>
         ) : (
-          /* ACTUAL MENU ITEMS */
-          adminMenu
-            // Filter hak akses (scopes)
-            .filter((m) => {
-              if (!m.scopes) return true;
-              return m.scopes.includes(scope ?? "");
-            })
-            .map((m, index) => {
-              // LOGIKA UNTUK MERENDER LABEL PEMBATAS
-              if (m.isLabel) {
-                return (
-                  <div
-                    key={`label-${m.label}-${index}`}
-                    className={`pt-5 pb-2 ${collapsed ? "px-0 text-center" : "px-4"}`}
-                  >
-                    {collapsed ? (
-                      <div className="h-[2px] w-6 bg-border mx-auto rounded-full" />
-                    ) : (
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                        {m.label}
-                      </p>
-                    )}
-                  </div>
-                );
-              }
-
-              // Jika bukan label, pastikan ikon ada
-              const Icon = m.icon!;
-
-              // Render Item dengan Children (Dropdown)
-              if (m.children) {
-                const children = m.children.filter((c) => {
-                  if (!c.scopes) return true;
-                  return c.scopes.includes(scope ?? "");
-                });
-
-                if (!children.length) return null;
-
-                return (
-                  <div key={m.label}>
-                    <button
-                      onClick={() => setOpenSettings(!openSettings)}
-                      className={`flex items-center w-full ${
-                        collapsed ? "justify-center" : "gap-3"
-                      } px-3 py-3 rounded-lg text-sm text-muted-foreground hover:bg-muted`}
-                    >
-                      <Icon size={18} />
-                      {!collapsed && (
-                        <>
-                          <span className="flex-1 text-left">{m.label}</span>
-                          {openSettings ? (
-                            <ChevronDown size={16} />
-                          ) : (
-                            <ChevronRight size={16} />
-                          )}
-                        </>
-                      )}
-                    </button>
-
-                    {openSettings && !collapsed && (
-                      <div className="pl-3 mt-1 space-y-1">
-                        {children.map((c) => {
-                          const CIcon = c.icon!;
-                          return (
-                            <NavLink
-                              key={c.to}
-                              to={c.to!}
-                              end={c.to === "/admin/settings"}
-                              className={({ isActive }) =>
-                                `flex items-center gap-2 px-3 py-3 rounded-lg text-sm ${
-                                  isActive
-                                    ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium"
-                                    : "text-muted-foreground hover:bg-muted"
-                                }`
-                              }
-                            >
-                              <CIcon size={16} />
-                              {c.label}
-                            </NavLink>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              // Render Item Biasa (Tanpa Children)
-              if (!m.to) return null;
-
+          /* ✅ AKTUAL: Menggunakan menuItems yang sudah difilter oleh AdminSidebar */
+          menuItems.map((m, index) => {
+            // Render Label Pembatas
+            if (m.isLabel) {
               return (
-                <NavLink
-                  key={m.to}
-                  to={m.to}
-                  end={m.to === "/admin"}
-                  className={({ isActive }) =>
-                    `flex items-center ${
-                      collapsed ? "justify-center" : "gap-3"
-                    } px-3 py-3 rounded-lg text-sm transition-colors ${
-                      isActive
-                        ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`
-                  }
+                <div
+                  key={`label-${m.label}-${index}`}
+                  className={`pt-5 pb-2 ${collapsed ? "px-0 text-center" : "px-4"}`}
                 >
-                  <Icon size={18} />
-                  {!collapsed && <span>{m.label}</span>}
-                </NavLink>
+                  {collapsed ? (
+                    <div className="h-[2px] w-6 bg-border mx-auto rounded-full" />
+                  ) : (
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                      {m.label}
+                    </p>
+                  )}
+                </div>
               );
-            })
+            }
+
+            const Icon = m.icon!;
+
+            // Render Item dengan Dropdown (Children)
+            if (m.children) {
+              return (
+                <div key={m.label}>
+                  <button
+                    onClick={() => setOpenSettings(!openSettings)}
+                    className={`flex items-center w-full ${
+                      collapsed ? "justify-center" : "gap-3"
+                    } px-3 py-3 rounded-lg text-sm text-muted-foreground hover:bg-muted`}
+                  >
+                    <Icon size={18} />
+                    {!collapsed && (
+                      <>
+                        <span className="flex-1 text-left">{m.label}</span>
+                        {openSettings ? (
+                          <ChevronDown size={16} />
+                        ) : (
+                          <ChevronRight size={16} />
+                        )}
+                      </>
+                    )}
+                  </button>
+
+                  {openSettings && !collapsed && (
+                    <div className="pl-3 mt-1 space-y-1">
+                      {m.children.map((c) => {
+                        const CIcon = c.icon!;
+                        return (
+                          <NavLink
+                            key={c.to}
+                            to={c.to!}
+                            end={c.to === "/admin/settings"}
+                            className={({ isActive }) =>
+                              `flex items-center gap-2 px-3 py-3 rounded-lg text-sm ${
+                                isActive
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium"
+                                  : "text-muted-foreground hover:bg-muted"
+                              }`
+                            }
+                          >
+                            <CIcon size={16} />
+                            {c.label}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Render NavLink Biasa
+            if (!m.to) return null;
+
+            return (
+              <NavLink
+                key={m.to}
+                to={m.to}
+                end={m.to === "/admin"}
+                className={({ isActive }) =>
+                  `flex items-center ${
+                    collapsed ? "justify-center" : "gap-3"
+                  } px-3 py-3 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-medium"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {!collapsed && <span>{m.label}</span>}
+              </NavLink>
+            );
+          })
         )}
       </nav>
 
@@ -227,9 +204,8 @@ export default function AdminDesktopSidebar({
       {!collapsed && (
         <div className="p-4 border-t border-border text-xs font-medium text-muted-foreground tracking-wide text-center">
           {loading ? (
-            /* SKELETON FOOTER */
             <div className="h-3 w-24 mx-auto bg-muted/60 dark:bg-muted animate-pulse rounded-md" />
-          ) : scope === "jatim" ? (
+          ) : admin?.scope === "jatim" ? (
             "PW Jawa Timur"
           ) : admin?.daerah ? (
             `PD ${admin.daerah}`
