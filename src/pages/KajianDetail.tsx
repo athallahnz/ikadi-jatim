@@ -129,6 +129,9 @@ export default function KajianDetail() {
 
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
+  function Skeleton({ className }: { className: string }) {
+    return <div className={`animate-pulse bg-muted rounded ${className}`} />;
+  }
   /* ================= FETCH ================= */
 
   const loadData = useCallback(async () => {
@@ -250,8 +253,134 @@ export default function KajianDetail() {
 
   /* ================= RENDER ================= */
 
-  if (loading) return <div className="pt-40 text-center">Loading...</div>;
-  if (!article) return <div className="pt-40 text-center">Tidak ditemukan</div>;
+  if (loading) {
+    return (
+      <section className="pt-28 pb-24 bg-background">
+        <div className="container mx-auto py-12 px-6">
+          <div className="grid lg:grid-cols-[1fr_380px] gap-16">
+            {/* MAIN CONTENT SKELETON */}
+            <div className="max-w-3xl">
+              {/* Breadcrumb Skeleton */}
+              <div className="flex gap-2 mb-6">
+                <Skeleton className="h-4 w-16" />
+                <div className="opacity-20">/</div>
+                <Skeleton className="h-4 w-24" />
+              </div>
+
+              {/* Title Skeleton */}
+              <Skeleton className="h-10 md:h-14 w-full mb-4" />
+              <Skeleton className="h-10 md:h-14 w-3/4 mb-6" />
+
+              {/* Meta Skeleton */}
+              <div className="flex justify-between items-center mb-8 pb-6 border-b border-border">
+                <div className="flex gap-4">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-24" />
+                </div>
+                <div className="flex gap-2">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                </div>
+              </div>
+
+              {/* Image Skeleton */}
+              <Skeleton className="w-full h-[400px] rounded-2xl mb-10" />
+
+              {/* Content Paragraphs Skeleton */}
+              <div className="space-y-4">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-5/6" />
+                <div className="py-2" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-4/5" />
+              </div>
+            </div>
+
+            {/* SIDEBAR SKELETON */}
+            <aside className="space-y-8">
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <Skeleton className="h-6 w-32 mb-6" />
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex gap-4 mb-6 last:mb-0">
+                    <Skeleton className="w-20 h-20 rounded-xl flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <Skeleton className="h-6 w-32 mb-5" />
+                <div className="flex gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="w-10 h-10 rounded-full" />
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!article) {
+    return (
+      <section className="pt-40 pb-24 min-h-[80vh] flex items-center justify-center bg-background relative overflow-hidden">
+        {/* Background Decor */}
+        <div className="absolute inset-0 islamic-pattern opacity-5 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="container mx-auto px-6 relative z-10 text-center">
+          <div className="max-w-md mx-auto">
+            {/* Icon/Illustration */}
+            <div className="mb-8 flex justify-center">
+              <div className="w-24 h-24 rounded-3xl bg-muted flex items-center justify-center rotate-12 hover:rotate-0 transition-transform duration-500">
+                <BookOpen
+                  size={48}
+                  className="text-primary -rotate-12 hover:rotate-0 transition-transform duration-500"
+                />
+              </div>
+            </div>
+
+            <h1 className="text-4xl font-display font-bold text-foreground mb-4">
+              Kajian Tidak Ditemukan
+            </h1>
+            <p className="text-muted-foreground mb-10 leading-relaxed">
+              Maaf, konten yang Anda cari tidak tersedia atau telah dipindahkan.
+              Silahkan kembali ke halaman utama kajian untuk mencari topik
+              lainnya.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/kajian"
+                className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 w-full sm:w-auto"
+              >
+                Lihat Semua Kajian
+              </Link>
+              <Link
+                to="/"
+                className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-secondary text-secondary-foreground font-semibold hover:bg-secondary/80 transition-all w-full sm:w-auto"
+              >
+                Beranda
+              </Link>
+            </div>
+
+            {settings.site_title && (
+              <p className="mt-16 text-[10px] font-bold text-primary/40 uppercase tracking-[0.3em]">
+                {settings.site_title}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const seoDescription =
     stripHtml(article.content).substring(0, 160).trim() + "...";
