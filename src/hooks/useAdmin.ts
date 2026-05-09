@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 
-// Interface spesifik sesuai struktur tabel admins
+// Interface yang sudah diperluas
 export interface Admin {
   id: string;
   name: string;
-  role: "admin" | "editor";
+  // ✅ Tambahkan "konsultan" agar tidak crash/error typing
+  role: "admin" | "editor" | "konsultan";
   scope: "jatim" | "daerah";
   status: "pending" | "active" | "rejected" | "blocked";
   daerah?: string | null;
@@ -24,7 +25,6 @@ export function useAdmin() {
   const email = session?.user?.email;
 
   useEffect(() => {
-    // Jika tidak ada session, hentikan proses
     if (!userId) {
       setAdmin(null);
       setLoading(false);
@@ -35,7 +35,6 @@ export function useAdmin() {
       try {
         setLoading(true);
 
-        // 1. Ambil data admin berdasarkan ID user yang login
         const { data, error } = await supabase
           .from("admins")
           .select("*")
@@ -45,13 +44,13 @@ export function useAdmin() {
         if (error) throw error;
 
         if (!data) {
-          // 2. Registrasi otomatis jika data belum ada di tabel admins
+          // Registrasi otomatis jika belum ada
           const { data: newAdmin, error: insertError } = await supabase
             .from("admins")
             .insert({
               id: userId,
               name: email || "User Baru",
-              role: "editor",
+              role: "editor", // Default role
               scope: "daerah",
               status: "pending",
             })
@@ -61,13 +60,19 @@ export function useAdmin() {
           if (insertError) throw insertError;
           setAdmin(newAdmin as Admin);
         } else {
-          // 3. Set data admin jika ditemukan
           setAdmin(data as Admin);
 
-          // 4. Proteksi Keamanan: Kick user jika status diblokir atau ditolak
+          // 🛡️ PROTEKSI KEAMANAN
+          // 1. Kick jika diblokir/ditolak
           if (data.status === "blocked" || data.status === "rejected") {
             await supabase.auth.signOut();
             window.location.replace(`/admin/${data.status}`);
+            return;
+          }
+
+          // 2. Opsional: Berikan peringatan jika masih pending
+          if (data.status === "pending") {
+            console.warn("Akun masih pending, akses terbatas.");
           }
         }
       } catch (err) {
@@ -80,5 +85,8 @@ export function useAdmin() {
     loadAdminData();
   }, [userId, email]);
 
-  return { admin, loading };
+  // ✅ Tambahkan helper isAuthorized agar pemakaian di komponen lebih gampang
+  const isAuthorized = admin?.status === "active";
+
+  return { admin, loading, isAuthorized };
 }

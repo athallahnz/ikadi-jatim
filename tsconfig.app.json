@@ -1,30 +1,26 @@
 {
   "compilerOptions": {
-    "types": ["vitest/globals"],
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
-    "composite": true,
-    
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    "jsx": "react-jsx",
 
-    /* Linting - Diperketat sesuai standar larangan 'any' */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true, // ✅ needs noEmit OR emitDeclarationOnly
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    "noEmit": true, // ✅ keep this — satisfies allowImportingTsExtensions
+    "composite": true, // ✅ add this — satisfies project references
+
+    "jsx": "react-jsx",
     "strict": true,
-    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Fix Deprecation */
-    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }

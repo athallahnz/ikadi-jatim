@@ -6,7 +6,7 @@
   ],
   "compilerOptions": {
     "composite": true,        // Wajib untuk Project References
-    "noEmit": false,
+    "noEmit": true,   // ← keep here only
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

@@ -43,3 +43,25 @@ export interface ConsultationMatch {
     slug: string;
     similarity_score: number;
 }
+
+export type FilterStatus = "all" | "pending" | "answered";
+
+export interface UnifiedConsultation {
+    id: string; // Bisa berupa UUID atau Angka (dari tabel lama)
+    inbox_id: string | null;
+    name: string | null;
+    city: string | null;
+    subject: string | null;
+    message: string | null;
+    reply_message: string | null;
+    category_id: number | null;
+    category_name: string | null;
+    status: string;
+    created_at: string;
+    answered_at: string | null;
+    // Gunakan optional operator (?) agar aman dan tidak bentrok
+    consultation_categories?: { name: string } | null;
+}
+
+// Tambahkan ini HANYA JIKA Anda mendapatkan error 'Tables is not exported' di komponen lain
+export type Tables = unknown;

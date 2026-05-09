@@ -1,535 +1,548 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Search,
-  MessageSquare,
-  User,
   Send,
-  CheckCircle2,
+  User,
   Loader2,
-  ChevronLeft,
-  Calendar,
-  Phone,
   Trash2,
-  ChevronDown,
   RotateCcw,
+  CheckCircle2,
+  ChevronLeft,
+  Inbox,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import Swal from "sweetalert2";
+import { Virtuoso } from "react-virtuoso";
 
-// --- Interfaces ---
-export interface ConsultationCategory {
-  id: number;
-  name: string;
-}
+// ======================================================
+// TYPES
+// ======================================================
 
-export interface ConsultationTicket {
+type TicketStatus = "pending" | "answered" | "closed" | "trashed";
+
+interface ConsultationTicket {
   id: string;
   name: string | null;
+  city: string | null;
   contact_info: string | null;
   subject: string | null;
   message: string;
   reply_message: string | null;
-  status: "pending" | "answered" | "closed" | "trashed";
+  status: TicketStatus;
   created_at: string;
   answered_at: string | null;
+  answered_by: string | null;
   category_id: number | null;
+  admins?: { name: string }[] | null;
 }
 
-type FilterStatus = "all" | "pending" | "answered" | "trashed";
+interface CounterState {
+  all: number;
+  pending: number;
+  answered: number;
+  trashed: number;
+}
 
-const AdminConsultations: React.FC = () => {
-  // --- States ---
+// ======================================================
+// CONSTANTS
+// ======================================================
+
+const PAGE_SIZE = 50;
+
+// ======================================================
+// COMPONENT
+// ======================================================
+
+const AdminConsultations = () => {
+  // ======================================================
+  // STATES & REFS
+  // ======================================================
+
   const [tickets, setTickets] = useState<ConsultationTicket[]>([]);
-  const [categories, setCategories] = useState<ConsultationCategory[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [activeChat, setActiveChat] = useState<ConsultationTicket | null>(null);
-  const [replyText, setReplyText] = useState<string>("");
-  const [filter, setFilter] = useState<FilterStatus>("all");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | "all">(
-    "all",
-  );
-  const [isSending, setIsSending] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showMobileList, setShowMobileList] = useState<boolean>(true);
+  const [loading, setLoading] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<TicketStatus | "all">("all");
+  const [sending, setSending] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [counters, setCounters] = useState<CounterState>({
+    all: 0,
+    pending: 0,
+    answered: 0,
+    trashed: 0,
+  });
 
+  // Menggunakan useRef untuk pagination agar tidak memicu re-render tak perlu
+  // dan memperbaiki masalah dependensi pada useEffect
+  const pageRef = useRef(0);
+  const hasMoreRef = useRef(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
 
-  // --- Logic: Load Data ---
-  const loadCategories = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("consultation_categories")
-      .select("id, name")
-      .order("name", { ascending: true });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-    if (!error && data) {
-      setCategories(data as ConsultationCategory[]);
+  // ======================================================
+  // ACTIVE CHAT
+  // ======================================================
+
+  const activeChat = useMemo(() => {
+    return tickets.find((x) => x.id === activeId) || null;
+  }, [tickets, activeId]);
+
+  // ======================================================
+  // FETCH COUNTERS
+  // ======================================================
+
+  const loadCounters = useCallback(async () => {
+    try {
+      const [allRes, pendingRes, answeredRes, trashedRes] = await Promise.all([
+        supabase
+          .from("inbox_consultations")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("inbox_consultations")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "pending"),
+        supabase
+          .from("inbox_consultations")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "answered"),
+        supabase
+          .from("inbox_consultations")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "trashed"),
+      ]);
+
+      setCounters({
+        all: allRes.count || 0,
+        pending: pendingRes.count || 0,
+        answered: answeredRes.count || 0,
+        trashed: trashedRes.count || 0,
+      });
+    } catch (err) {
+      console.error(err);
     }
   }, []);
 
-  const loadTickets = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("inbox_consultations")
-      .select("*")
-      .order("created_at", { ascending: false });
+  // ======================================================
+  // FETCH TICKETS
+  // ======================================================
 
-    if (!error && data) {
-      setTickets(data as ConsultationTicket[]);
-    }
-    setLoading(false);
-  }, []);
+  const fetchTickets = useCallback(
+    async (reset = false) => {
+      if (loading) return;
+
+      try {
+        setLoading(true);
+        const currentPage = reset ? 0 : pageRef.current;
+
+        let query = supabase
+          .from("inbox_consultations")
+          .select(
+            `id, name, city, contact_info, subject, message, reply_message, status, created_at, answered_at, answered_by, category_id, admins:answered_by(name)`,
+          )
+          .order("created_at", { ascending: false })
+          .range(
+            currentPage * PAGE_SIZE,
+            currentPage * PAGE_SIZE + PAGE_SIZE - 1,
+          );
+
+        if (filter !== "all") query = query.eq("status", filter);
+
+        if (debouncedSearch.trim()) {
+          const keyword = debouncedSearch.trim();
+          query = query.or(
+            `name.ilike.%${keyword}%,subject.ilike.%${keyword}%,message.ilike.%${keyword}%`,
+          );
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const rows = (data as ConsultationTicket[]) || [];
+
+        if (reset) {
+          setTickets(rows);
+          pageRef.current = 1;
+        } else {
+          setTickets((prev) => [...prev, ...rows]);
+          pageRef.current = pageRef.current + 1;
+        }
+
+        hasMoreRef.current = rows.length === PAGE_SIZE;
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "Gagal memuat tiket", "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [filter, debouncedSearch],
+  );
+
+  // ======================================================
+  // INITIAL LOAD
+  // ======================================================
 
   useEffect(() => {
-    loadTickets();
-    loadCategories();
-  }, [loadTickets, loadCategories]);
+    fetchTickets(true);
+    loadCounters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, debouncedSearch]);
+
+  // ======================================================
+  // REALTIME
+  // ======================================================
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [activeChat]);
+    const channel = supabase
+      .channel("consultation-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "inbox_consultations" },
+        (payload) => {
+          const newTicket = payload.new as ConsultationTicket;
+          // Hanya tambahkan jika sesuai filter aktif
+          if (filter === "all" || newTicket.status === filter) {
+            setTickets((prev) => [newTicket, ...prev]);
+          }
+          loadCounters();
+        },
+      )
+      .subscribe();
 
-  // --- Logic: Counters (Powerfull & Dynamic) ---
-  const getCountByStatus = (status: FilterStatus): number => {
-    return tickets.filter((t) => {
-      const matchesStatus =
-        status === "all" ? t.status !== "trashed" : t.status === status;
-      const matchesCategory =
-        selectedCategoryId === "all" || t.category_id === selectedCategoryId;
-      return matchesStatus && matchesCategory;
-    }).length;
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadCounters, filter]);
 
-  // --- Logic: Send Reply ---
-  const handleSendReply = async (): Promise<void> => {
+  // ======================================================
+  // ACTIONS
+  // ======================================================
+
+  const sendReply = async () => {
     if (!activeChat || !replyText.trim()) return;
-    setIsSending(true);
 
     try {
+      setSending(true);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Unauthorized");
+
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from("inbox_consultations")
         .update({
-          reply_message: replyText,
+          reply_message: replyText.trim(),
           status: "answered",
-          answered_at: new Date().toISOString(),
+          answered_at: now,
+          answered_by: user.id,
         })
         .eq("id", activeChat.id);
 
       if (error) throw error;
 
-      await loadTickets();
-      setActiveChat(null);
-      setReplyText("");
-      setShowMobileList(true);
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.id === activeChat.id
+            ? {
+                ...t,
+                reply_message: replyText,
+                status: "answered",
+                answered_at: now,
+              }
+            : t,
+        ),
+      );
 
+      setReplyText("");
+      loadCounters();
       Swal.fire({
         icon: "success",
-        title: "Terkirim",
+        title: "Balasan terkirim",
         toast: true,
-        position: "top-end",
-        showConfirmButton: false,
         timer: 2000,
+        showConfirmButton: false,
+        position: "top-end",
       });
     } catch (err) {
       console.error(err);
       Swal.fire("Error", "Gagal mengirim balasan", "error");
     } finally {
-      setIsSending(false);
+      setSending(false);
     }
   };
 
-  // --- Filtering & Searching ---
-  const filteredTickets = tickets.filter((t) => {
-    const search = searchQuery.toLowerCase();
-
-    // Gunakan optional chaining dan fallback string kosong
-    const matchesSearch =
-      (t.name?.toLowerCase() || "").includes(search) ||
-      (t.contact_info?.toLowerCase() || "").includes(search) ||
-      (t.subject?.toLowerCase() || "").includes(search) ||
-      (t.message?.toLowerCase() || "").includes(search) ||
-      (t.reply_message?.toLowerCase() || "").includes(search);
-
-    const matchesStatus =
-      filter === "all" ? t.status !== "trashed" : t.status === filter;
-    const matchesCategory =
-      selectedCategoryId === "all" || t.category_id === selectedCategoryId;
-
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
-
-  const handleMoveToTrash = async (id: string) => {
+  const moveToTrash = async (id: string) => {
     try {
       const { error } = await supabase
         .from("inbox_consultations")
         .update({ status: "trashed" })
         .eq("id", id);
-
       if (error) throw error;
-
-      await loadTickets();
-      if (activeChat?.id === id) setActiveChat(null);
-
-      Swal.fire({
-        icon: "info",
-        title: "Dipindahkan ke Sampah",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 2000,
-      });
+      setTickets((prev) => prev.filter((x) => x.id !== id));
+      loadCounters();
     } catch (err) {
-      Swal.fire("Error", "Gagal membuang pertanyaan", "error");
+      console.error(err);
     }
   };
 
-  const handleRestore = async (id: string, replyMessage: string | null) => {
+  const restoreTicket = async (id: string) => {
     try {
-      // Jika sudah ada reply, kembalikan ke 'answered', jika belum ke 'pending'
-      const targetStatus = replyMessage ? "answered" : "pending";
-
       const { error } = await supabase
         .from("inbox_consultations")
-        .update({ status: targetStatus })
+        .update({ status: "pending" })
         .eq("id", id);
-
       if (error) throw error;
-
-      await loadTickets();
-      if (activeChat?.id === id) setActiveChat(null);
-
-      Swal.fire({
-        icon: "success",
-        title: "Berhasil Dikembalikan",
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 2000,
-      });
+      fetchTickets(true);
+      loadCounters();
     } catch (err) {
-      Swal.fire("Error", "Gagal mengembalikan pertanyaan", "error");
+      console.error(err);
     }
   };
+
+  // ======================================================
+  // RENDER
+  // ======================================================
 
   return (
     <AdminLayout>
-      <div className="flex flex-col h-[calc(100vh-120px)] lg:h-[calc(100vh-160px)]">
-        {/* Header Section */}
-        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-              Inbox Konsultasi
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Management Portal untuk Pertanyaan & Konsultasi Asatidz kepada
-              Ikadi Jatim.
-            </p>
+      <div className="h-[calc(100vh-120px)] flex flex-col bg-emerald-50/20 dark:bg-emerald-950/10">
+        {/* TOPBAR */}
+        <div className="flex flex-col gap-4 mb-5">
+          <div className="flex justify-between items-end">
+            <div>
+              <h1 className="text-3xl font-black text-emerald-950 dark:text-emerald-50">
+                Inbox Consultation
+              </h1>
+              <p className="text-emerald-600/80 dark:text-emerald-400/80 text-sm font-medium">
+                Realtime Consultation Dashboard
+              </p>
+            </div>
+            {loading && (
+              <Loader2
+                className="animate-spin text-emerald-600 mb-2"
+                size={20}
+              />
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-            {/* Custom Category Dropdown */}
-            <div className="relative group w-full sm:w-auto sm:min-w-[160px]">
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedCategoryId(val === "all" ? "all" : Number(val));
-                }}
-                className="w-full h-11 pl-4 pr-10 rounded-2xl border border-emerald-100 dark:border-emerald-900 bg-card text-[11px] font-black uppercase tracking-widest focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all appearance-none cursor-pointer"
-              >
-                <option value="all">Semua Kategori</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-600 pointer-events-none" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard
+              title="All"
+              value={counters.all}
+              icon={<Inbox size={18} />}
+              color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200"
+            />
+            <StatCard
+              title="Pending"
+              value={counters.pending}
+              icon={<Clock size={18} />}
+              color="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200"
+            />
+            <StatCard
+              title="Answered"
+              value={counters.answered}
+              icon={<CheckCircle size={18} />}
+              color="bg-emerald-600 text-white dark:bg-emerald-700 dark:text-emerald-50"
+            />
+            <StatCard
+              title="Trash"
+              value={counters.trashed}
+              icon={<Trash2 size={18} />}
+              color="bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200"
+            />
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full p-1">
+            {/* Search Input - Luas di mobile, tetap proporsional di desktop */}
+            <div className="relative w-full lg:max-w-sm shrink-0">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500/50 dark:text-emerald-400/40"
+                size={18}
+              />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, subject..."
+                className="h-11 pl-10 pr-4 rounded-xl border border-emerald-100 dark:border-emerald-800 bg-white dark:bg-emerald-900/20 w-full focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm shadow-sm"
+              />
             </div>
 
-            {/* Status Filter with Dynamic Counts */}
-            <div className="flex bg-muted/40 dark:bg-emerald-950/20 p-1.5 rounded-[1.25rem] border border-emerald-100/50 dark:border-emerald-900/30 overflow-x-auto no-scrollbar backdrop-blur-sm">
-              {(
-                ["all", "pending", "answered", "trashed"] as FilterStatus[]
-              ).map((s) => {
-                const isActive = filter === s;
-                const dynamicCount = getCountByStatus(s);
+            {/* Filter Slider Container */}
+            <div className="w-full lg:w-auto overflow-hidden">
+              <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 bg-emerald-100/30 dark:bg-emerald-900/20 p-1.5 rounded-2xl border border-emerald-100 dark:border-emerald-800 scroll-smooth">
+                {(["all", "pending", "answered", "trashed"] as const).map(
+                  (x) => {
+                    const countValue = x === "all" ? counters.all : counters[x];
 
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setFilter(s)}
-                    className={`relative flex items-center gap-2 px-4 py-2 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all duration-300 whitespace-nowrap ${
-                      isActive
-                        ? "bg-emerald-600 text-white shadow-lg"
-                        : "text-muted-foreground hover:text-emerald-700 dark:hover:text-emerald-400"
-                    }`}
-                  >
-                    <span>
-                      {s === "all"
-                        ? "Semua"
-                        : s === "pending"
-                          ? "Perlu Dijawab"
-                          : s === "answered"
-                            ? "Selesai"
-                            : "Sampah"}
-                    </span>
-                    <span
-                      className={`flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-md text-[9px] font-bold ${
-                        isActive
-                          ? "bg-white/20 text-white"
-                          : "bg-muted dark:bg-emerald-900/50 text-muted-foreground"
-                      }`}
-                    >
-                      {dynamicCount}
-                    </span>
-                  </button>
-                );
-              })}
+                    return (
+                      <Button
+                        key={x}
+                        variant={filter === x ? "default" : "ghost"}
+                        onClick={() => setFilter(x)}
+                        className={`shrink-0 rounded-xl capitalize px-4 py-2 h-9 flex items-center gap-2 transition-all border border-transparent ${
+                          filter === x
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-200 dark:shadow-none"
+                            : "text-emerald-700 dark:text-emerald-300 hover:bg-white dark:hover:bg-emerald-800/50 hover:border-emerald-100 dark:hover:border-emerald-700"
+                        }`}
+                      >
+                        <span className="font-bold text-xs tracking-tight">
+                          {x}
+                        </span>
+
+                        <span
+                          className={`text-[10px] min-w-[20px] h-5 flex items-center justify-center px-1.5 rounded-lg font-black ${
+                            filter === x
+                              ? "bg-white/20 text-white"
+                              : "bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200"
+                          }`}
+                        >
+                          {countValue}
+                        </span>
+                      </Button>
+                    );
+                  },
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Main Workspace */}
-        <div className="flex-1 flex border border-emerald-100 dark:border-emerald-900 rounded-[2rem] bg-card overflow-hidden shadow-2xl relative">
-          {/* Sidebar List */}
+        {/* MAIN BOX */}
+        <div className="flex-1 border border-emerald-100 dark:border-emerald-800 rounded-[1rem] overflow-hidden flex bg-white dark:bg-emerald-950/40 backdrop-blur-sm shadow-sm">
+          {/* SIDEBAR */}
           <div
-            className={`w-full lg:w-[400px] border-r border-emerald-50 dark:border-emerald-900 flex flex-col bg-muted/5 transition-all ${!showMobileList ? "hidden lg:flex" : "flex"}`}
+            className={`${showSidebar ? "flex" : "hidden lg:flex"} w-full lg:w-[400px] border-r border-emerald-100 dark:border-emerald-800 flex-col bg-emerald-50/10`}
           >
-            <div className="p-4 border-b border-emerald-50 dark:border-emerald-900 bg-card/50 backdrop-blur-md sticky top-0 z-10">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  type="text"
-                  placeholder="Cari Pertanyaan..."
-                  className="w-full pl-11 pr-4 py-3 text-sm bg-muted/50 dark:bg-emerald-900/10 border-none rounded-2xl focus:ring-2 focus:ring-emerald-500/20 outline-none"
+            <Virtuoso
+              data={tickets}
+              endReached={() => {
+                if (!loading && hasMoreRef.current) fetchTickets();
+              }}
+              itemContent={(_index, ticket) => (
+                <TicketCard
+                  ticket={ticket}
+                  active={activeId === ticket.id}
+                  onClick={() => {
+                    setActiveId(ticket.id);
+                    setShowSidebar(false);
+                    setReplyText(ticket.reply_message || "");
+                  }}
+                  onTrash={() => moveToTrash(ticket.id)}
+                  onRestore={() => restoreTicket(ticket.id)}
                 />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-              {loading && tickets.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-40 gap-2">
-                  <Loader2 className="animate-spin text-emerald-500" />
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                    Memuat Data...
-                  </span>
-                </div>
-              ) : filteredTickets.length === 0 ? (
-                <div className="text-center py-10 opacity-40 italic text-sm text-foreground">
-                  Tidak ada pertanyaan.
-                </div>
-              ) : (
-                filteredTickets.map((ticket) => (
-                  <button
-                    key={ticket.id}
-                    onClick={() => {
-                      setActiveChat(ticket);
-                      setShowMobileList(false);
-                      setReplyText(ticket.reply_message || "");
-                    }}
-                    className={`w-full text-left p-4 rounded-3xl transition-all border flex flex-col gap-3 relative group ${
-                      activeChat?.id === ticket.id
-                        ? "bg-emerald-600 border-emerald-500 text-white"
-                        : "bg-card border-emerald-50 dark:border-emerald-900/50 hover:border-emerald-200"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center w-full">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                            activeChat?.id === ticket.id
-                              ? "bg-emerald-500"
-                              : ticket.status === "pending"
-                                ? "bg-amber-100 text-amber-700"
-                                : "bg-emerald-100 text-emerald-700"
-                          }`}
-                        >
-                          {ticket.status === "pending" ? "Menunggu" : "Selesai"}
-                        </span>
-                        <span
-                          className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                            activeChat?.id === ticket.id
-                              ? "bg-white/20 border-white/30"
-                              : "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400"
-                          }`}
-                        >
-                          {ticket.subject || "Umum"}
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-medium opacity-70 whitespace-nowrap">
-                        {new Date(ticket.created_at).toLocaleDateString(
-                          "id-ID",
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-1 pr-8">
-                      <h4 className="font-bold text-sm truncate">
-                        {ticket.name || "Hamba Allah"}
-                      </h4>
-                      <p
-                        className={`text-xs line-clamp-1 italic transition-colors ${
-                          activeChat?.id === ticket.id
-                            ? "text-white/90"
-                            : "text-muted-foreground opacity-80"
-                        }`}
-                      >
-                        "{ticket.message}"
-                      </p>
-                    </div>
-
-                    {ticket.status === "trashed" ? (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRestore(ticket.id, ticket.reply_message);
-                        }}
-                        className={`absolute bottom-4 right-4 p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 ${
-                          activeChat?.id === ticket.id
-                            ? "text-emerald-200 hover:text-white"
-                            : "text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600"
-                        }`}
-                        title="Kembalikan dari sampah"
-                      >
-                        <RotateCcw size={14} />
-                      </div>
-                    ) : (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMoveToTrash(ticket.id);
-                        }}
-                        className={`absolute bottom-4 right-4 p-2 rounded-xl transition-all opacity-0 group-hover:opacity-100 ${
-                          activeChat?.id === ticket.id
-                            ? "text-emerald-200 hover:text-white"
-                            : "text-muted-foreground hover:text-red-500"
-                        }`}
-                      >
-                        <Trash2 size={14} />
-                      </div>
-                    )}
-                  </button>
-                ))
               )}
-            </div>
+            />
           </div>
 
-          {/* Chat Viewport */}
+          {/* CHAT VIEW */}
           <div
-            className={`flex-1 flex flex-col bg-[#fcfdfc] dark:bg-[#080f0c] transition-all min-w-0 ${showMobileList ? "hidden lg:flex" : "flex"}`}
+            className={`${showSidebar ? "hidden lg:flex" : "flex"} flex-1 flex-col`}
           >
             {activeChat ? (
               <>
-                <div className="p-4 lg:p-6 bg-card border-b border-emerald-50 dark:border-emerald-900 flex items-center gap-4 sticky top-0 z-20 backdrop-blur-md">
+                <div className="p-5 border-b border-emerald-100 dark:border-emerald-800 flex items-center gap-4 bg-white/50 dark:bg-emerald-950/50">
                   <Button
-                    variant="ghost"
                     size="icon"
-                    onClick={() => setShowMobileList(true)}
-                    className="lg:hidden rounded-full shrink-0"
+                    variant="ghost"
+                    className="lg:hidden text-emerald-600"
+                    onClick={() => setShowSidebar(true)}
                   >
-                    <ChevronLeft className="h-6 w-6" />
+                    <ChevronLeft />
                   </Button>
-                  <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shadow-inner shrink-0">
-                    <User className="text-emerald-700 dark:text-emerald-400 h-6 w-6" />
+                  <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-inner">
+                    <User />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-black text-foreground leading-tight truncate">
-                        {activeChat.name || "Hamba Allah"}
-                      </h3>
-                      <span className="text-[9px] font-black uppercase bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-lg border">
-                        {activeChat.subject || "Umum"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 text-muted-foreground text-[10px]">
-                      <span className="flex items-center gap-1 font-bold italic truncate">
-                        <Phone size={10} /> {activeChat.contact_info}
-                      </span>
-                      <span className="flex items-center gap-1 border-l pl-3 shrink-0 font-bold">
-                        <Calendar size={10} />{" "}
-                        {new Date(activeChat.created_at).toLocaleDateString(
-                          "id-ID",
-                        )}
-                      </span>
-                    </div>
+                  <div className="min-w-0">
+                    <h2 className="font-bold text-emerald-950 dark:text-emerald-50 truncate text-lg">
+                      {activeChat.name || "Hamba Allah"}
+                    </h2>
+                    <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate font-medium">
+                      {activeChat.city ? ` ${activeChat.city}` : ""} -{" "}
+                      {activeChat.subject}
+                    </p>
                   </div>
                 </div>
 
                 <div
                   ref={scrollRef}
-                  className="flex-1 p-4 lg:p-8 overflow-y-auto space-y-8 custom-scrollbar"
+                  className="flex-1 overflow-y-auto p-8 space-y-8 bg-emerald-50/5 dark:bg-emerald-950/10"
                 >
-                  <div className="flex flex-col items-start gap-2 max-w-[90%] lg:max-w-[75%]">
-                    <div className="bg-white dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900 p-5 rounded-[2rem] rounded-tl-none shadow-sm text-sm text-foreground leading-[1.6] w-full">
-                      <span className="block text-[9px] font-black text-emerald-600 mb-2 uppercase tracking-widest italic">
-                        Pertanyaan Masuk:
-                      </span>
-                      <p className="whitespace-pre-wrap break-words">
+                  <div className="max-w-2xl">
+                    <div className="bg-emerald-100/50 dark:bg-emerald-900/40 text-emerald-950 dark:text-emerald-50 rounded-[1rem] rounded-tl-sm p-6 border border-emerald-100 dark:border-emerald-800 shadow-sm">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
                         {activeChat.message}
                       </p>
+                      <span className="text-[10px] opacity-40 mt-3 block text-right italic">
+                        Dikirim:{" "}
+                        {new Date(activeChat.created_at).toLocaleString(
+                          "id-ID",
+                          {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          },
+                        )}
+                      </span>
                     </div>
                   </div>
 
                   {activeChat.reply_message && (
-                    <div className="flex flex-col items-end gap-2 ml-auto max-w-[90%] lg:max-w-[75%] animate-in fade-in slide-in-from-bottom-4">
-                      <div className="bg-emerald-700 dark:bg-emerald-600 text-white p-5 rounded-[2rem] rounded-tr-none shadow-xl text-sm leading-[1.6] w-full">
-                        <span className="block text-[9px] font-black text-emerald-200 mb-2 uppercase tracking-widest text-right italic">
-                          Jawaban Anda:
-                        </span>
-                        <p className="whitespace-pre-wrap break-words">
+                    <div className="max-w-2xl ml-auto">
+                      <div className="bg-emerald-600 text-white rounded-[1rem] rounded-tr-sm p-6 shadow-lg shadow-emerald-200 dark:shadow-none">
+                        <p className="whitespace-pre-wrap text-sm leading-relaxed">
                           {activeChat.reply_message}
                         </p>
+                        <span className="text-[10px] text-emerald-200 mt-3 block text-right italic">
+                          Verified by{" "}
+                          {activeChat.admins && activeChat.admins.length > 0
+                            ? activeChat.admins[0].name
+                            : "Admin IKADI"}{" "}
+                          on{" "}
+                          {activeChat.answered_at
+                            ? new Date(
+                                activeChat.answered_at,
+                              ).toLocaleDateString("id-ID")
+                            : "Unknown Date"}
+                        </span>
                       </div>
-                      <span className="text-[9px] font-bold text-emerald-600 uppercase mr-2">
-                        ✓ Terjawab{" "}
-                        {activeChat.answered_at
-                          ? new Date(activeChat.answered_at).toLocaleTimeString(
-                              "id-ID",
-                              { hour: "2-digit", minute: "2-digit" },
-                            )
-                          : ""}
-                      </span>
                     </div>
                   )}
                 </div>
 
-                <div className="p-4 lg:p-6 bg-card border-t border-emerald-50 dark:border-emerald-900">
-                  {/* Container Input: max-w-4xl diubah menjadi max-w-full */}
-                  <div className="max-w-full mx-auto bg-muted/30 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800 rounded-[2rem] p-3 focus-within:ring-4 focus-within:ring-emerald-500/10 transition-all duration-300">
+                <div className="border-t border-emerald-100 dark:border-emerald-800 p-6 bg-white dark:bg-emerald-950/50">
+                  <div className="border border-emerald-200 dark:border-emerald-800 rounded-[1rem] p-6 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all bg-emerald-50/30 dark:bg-emerald-900/20">
                     <textarea
-                      disabled={activeChat.status === "trashed"}
-                      value={replyText} // Pastikan menggunakan value agar reaktif
                       onChange={(e) => setReplyText(e.target.value)}
-                      placeholder={
-                        activeChat.status === "trashed"
-                          ? "Kembalikan pesan ini untuk membalas..."
-                          : "Ketik jawaban syar'i..."
-                      }
-                      className={`w-full bg-transparent p-3 outline-none min-h-[100px] resize-none text-sm leading-relaxed ${
-                        activeChat.status === "trashed"
-                          ? "opacity-50 cursor-not-allowed"
-                          : ""
-                      }`}
+                      placeholder="Ketik Jawaban disini..."
+                      className="w-full bg-transparent outline-none resize-none min-h-[120px] text-sm text-emerald-950 dark:text-emerald-50"
                     />
-                    <div className="flex justify-between items-center p-2 border-t border-emerald-100/50 mt-2 gap-4">
-                      <div className="hidden sm:flex items-center gap-2 text-[10px] font-bold uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full">
-                        <CheckCircle2 size={12} /> Terverifikasi Ikadi
+                    <div className="flex justify-between items-center mt-4 border-t border-emerald-100 dark:border-emerald-800 pt-4">
+                      <div className="text-[10px] flex items-center gap-2 text-emerald-600 font-bold uppercase tracking-wider">
+                        <CheckCircle2 size={14} /> Verified IKADI Admin
                       </div>
                       <Button
-                        onClick={handleSendReply}
-                        disabled={isSending || !replyText.trim()}
-                        className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl px-8 h-12 shadow-lg transition-all active:scale-95"
+                        disabled={sending || !replyText.trim()}
+                        onClick={sendReply}
+                        className="rounded-xl px-8 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none transition-transform active:scale-95"
                       >
-                        {isSending ? (
-                          <Loader2 className="h-5 w-5 animate-spin" />
+                        {sending ? (
+                          <Loader2 className="animate-spin" />
                         ) : (
                           <>
-                            <Send size={16} className="mr-2" /> Kirim
+                            <Send className="mr-2 h-4 w-4" /> Send Response
                           </>
                         )}
                       </Button>
@@ -538,17 +551,12 @@ const AdminConsultations: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center opacity-30 p-12 text-center">
-                <MessageSquare
-                  size={80}
-                  strokeWidth={1}
-                  className="mb-4 text-emerald-600 animate-pulse"
-                />
-                <h3 className="text-xl font-black uppercase tracking-widest text-emerald-900 dark:text-emerald-100">
-                  Pilih Konsultasi
-                </h3>
-                <p className="text-sm italic mt-2 text-foreground">
-                  Menunggu asatidz untuk meninjau pertanyaan...
+              <div className="flex-1 flex items-center justify-center flex-col text-center opacity-20 text-emerald-900 dark:text-emerald-50">
+                <div className="bg-emerald-100 dark:bg-emerald-900 p-8 rounded-full mb-6 animate-pulse">
+                  <Search size={80} />
+                </div>
+                <p className="text-xl font-black uppercase tracking-widest">
+                  Select a consultation to view details
                 </p>
               </div>
             )}
@@ -556,6 +564,134 @@ const AdminConsultations: React.FC = () => {
         </div>
       </div>
     </AdminLayout>
+  );
+};
+
+// ======================================================
+// STAT CARD
+// ======================================================
+
+const StatCard = ({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: number;
+  icon?: React.ReactNode;
+  color?: string;
+}) => {
+  return (
+    <div
+      className={`border rounded-[1rem] p-5 shadow-sm transition-all hover:scale-[1.02] ${color || "bg-card border-emerald-100 dark:border-emerald-800"}`}
+    >
+      <div className="flex justify-between items-start">
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">
+          {title}
+        </p>
+        <span className="opacity-50">{icon}</span>
+      </div>
+      <h3 className="text-3xl font-black mt-2 leading-none">
+        {value.toLocaleString()}
+      </h3>
+    </div>
+  );
+};
+
+// ======================================================
+// TICKET CARD
+// ======================================================
+
+const TicketCard = ({
+  ticket,
+  active,
+  onClick,
+  onTrash,
+  onRestore,
+}: {
+  ticket: ConsultationTicket;
+  active: boolean;
+  onClick: () => void;
+  onTrash: () => void;
+  onRestore: () => void;
+}) => {
+  return (
+    <div
+      onClick={onClick}
+      className={`p-4 border-b border-emerald-50 dark:border-emerald-800 cursor-pointer transition-all relative group ${
+        active
+          ? "bg-emerald-50/80 dark:bg-emerald-900/40 border-l-4 border-l-emerald-500"
+          : "hover:bg-emerald-50/30"
+      }`}
+    >
+      <div className="relative p-3 border-b border-emerald-100/50 dark:border-emerald-800/30 cursor-pointer hover:bg-emerald-500/[0.03] transition-colors group">
+        {/* Baris Atas: Nama & Waktu */}
+        <div className="flex justify-between items-start gap-3 mb-3">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div
+              className={`h-2 w-2 rounded-full shrink-0 ${
+                ticket.status === "pending"
+                  ? "bg-amber-500"
+                  : ticket.status === "answered"
+                    ? "bg-emerald-500"
+                    : "bg-rose-500"
+              }`}
+            />
+            <h2 className="font-bold text-md truncate text-emerald-950 dark:text-emerald-50">
+              {ticket.name || "Hamba Allah"}
+            </h2>
+          </div>
+
+          {/* Waktu Pojok Kanan Atas - Sangat Ringkas */}
+          <span className="text-[11px] font-bold opacity-40 uppercase whitespace-nowrap shrink-0 mt-0.5 tracking-tighter">
+            {new Date(ticket.created_at).toLocaleString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
+        </div>
+
+        {/* Baris Tengah: Subject */}
+        <p className="text-[12px] font-bold text-emerald-600 dark:text-emerald-400 truncate uppercase tracking-tight">
+          {ticket.subject}
+        </p>
+
+        {/* Baris Bawah: Isi Pesan (Dipotong 1 baris agar lebih clean) */}
+        <div className="pr-8">
+          <p className="text-[11px] line-clamp-1 text-muted-foreground/80 leading-snug">
+            {ticket.message}
+          </p>
+        </div>
+
+        {/* Tombol Action: Pojok Kanan Bawah */}
+        <div className="absolute bottom-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+          {ticket.status === "trashed" ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onRestore();
+              }}
+              className="p-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 border border-blue-100 transition-colors"
+            >
+              <RotateCcw size={12} />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTrash();
+              }}
+              className="p-1 bg-rose-50 text-rose-600 rounded-md hover:bg-rose-100 border border-rose-100 transition-colors"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

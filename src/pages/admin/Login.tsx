@@ -4,6 +4,17 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Lock, Mail, Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 
+// --- Interfaces ---
+interface AuthError {
+  message: string;
+  status?: number;
+}
+
+interface AdminData {
+  role: "admin" | "editor" | "konsultan";
+  status: "pending" | "active" | "rejected" | "blocked";
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,36 +26,81 @@ export default function Login() {
 
   /* ================= LOGIN EMAIL ================= */
 
-  const handleLogin = async (e: React.FormEvent) => {
+  // --- handleLogin Function ---
+  const handleLogin = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // 1. Sign In ke Auth Supabase
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (error) throw error;
+      if (authError) throw authError as AuthError;
 
-      if (data.session) {
+      if (authData.session) {
+        // 2. Ambil data profil admin
+        const { data: adminData, error: adminError } = await supabase
+          .from("admins")
+          .select("role, status")
+          .eq("id", authData.user.id)
+          .maybeSingle();
+
+        if (adminError) throw adminError as AuthError;
+
+        // Proteksi jika data di tabel admins belum dibuat
+        if (!adminData) {
+          await supabase.auth.signOut();
+          throw new Error("Profil admin tidak ditemukan. Hubungi IT Support.");
+        }
+
+        // Proteksi status akun
+        const admin = adminData as AdminData;
+        if (admin.status !== "active") {
+          await supabase.auth.signOut();
+          const statusMsg: Record<string, string> = {
+            pending: "Akun Anda masih dalam antrean aktivasi.",
+            blocked: "Akun Anda telah diblokir oleh sistem.",
+            rejected: "Pendaftaran akun Anda ditolak.",
+          };
+          throw new Error(statusMsg[admin.status] || "Akses ditolak.");
+        }
+
+        // 3. Notifikasi Berhasil
         Swal.fire({
           icon: "success",
-          title: "Login berhasil",
-          timer: 1500,
+          title: "Login Berhasil",
+          toast: true,
+          position: "top-end",
+          timer: 2000,
           showConfirmButton: false,
         });
 
-        navigate("/admin");
+        // 4. Role-Based Redirect
+        if (admin.role === "konsultan") {
+          navigate("/admin/consultations");
+        } else {
+          navigate("/admin");
+        }
       }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Login gagal";
+    } catch (err: unknown) {
+      // Penanganan error tanpa 'any'
+      let errorMessage = "Terjadi kesalahan saat login.";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === "object" && err !== null && "message" in err) {
+        errorMessage = (err as AuthError).message;
+      }
 
       Swal.fire({
         icon: "error",
-        title: "Login gagal",
+        title: "Login Gagal",
         text: errorMessage,
+        confirmButtonColor: "#ef4444",
       });
     } finally {
       setLoading(false);
@@ -73,34 +129,47 @@ export default function Login() {
     }
   };
 
+  // Efek ini menangani jika user sudah punya session aktif saat buka halaman login
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) {
-        navigate("/admin");
+    const checkActiveSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        // Cek ulang role untuk redirect
+        const { data } = await supabase
+          .from("admins")
+          .select("role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (data?.role === "konsultan") {
+          navigate("/admin/consultations");
+        } else {
+          navigate("/admin");
+        }
       }
-    });
+    };
+    checkActiveSession();
   }, [navigate]);
+
   /* ================= UI ================= */
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background islamic-pattern px-4">
+      {/* ... (UI tetap sama seperti sebelumnya) ... */}
       <div className="w-full max-w-md bg-card backdrop-blur shadow-2xl p-8 rounded-2xl border border-border">
-        {/* HEADER */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             <Lock className="text-primary w-8 h-8" />
           </div>
-
           <h1 className="text-2xl font-display font-bold text-foreground">
             Admin Portal
           </h1>
-
           <p className="text-muted-foreground text-sm mt-2">
             Login untuk mengelola konten IKADI Jatim
           </p>
         </div>
-
-        {/* GOOGLE LOGIN */}
 
         <button
           onClick={handleGoogleLogin}
@@ -113,25 +182,17 @@ export default function Login() {
           <span className="font-medium text-sm">Login dengan Google</span>
         </button>
 
-        {/* Divider */}
-
         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-5">
           <div className="flex-1 h-px bg-border" />
           ATAU
           <div className="flex-1 h-px bg-border" />
         </div>
 
-        {/* FORM LOGIN */}
-
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* EMAIL */}
-
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Email</label>
-
             <div className="relative group">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition" />
-
               <input
                 type="email"
                 required
@@ -143,16 +204,12 @@ export default function Login() {
             </div>
           </div>
 
-          {/* PASSWORD */}
-
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">
               Password
             </label>
-
             <div className="relative group">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition" />
-
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -177,8 +234,7 @@ export default function Login() {
                 type="checkbox"
                 checked={remember}
                 onChange={() => setRemember(!remember)}
-                className="rounded border-border text-primary focus:ring-primary
-              focus:ring-2 focus:ring-offset-0"
+                className="rounded border-border text-primary focus:ring-primary focus:ring-2 focus:ring-offset-0"
               />
               Remember me
             </label>
@@ -190,8 +246,6 @@ export default function Login() {
               Lupa password?
             </button>
           </div>
-
-          {/* LOGIN BUTTON */}
 
           <button
             type="submit"
@@ -205,8 +259,6 @@ export default function Login() {
             )}
           </button>
         </form>
-
-        {/* FOOTER */}
 
         <div className="mt-8 pt-6 border-t border-border text-center">
           <p className="text-xs text-muted-foreground">
