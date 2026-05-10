@@ -426,3 +426,25 @@ entrypoint = "./functions/render-event-meta/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/render-event-meta/*.html" ]
+
+[functions.transcribe-vn]
+enabled = true
+verify_jwt = true
+import_map = "./functions/transcribe-vn/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/transcribe-vn/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/transcribe-vn/*.html" ]
+
+[functions.ai-vector-sync]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ai-vector-sync/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/ai-vector-sync/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/ai-vector-sync/*.html" ]

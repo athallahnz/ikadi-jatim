@@ -282,7 +282,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                             onChange={handleInputChange}
                             className="w-full bg-emerald-50/50 dark:bg-emerald-900 border border-emerald-200 dark:border-emerald-800/50 rounded-xl pl-10 pr-4 py-3.5 text-sm font-bold text-emerald-950 dark:text-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none appearance-none cursor-pointer transition-all"
                           >
-                            <option value="" className="text-emerald-950">
+                            <option value="" className="text-emerald-950 dark:text-white">
                               {isLoadingCategories
                                 ? "Memuat..."
                                 : "Pilih Kategori"}
@@ -291,7 +291,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                               <option
                                 key={cat.id}
                                 value={cat.id}
-                                className="text-emerald-950"
+                                className="text-emerald-950 dark:text-white"
                               >
                                 {cat.name}
                               </option>
@@ -382,13 +382,13 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                         setDonationAmount(amount);
                         setCustomDonation("");
                       }}
-                      className={`group relative py-4 rounded-2xl border-2 font-black text-sm transition-all overflow-hidden ${donationAmount === amount ? "border-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 shadow-md scale-105" : "border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 text-emerald-900/60"}`}
+                      className={`group relative py-4 rounded-2xl border-2 font-black text-foreground text-sm transition-all overflow-hidden ${donationAmount === amount ? "border-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 shadow-md scale-105" : "border-emerald-200 dark:border-emerald-900/50 hover:border-emerald-400 text-emerald-900/60"}`}
                     >
                       Rp {amount.toLocaleString("id-ID")}
                       {donationAmount === amount && (
                         <CheckCircle
                           size={14}
-                          className="absolute top-2 right-2 text-emerald-700"
+                          className="absolute top-2 right-2 text-foreground animate-pulse"
                         />
                       )}
                     </button>
@@ -396,7 +396,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                 </div>
 
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-emerald-950 group-focus-within:text-emerald-700 transition-colors">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-foreground group-focus-within:text-emerald-700 transition-colors">
                     Rp
                   </div>
                   <input
@@ -407,7 +407,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                       setDonationAmount(Number(e.target.value));
                     }}
                     placeholder="Nominal Infaq Lainnya..."
-                    className="w-full bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl pl-12 pr-6 py-4 text-center font-black text-emerald-950 dark:text-white focus:border-emerald-700 outline-none transition-all no-spinner placeholder:text-emerald-900/20"
+                    className="placeholder:text-foreground w-full bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-200 dark:border-emerald-800 rounded-2xl pl-12 pr-6 py-4 text-center font-black text-emerald-950 dark:text-white focus:border-emerald-700 outline-none transition-all no-spinner"
                   />
                 </div>
 
@@ -421,7 +421,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                   </Button>
                   <button
                     onClick={() => setStep("success")}
-                    className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-950/40 hover:text-emerald-700 transition-colors"
+                    className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:text-emerald-700 hover:dark:text-emerald-300  transition-colors"
                   >
                     Lewati & Selesai
                   </button>
@@ -433,9 +433,9 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
             {step === "qris" && (
               <div className="animate-in slide-in-from-right-8 duration-500 text-center space-y-8 py-8 max-w-sm mx-auto">
                 <div className="space-y-3">
-                  <h3 className="text-2xl font-black text-emerald-950 dark:text-white tracking-tight">
+                  <h2 className="text-4xl mb-4 font-black text-emerald-950 dark:text-white tracking-tight">
                     Scan Pembayaran
-                  </h3>
+                  </h2>
                   <div className="inline-block px-5 py-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full border border-emerald-200 dark:border-emerald-800">
                     <span className="text-emerald-950 dark:text-emerald-400 font-black text-sm">
                       Total: Rp {donationAmount.toLocaleString("id-ID")}
@@ -445,7 +445,7 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
 
                 {/* QR Container */}
                 <div className="relative group p-8 bg-white rounded-[0.5rem] border-2 border-dashed border-emerald-300 shadow-2xl shadow-emerald-900/10 transition-transform hover:scale-105">
-                  <div className="relative z-10 w-full aspect-square flex items-center justify-center overflow-hidden rounded">
+                  <div className="relative z-10 w-full aspect-square flex items-center justify-center overflow-hidden rounded focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500 focused mobile:w-64">
                     <QRCodeSVG
                       value={generateDynamicQRIS(
                         TEMP_STATIC_QRIS,
@@ -500,9 +500,9 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-4xl font-black text-emerald-950 dark:text-white tracking-tighter leading-none">
+                  <h2 className="text-4xl font-black text-emerald-950 dark:text-white tracking-tighter leading-none">
                     Jazakumullah Khair!
-                  </h3>
+                  </h2>
                   <p className="text-emerald-900 dark:text-emerald-400 text-sm leading-relaxed px-6 font-bold italic">
                     Pertanyaan Anda telah kami terima. Dewan asatidz akan segera
                     meninjau dan menjawab. Pantau portal pribadi untuk melihat

@@ -15,9 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import Swal from "sweetalert2";
+import CustomAudioPlayer from "./ui/CustomAudioPlayer";
 
 // --- Interfaces ---
 export interface ConsultationTicket {
+  reply_audio_url: string | null;
   categories: {
     name: string;
   } | null;
@@ -388,12 +390,23 @@ const PortalKonsultasi: React.FC = () => {
                         Mohon bersabar, ustadz sedang meninjau pesan Anda...
                       </p>
                     </div>
-                  ) : activeChat.reply_message ? (
+                  ) : activeChat.reply_message || activeChat.reply_audio_url ? (
                     <div className="space-y-5 relative w-full overflow-hidden">
-                      <p className="text-[13px] md:text-sm leading-[1.8] text-foreground/90 font-medium whitespace-pre-wrap break-words">
-                        {activeChat.reply_message}
-                      </p>
+                      {/* 🚀 INTEGRASI CUSTOM VOICE PLAYER */}
+                      {activeChat.reply_audio_url && (
+                        <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-700">
+                          <CustomAudioPlayer src={activeChat.reply_audio_url} />
+                        </div>
+                      )}
 
+                      {/* Teks Jawaban */}
+                      {activeChat.reply_message && (
+                        <p className="text-[13px] md:text-sm leading-[1.8] text-foreground/90 font-medium whitespace-pre-wrap break-words">
+                          {activeChat.reply_message}
+                        </p>
+                      )}
+
+                      {/* Footer Info & Verification */}
                       <div className="pt-4 border-t border-emerald-50 dark:border-emerald-800/60 flex flex-wrap justify-between items-center gap-3">
                         <div className="flex items-center gap-1.5 bg-emerald-50/50 dark:bg-emerald-800/30 px-3 py-1.5 rounded-full border border-emerald-100 dark:border-emerald-700">
                           <BadgeCheck
@@ -422,6 +435,7 @@ const PortalKonsultasi: React.FC = () => {
                       </div>
                     </div>
                   ) : (
+                    /* State ketika status sudah bukan pending tapi data belum dimuat sempurna */
                     <div className="flex items-center gap-3 py-2 italic text-muted-foreground text-xs font-medium">
                       <Loader2 className="h-3 w-3 animate-spin" /> Ustadz sedang
                       merumuskan jawaban...

@@ -381,6 +381,48 @@
 }
 
 @layer utilities {
+  /* Tambahkan ini di class textarea kamu agar teks Arab tidak terlihat kecil/berantakan */
+  .textarea-answer {
+    font-family:
+      "Inter", sans-serif, "Amiri", serif; /* Amiri bagus untuk Arabic */
+    line-height: 1.8;
+    direction: auto; /* Otomatis geser ke kanan jika teks Arab dominan */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px; /* Sangat tipis agar elegan */
+    height: 5px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* Styling untuk Light Mode */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #10b981; /* emerald-500 */
+    border-radius: 20px;
+    opacity: 0.5;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #059669; /* emerald-600 */
+  }
+
+  /* Styling untuk Dark Mode */
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #065f46; /* emerald-800 */
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #064e3b; /* emerald-900 */
+  }
+
+  /* Support untuk Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #10b981 transparent;
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -388,7 +430,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .font-display {
     font-family: "Playfair Display", serif;
   }

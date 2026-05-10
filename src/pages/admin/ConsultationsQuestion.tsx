@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PostgrestError } from "@supabase/postgrest-js";
 import AdminLayout from "@/components/admin/AdminLayout";
 import {
   Search,
   Send,
-  User,
   Loader2,
   Trash2,
   RotateCcw,
@@ -13,11 +13,14 @@ import {
   Clock,
   CheckCircle,
   Tag,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import Swal from "sweetalert2";
 import { Virtuoso } from "react-virtuoso";
+import VoiceRecorder from "@/components/VoiceRecorder";
+import CustomAudioPlayer from "@/components/ui/CustomAudioPlayer";
 
 // ======================================================
 // TYPES
@@ -38,6 +41,7 @@ interface ConsultationTicket {
   subject: string | null;
   message: string;
   reply_message: string | null;
+  reply_audio_url?: string | null;
   status: TicketStatus;
   created_at: string;
   answered_at: string | null;
@@ -46,6 +50,29 @@ interface ConsultationTicket {
   admins?: { name: string }[] | null;
 }
 
+interface ConsultationRow {
+  id: number;
+  answer: string | null;
+  reply_audio_url: string | null;
+  slug: string;
+}
+
+interface UpsertPayload {
+  id?: number; // Primary Key (jika ada)
+  inbox_id: string;
+  author_name: string;
+  city: string;
+  title: string;
+  slug: string;
+  question: string;
+  answer: string;
+  reply_audio_url: string | null;
+  category_id: number | null;
+  status: number;
+  answered_at: string;
+  answered_by: string;
+  created_at: string;
+}
 interface CounterState {
   all: number;
   pending: number;
@@ -74,6 +101,9 @@ const AdminConsultations = () => {
   const [statsLoading, setStatsLoading] = useState<boolean>(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TicketStatus | "all">("all");
   const [sending, setSending] = useState(false);
@@ -99,6 +129,16 @@ const AdminConsultations = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Helper pembuat Slug (Pastikan ini ada di komponen Anda)
+  const createUniqueSlug = (text: string) => {
+    const baseSlug = text
+      .toLowerCase()
+      .replace(/[^\w ]+/g, "")
+      .replace(/ +/g, "-")
+      .substring(0, 50);
+    return `${baseSlug}-${Date.now()}`;
+  };
+
   // ======================================================
   // LOAD CATEGORIES
   // ======================================================
@@ -123,6 +163,48 @@ const AdminConsultations = () => {
   const activeChat = useMemo(() => {
     return tickets.find((x) => x.id === activeId) || null;
   }, [tickets, activeId]);
+
+  // ======================================================
+  // TRANSCRIBE FUNCTION
+  // ======================================================
+
+  const handleTranscribe = async () => {
+    if (!audioUrl) return;
+
+    setIsTranscribing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("transcribe-vn", {
+        body: { audioUrl: audioUrl },
+      });
+
+      if (error) throw error;
+
+      // Append teks hasil transkripsi ke textarea
+      const transcription = data.text;
+      setReplyText((prev) => {
+        const trimmedPrev = prev.trim();
+        // Tambahkan spasi/enter jika sebelumnya sudah ada teks
+        return trimmedPrev
+          ? `${trimmedPrev}\n\n${transcription}`
+          : transcription;
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil!",
+        text: "Suara berhasil diubah ke teks.",
+        toast: true,
+        position: "top-end",
+        timer: 3000,
+        showConfirmButton: false,
+      });
+    } catch (err: unknown) {
+      const errorObj = err as { message: string };
+      Swal.fire("Gagal Transkripsi", errorObj.message, "error");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   // ======================================================
   // FETCH COUNTERS
@@ -176,7 +258,7 @@ const AdminConsultations = () => {
         let query = supabase
           .from("inbox_consultations")
           .select(
-            `id, name, city, contact_info, subject, message, reply_message, status, created_at, answered_at, answered_by, category_id, admins:answered_by(name)`,
+            `id, name, city, contact_info, subject, message, reply_message, reply_audio_url, status, created_at, answered_at, answered_by, category_id, admins:answered_by(name)`,
           )
           .order("created_at", { ascending: false })
           .range(
@@ -268,55 +350,125 @@ const AdminConsultations = () => {
   // ACTIONS
   // ======================================================
 
-  const sendReply = async () => {
-    if (!activeChat || !replyText.trim()) return;
+  const sendReply = async (): Promise<void> => {
+    if (!activeChat) return;
+
+    const trimmedText = replyText.trim();
+    // Validasi: Harus ada salah satu (Teks atau Audio)
+    if (!trimmedText && !audioUrl) {
+      Swal.fire(
+        "Peringatan",
+        "Berikan jawaban teks atau rekaman suara",
+        "warning",
+      );
+      return;
+    }
+
+    setSending(true);
+    const now = new Date().toISOString();
 
     try {
-      setSending(true);
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Unauthorized");
+      const { data: authData, error: authError } =
+        await supabase.auth.getUser();
+      if (authError || !authData.user) throw new Error("Sesi login habis.");
+      const adminId = authData.user.id;
 
-      const now = new Date().toISOString();
-      const { error } = await supabase
+      // 🚀 1. CEK DATA LAMA (Agar Teks & Audio bisa digabung)
+      const { data: existingRecord } = (await supabase
+        .from("consultations")
+        .select("id, answer, reply_audio_url, slug")
+        .eq("inbox_id", activeChat.id)
+        .maybeSingle()) as {
+        data: ConsultationRow | null;
+        error: PostgrestError | null;
+      };
+
+      // 🚀 2. TENTUKAN ISI JAWABAN (Merging Logic)
+      // Jika kirim teks baru, pakai teks itu. Jika tidak, pakai yang lama dari DB.
+      const finalAnswer =
+        trimmedText ||
+        existingRecord?.answer ||
+        "Jawaban dikirim melalui rekaman suara.";
+      const finalAudio = audioUrl || existingRecord?.reply_audio_url || null;
+
+      // 🚀 3. SIAPKAN PAYLOAD UNTUK TABEL PUBLIK
+      const publicPayload: UpsertPayload = {
+        inbox_id: activeChat.id,
+        author_name: activeChat.name ?? "Hamba Allah",
+        city: activeChat.city ?? "Tidak disebutkan",
+        title: activeChat.subject ?? "Konsultasi Agama",
+        slug:
+          existingRecord?.slug ||
+          createUniqueSlug(activeChat.subject || "konsultasi"),
+        question: activeChat.message,
+        category_id: activeChat.category_id,
+        status: 1,
+        answered_at: now,
+        answered_by: adminId,
+        created_at: activeChat.created_at || now,
+        answer: finalAnswer,
+        reply_audio_url: finalAudio,
+      };
+
+      // JIKA ID DITEMUKAN, MAKA PAKSA UPDATE KE ID TERSEBUT
+      if (existingRecord?.id) {
+        publicPayload.id = existingRecord.id;
+      }
+
+      // 🚀 4. EKSEKUSI DUAL-UPDATE
+      // Update Inbox (Internal)
+      const { error: errInbox } = await supabase
         .from("inbox_consultations")
         .update({
-          reply_message: replyText.trim(),
+          reply_message: finalAnswer,
+          reply_audio_url: finalAudio,
           status: "answered",
           answered_at: now,
-          answered_by: user.id,
+          answered_by: adminId,
         })
         .eq("id", activeChat.id);
 
-      if (error) throw error;
+      if (errInbox) throw errInbox;
 
-      setTickets((prev) =>
+      // Upsert ke Consultations (Publik)
+      const { error: errPublic } = await supabase
+        .from("consultations")
+        .upsert(publicPayload); // Tanpa onConflict karena sudah bawa ID (PK)
+
+      if (errPublic) throw errPublic;
+
+      // 🚀 5. UPDATE UI STATE
+      setTickets((prev: ConsultationTicket[]) =>
         prev.map((t) =>
           t.id === activeChat.id
             ? {
                 ...t,
-                reply_message: replyText,
                 status: "answered",
+                reply_message: finalAnswer,
+                reply_audio_url: finalAudio,
                 answered_at: now,
               }
             : t,
         ),
       );
 
+      // Reset Input
       setReplyText("");
-      loadCounters();
+      setAudioUrl(null);
+      setIsRecording(false);
+
       Swal.fire({
+        title: "Berhasil!",
+        text: "Jawaban berhasil dipublikasikan.",
         icon: "success",
-        title: "Balasan terkirim",
-        toast: true,
-        timer: 2000,
+        timer: 1500,
         showConfirmButton: false,
-        position: "top-end",
       });
-    } catch (err) {
-      console.error(err);
-      Swal.fire("Error", "Gagal mengirim balasan", "error");
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Gagal menyimpan data";
+      console.error("Detail Error:", error);
+      Swal.fire("Gagal", errorMsg, "error");
     } finally {
       setSending(false);
     }
@@ -356,7 +508,7 @@ const AdminConsultations = () => {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col h-[150dvh] lg:h-[calc(100vh-110px)] bg-emerald-50/20 dark:bg-emerald-950/10 overflow-hidden">
+      <div className="flex flex-col h-[150dvh] lg:h-[calc(100vh-110px)]">
         {/* 1. HEADER & STATS (Scrollable) */}
         <div className="flex flex-col gap-4 mb-3">
           <div className="flex justify-between items-end">
@@ -510,29 +662,44 @@ const AdminConsultations = () => {
           </div>
         </div>
 
-        {/* MAIN BOX */}
-        <div className="flex-1 flex overflow-hidden mt-3 lg:mt-2 border border-emerald-100 dark:border-emerald-800 rounded-[1rem] bg-white dark:bg-emerald-950/40 backdrop-blur-sm shadow-sm">
-          {" "}
-          {/* SIDEBAR */}
-          <div
-            className={`${showSidebar ? "flex" : "hidden lg:flex"} w-full lg:w-[400px] border-r border-emerald-100 dark:border-emerald-800 flex-col bg-emerald-50/10`}
+        {/* MAIN BOX: Container Utama dengan Glassmorphism & Depth */}
+        <div className="flex-1 flex overflow-hidden mt-3 lg:mt-2 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl bg-white/80 dark:bg-emerald-950/40 backdrop-blur-xl shadow-xl shadow-emerald-900/5">
+          {/* SIDEBAR: List Konsultasi */}
+          <aside
+            className={`${
+              showSidebar ? "flex" : "hidden lg:flex"
+            } w-full lg:w-[380px] xl:w-[420px] border-r border-emerald-100 dark:border-emerald-800/50 flex-col bg-emerald-50/20 dark:bg-emerald-950/20 transition-all duration-300`}
           >
-            {/* SIDEBAR HEADER - Dibuat identik dengan Chat View Header */}
-            <div className="p-5 border-b border-emerald-100 dark:border-emerald-800 flex items-center gap-4 bg-white/50 dark:bg-emerald-950/50 shrink-0">
-              <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-inner shrink-0">
-                <Inbox size={24} />
+            {/* SIDEBAR HEADER: Ringkas & Informatif */}
+            <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-emerald-100 dark:border-emerald-800/50 flex items-center gap-3 bg-white/90 dark:bg-emerald-950/90 backdrop-blur-xl sticky top-0 z-20 shrink-0 shadow-sm shadow-emerald-900/5">
+              {/* Ikon Box: Dibuat responsif h-10 ke h-12 agar sama dengan Chat View */}
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-200 dark:shadow-none shrink-0 rotate-3 transition-all duration-300">
+                <Inbox
+                  size={20}
+                  className="sm:w-[22px] sm:h-[22px]"
+                  strokeWidth={2.5}
+                />
               </div>
-              <div className="min-w-0">
-                <h2 className="font-bold text-emerald-950 dark:text-emerald-50 truncate text-lg leading-tight">
+
+              <div className="min-w-0 flex-1">
+                {/* Judul: Font-size & leading disamakan (text-base ke text-lg) */}
+                <h2 className="font-extrabold text-emerald-950 dark:text-emerald-50 truncate text-base sm:text-lg leading-tight">
                   Daftar Konsultasi
                 </h2>
-                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 truncate font-black uppercase tracking-widest mt-0.5">
-                  Status: {filter} • {tickets.length} Pesan Dimuat
-                </p>
+
+                {/* Subtitle: Tracking & Size disamakan */}
+                <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                  <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-[9px] sm:text-[10px] text-emerald-600/70 dark:text-emerald-400/70 font-black uppercase tracking-widest truncate">
+                    {filter} • {tickets.length} Pesan
+                  </p>
+                </div>
               </div>
             </div>
+
             <Virtuoso
               data={tickets}
+              className="custom-scrollbar"
               endReached={() => {
                 if (!loading && hasMoreRef.current) fetchTickets();
               }}
@@ -550,120 +717,243 @@ const AdminConsultations = () => {
                 />
               )}
             />
-          </div>
-          {/* CHAT VIEW */}
-          <div
-            className={`${showSidebar ? "hidden lg:flex" : "flex"} flex-1 flex-col`}
+          </aside>
+
+          {/* CHAT VIEW: Area Utama */}
+          <main
+            className={`${
+              showSidebar ? "hidden lg:flex" : "flex"
+            } flex-1 flex-col h-full bg-white dark:bg-emerald-950/30 relative`}
           >
             {activeChat ? (
               <>
-                <div className="p-5 border-b border-emerald-100 dark:border-emerald-800 flex items-center gap-4 bg-white/50 dark:bg-emerald-950/50">
+                {/* CHAT HEADER: Profile Style */}
+                <header className="px-4 py-3 sm:px-6 sm:py-4 border-b border-emerald-100 dark:border-emerald-800/50 flex items-center gap-4 bg-white/90 dark:bg-emerald-950/90 backdrop-blur-xl sticky top-0 z-20 shadow-sm shadow-emerald-900/5">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="lg:hidden text-emerald-600"
+                    className="lg:hidden text-emerald-600 hover:bg-emerald-50 -ml-2 shrink-0"
                     onClick={() => setShowSidebar(true)}
                   >
-                    <ChevronLeft />
+                    <ChevronLeft size={24} />
                   </Button>
-                  <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-inner">
-                    <User />
+
+                  <div className="relative shrink-0">
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 text-white flex items-center justify-center shadow-md font-bold text-lg">
+                      {activeChat.name?.charAt(0) || "H"}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 bg-emerald-500 border-2 border-white dark:border-emerald-950 rounded-full" />
                   </div>
-                  <div className="min-w-0">
-                    <h2 className="font-bold text-emerald-950 dark:text-emerald-50 truncate text-lg">
+
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-black text-emerald-950 dark:text-emerald-50 truncate text-base sm:text-lg leading-none mb-1">
                       {activeChat.name || "Hamba Allah"}
                     </h2>
-                    <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate font-medium">
-                      {activeChat.city ? ` ${activeChat.city}` : ""} -{" "}
-                      {activeChat.subject}
+                    <p className="text-[10px] sm:text-[11px] text-emerald-600/70 dark:text-emerald-400/70 truncate font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="px-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-md text-emerald-700 dark:text-emerald-300">
+                        {activeChat.city || "Indonesia"}
+                      </span>
+                      <span className="opacity-30">•</span>
+                      <span className="truncate">{activeChat.subject}</span>
                     </p>
                   </div>
-                </div>
+                </header>
 
+                {/* CHAT AREA: Feed History */}
                 <div
                   ref={scrollRef}
-                  className="flex-1 overflow-y-auto p-8 space-y-8 bg-emerald-50/5 dark:bg-emerald-950/10"
+                  className="flex-1 overflow-y-auto px-4 py-8 sm:px-10 space-y-8 bg-[radial-gradient(#10b98110_1px,transparent_1px)] [background-size:20px_20px] custom-scrollbar scroll-smooth"
                 >
-                  <div className="max-w-2xl">
-                    <div className="bg-emerald-100/50 dark:bg-emerald-900/40 text-emerald-950 dark:text-emerald-50 rounded-[1rem] rounded-tl-sm p-6 border border-emerald-100 dark:border-emerald-800 shadow-sm">
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                  {/* User Bubble: Classic Sophisticated */}
+                  <div className="flex flex-col gap-2 max-w-[95%] sm:max-w-[85%] group animate-in fade-in slide-in-from-left-4 duration-500">
+                    <div className="bg-white dark:bg-emerald-900/20 text-emerald-950 dark:text-emerald-50 rounded-2xl rounded-tl-none p-5 sm:p-6 border border-emerald-100 dark:border-emerald-800/50 shadow-sm hover:shadow-md transition-all">
+                      <p className="whitespace-pre-wrap text-sm sm:text-base leading-relaxed antialiased font-medium">
                         {activeChat.message}
                       </p>
-                      <span className="text-[10px] opacity-40 mt-3 block text-right italic">
-                        Dikirim:{" "}
+                    </div>
+                    <div className="flex items-center gap-2 px-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                      <Clock size={10} />
+                      <span className="text-[10px] font-bold uppercase tracking-tighter">
+                        Ditanyakan •{" "}
                         {new Date(activeChat.created_at).toLocaleString(
                           "id-ID",
-                          {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          },
+                          { dateStyle: "medium", timeStyle: "short" },
                         )}
                       </span>
                     </div>
                   </div>
 
-                  {activeChat.reply_message && (
-                    <div className="max-w-2xl ml-auto">
-                      <div className="bg-emerald-600 text-white rounded-[1rem] rounded-tr-sm p-6 shadow-lg shadow-emerald-200 dark:shadow-none">
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                          {activeChat.reply_message}
-                        </p>
-                        <span className="text-[10px] text-emerald-200 mt-3 block text-right italic">
-                          Verified by{" "}
-                          {activeChat.admins && activeChat.admins.length > 0
-                            ? activeChat.admins[0].name
-                            : "Admin IKADI"}{" "}
-                          on{" "}
-                          {activeChat.answered_at
-                            ? new Date(
-                                activeChat.answered_at,
-                              ).toLocaleDateString("id-ID")
-                            : "Unknown Date"}
-                        </span>
+                  {/* Admin Bubble: Premium Full-Width Style */}
+                  {(activeChat.reply_message || activeChat.reply_audio_url) && (
+                    <div className="flex flex-col gap-3 items-end w-full animate-in fade-in slide-in-from-right-6 duration-700">
+                      <div className="w-full sm:max-w-[85%] lg:max-w-[75%] bg-emerald-600 dark:bg-emerald-700 text-white rounded-3xl rounded-tr-none p-5 sm:p-7 shadow-xl shadow-emerald-900/10 border border-emerald-500/30 relative overflow-hidden">
+                        {/* Visual Accent */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
+                        {/* Audio Player Section: Powerfull UI Revamp */}
+                        {activeChat.reply_audio_url && (
+                          <div className="mb-5 w-full">
+                            <CustomAudioPlayer
+                              src={activeChat.reply_audio_url}
+                            />
+                          </div>
+                        )}
+
+                        {activeChat.reply_message && (
+                          <p className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-medium drop-shadow-sm">
+                            {activeChat.reply_message}
+                          </p>
+                        )}
+
+                        {/* Admin Verification Footer */}
+                        <footer className="mt-5 pt-4 border-t border-emerald-500/30 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-white text-emerald-600 p-1 rounded-full shadow-sm">
+                              <CheckCircle2 size={12} strokeWidth={3} />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-emerald-100">
+                              Verified by{" "}
+                              {activeChat.admins?.[0]?.name ||
+                                "Tim Konsultan Syariah"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-emerald-200/80 bg-emerald-800/30 px-2 py-1 rounded-md">
+                            {activeChat.answered_at
+                              ? new Date(
+                                  activeChat.answered_at,
+                                ).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "Baru saja"}
+                          </span>
+                        </footer>
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div className="border-t border-emerald-100 dark:border-emerald-800 p-6 bg-white dark:bg-emerald-950/50">
-                  <div className="border border-emerald-200 dark:border-emerald-800 rounded-[1rem] p-6 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all bg-emerald-50/30 dark:bg-emerald-900/20">
+                {/* INPUT AREA: Ultra-Slim Fixed Width for iPhone XR Alignment */}
+                <footer className="p-2 sm:p-6 border-t border-emerald-100 dark:border-emerald-800/50 bg-white dark:bg-emerald-950/80 flex items-end">
+                  <div
+                    className="
+              /* Lebar Adaptif Asimetris */
+              w-[320px]
+              min-[360px]:w-[304px] /* Sesuaikan dengan lebar layar iPhone XR untuk pengalaman mengetik optimal */
+              min-[375px]:w-[319px] /* Sesuaikan dengan lebar layar iPhone XR untuk pengalaman mengetik optimal */
+              min-[390px]:w-[333px] /* Sedikit lebih lebar untuk layar yang lebih besar, tetap mempertahankan margin kiri yang rapat */
+              min-[412px]:w-[355px] /* Untuk layar yang lebih besar lagi, memberikan sedikit ekstra ruang tanpa membuatnya terlalu lebar */
+              min-[414px]:w-[357px] /* Untuk layar yang lebih besar lagi, memberikan sedikit ekstra ruang tanpa membuatnya terlalu lebar */
+              min-[430px]:w-[373px] /* Pada layar yang sangat lebar, tetap memberikan batas maksimal agar tidak terlalu melebar */
+              sm:w-full sm:max-w-full
+              
+              /* Margin kiri tetap merapat (Asimetris) */
+              ml-1 mr-auto sm:mx-auto
+
+              border border-emerald-200 dark:border-emerald-800 
+              rounded-[1rem] p-2 sm:p-4 
+              focus-within:ring-4 focus-within:ring-emerald-500/10 
+              transition-all duration-500
+              bg-emerald-50/20 dark:bg-emerald-900/10 backdrop-blur-sm
+              shadow-sm focus-within:shadow-md
+            "
+                  >
                     <textarea
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Ketik Jawaban disini..."
-                      className="w-full bg-transparent outline-none resize-none min-h-[120px] text-sm text-emerald-950 dark:text-emerald-50"
+                      value={replyText}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        setReplyText(e.target.value)
+                      }
+                      placeholder="Tulis jawaban bijak Anda..."
+                      className="w-full bg-transparent outline-none resize-none min-h-[100px] max-h-[250px] overflow-y-auto text-sm sm:text-base text-emerald-950 dark:text-emerald-50 px-2 placeholder:text-muted-foreground leading-relaxed font-medium"
                     />
-                    <div className="flex justify-between items-center mt-4 border-t border-emerald-100 dark:border-emerald-800 pt-4">
-                      <div className="text-[10px] flex items-center gap-2 text-emerald-600 font-bold uppercase tracking-wider">
-                        <CheckCircle2 size={14} /> Verified IKADI Admin
-                      </div>
-                      <Button
-                        disabled={sending || !replyText.trim()}
-                        onClick={sendReply}
-                        className="rounded-xl px-8 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200 dark:shadow-none transition-transform active:scale-95"
-                      >
-                        {sending ? (
-                          <Loader2 className="animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="mr-2 h-4 w-4" /> Send Response
-                          </>
+
+                    <div className="flex items-center gap-2 mt-2 border-t border-emerald-100 dark:border-emerald-800/30 pt-3 sm:pt-4">
+                      {/* Tombol Transkripsi di dalam footer */}
+                      <div className="flex-1 flex items-center min-w-0 gap-2">
+                        <VoiceRecorder
+                          ticketId={activeChat.id}
+                          onUploadComplete={(url: string) => setAudioUrl(url)}
+                          onClear={() => setAudioUrl(null)}
+                          onRecordingStateChange={(state: boolean) =>
+                            setIsRecording(state)
+                          }
+                        />
+
+                        {/* Tombol Transkripsi: Muncul jika ada VN yang siap */}
+                        {audioUrl && !isRecording && (
+                          <button
+                            type="button"
+                            onClick={handleTranscribe}
+                            disabled={isTranscribing}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-500/20 transition-all animate-in zoom-in duration-300 disabled:opacity-50"
+                          >
+                            {isTranscribing ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <Sparkles size={14} className="fill-current" />
+                            )}
+                            <span className="text-[10px] font-black uppercase tracking-tighter">
+                              {isTranscribing
+                                ? "Processing..."
+                                : "AI Transcribe"}
+                            </span>
+                          </button>
                         )}
-                      </Button>
+
+                        {/* Status Indicator */}
+                        {!isRecording && !audioUrl && (
+                          <div className="hidden min-[420px]:flex items-center gap-2 text-emerald-600/40 font-black text-[10px] uppercase tracking-widest ml-1 truncate">
+                            <CheckCircle
+                              size={14}
+                              className="shrink-0 animate-pulse"
+                            />
+                            <span className="truncate">Ready to Response</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {!isRecording && (
+                        <Button
+                          disabled={sending || (!replyText.trim() && !audioUrl)}
+                          onClick={sendReply}
+                          className="rounded-2xl px-5 sm:px-8 bg-emerald-600 hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-900/20 active:scale-90 transition-all h-10 sm:h-12 gap-2"
+                        >
+                          {sending ? (
+                            <Loader2 className="animate-spin" size={18} />
+                          ) : (
+                            <>
+                              <span className="hidden sm:inline font-bold">
+                                Kirim Balasan
+                              </span>
+                              <Send size={18} strokeWidth={2.5} />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                </div>
+                </footer>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center flex-col text-center opacity-20 text-emerald-900 dark:text-emerald-50">
-                <div className="bg-emerald-100 dark:bg-emerald-900 p-8 rounded-full mb-6 animate-pulse">
-                  <Search size={80} />
+              /* EMPTY STATE: Minimalist & Artistic */
+              <div className="flex-1 flex items-center justify-center flex-col text-center p-10 bg-[radial-gradient(#10b98108_1.5px,transparent_1.5px)] [background-size:30px_30px]">
+                <div className="relative group">
+                  <div className="absolute inset-0 bg-emerald-500 blur-3xl opacity-10 group-hover:opacity-20 transition-opacity" />
+                  <div className="bg-white dark:bg-emerald-900/20 p-12 rounded-[3.5rem] text-emerald-100 dark:text-emerald-800/40 relative border border-emerald-50 dark:border-emerald-900/20 shadow-inner">
+                    <Inbox size={120} strokeWidth={0.5} />
+                  </div>
                 </div>
-                <p className="text-xl font-black uppercase tracking-widest">
-                  Select a consultation to view details
-                </p>
+                <div className="mt-8 space-y-2">
+                  <h3 className="text-emerald-950 dark:text-emerald-50 font-black text-2xl tracking-tighter">
+                    No Consultation Selected
+                  </h3>
+                  <p className="text-emerald-600/40 dark:text-emerald-400/40 text-sm max-w-[280px] leading-relaxed font-medium">
+                    Pilih tiket konsultasi dari daftar di samping untuk
+                    memberikan bimbingan.
+                  </p>
+                </div>
               </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </AdminLayout>

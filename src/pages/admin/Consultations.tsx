@@ -1,9 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
+import VectorSyncModal from "@/components/admin/VectorSyncModal"; // Path sesuaikan
 import ConsultationsDataTable from "./ConsultationsDataTable";
 import { supabase } from "@/lib/supabase";
 import Swal from "sweetalert2";
-import { MessageCircle, Clock, CheckCircle2, BarChart3 } from "lucide-react";
+import {
+  MessageCircle,
+  Clock,
+  CheckCircle2,
+  BarChart3,
+  Zap,
+  Loader2,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -15,6 +23,7 @@ import {
   TooltipProps,
 } from "recharts";
 import { UnifiedConsultation, FilterStatus } from "@/types/database";
+import { Button } from "@/components/ui/button";
 
 // --- Interfaces ---
 interface SupabaseError {
@@ -46,7 +55,41 @@ export default function Consultations() {
   const [page, setPage] = useState<number>(1);
   const [search, setSearch] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
+
   const pageSize = 10;
+
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [isTriggering, setIsTriggering] = useState(false);
+
+  const handleTriggerSync = async () => {
+    setIsTriggering(true);
+    try {
+      // Gunakan invoke, bukan fetch manual ke /api/embed
+      const { data, error } = await supabase.functions.invoke("ai-vector-sync");
+
+      if (error) {
+        // Jika error dari Supabase (CORS, Auth, dll)
+        console.error("Supabase Function Error:", error);
+        Swal.fire("Gagal", `Server Error: ${error.message}`, "error");
+        return;
+      }
+
+      if (data && data.jobId) {
+        setActiveJobId(data.jobId);
+      } else {
+        throw new Error("Tidak ada Job ID yang diterima dari server.");
+      }
+    } catch (error: unknown) {
+      console.error("Failed to start sync:", error);
+      const msg =
+        error instanceof Error ? error.message : "Terjadi kesalahan sistem";
+      Swal.fire("Gagal", msg, "error");
+    } finally {
+      setIsTriggering(false);
+    }
+  };
+
+  
 
   const loadStatsAndChart = useCallback(async () => {
     setStatsLoading(true);
@@ -276,6 +319,35 @@ export default function Consultations() {
             pertanyaan masyarakat dengan cepat.
           </p>
         </div>
+
+        {/* TOMBOL AI SYNC DI KANAN */}
+        <div className="flex items-center gap-3">
+          {!activeJobId && (
+            <Button
+              onClick={handleTriggerSync}
+              disabled={isTriggering}
+              className="group relative bg-emerald-950 dark:bg-emerald-50 text-white dark:text-emerald-950 rounded-2xl px-6 h-12 overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-xl shadow-emerald-900/20"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+              {isTriggering ? (
+                <Loader2 size={18} className="animate-spin mr-2" />
+              ) : (
+                <Zap size={18} className="mr-2 fill-current" />
+              )}
+              <span className="font-black text-xs uppercase tracking-widest">
+                {isTriggering ? "Initializing..." : "AI Vector Sync"}
+              </span>
+            </Button>
+          )}
+        </div>
+
+        {/* MODAL PROGRESS */}
+        {activeJobId && (
+          <VectorSyncModal
+            jobId={activeJobId}
+            onClose={() => setActiveJobId(null)}
+          />
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -394,7 +466,7 @@ function StatCard({
   bg: string;
 }) {
   return (
-<div className="group relative border rounded-[1.5rem] p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800">
+    <div className="group relative border rounded-[1.5rem] p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800">
       {/* Baris Atas */}
       <div className="flex justify-between items-start mb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 opacity-80">

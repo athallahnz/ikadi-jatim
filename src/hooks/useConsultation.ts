@@ -22,9 +22,13 @@ interface RawCategoryResponse {
 }
 
 export interface Consultation {
-    id: number;
-    author_name: string;
+    id: string;
     title: string;
+    reply_audio_url?: string;
+    admins?: {
+        name: string;
+    };
+    author_name: string;
     slug: string;
     question: string;
     answer: string;
@@ -89,7 +93,7 @@ export const useConsultation = (
             let query = supabase
                 .from("consultations")
                 .select(
-                    `id, author_name, title, slug, question, answer, created_at, status, consultation_categories!inner ( name, slug )`,
+                    `id, author_name, title, slug, question, answer, created_at, status, reply_audio_url, admins:answered_by(name), consultation_categories(name, slug)`,
                     { count: "exact" },
                 )
                 .eq("status", 1);
@@ -128,7 +132,11 @@ export const useConsultation = (
             setLoading(true);
             const { data: singleData, error: err } = await supabase
                 .from("consultations")
-                .select(`*, consultation_categories ( name, slug )`)
+                .select(`
+                *, 
+                admins:answered_by(name), 
+                consultation_categories ( name, slug )
+            `)
                 .eq("slug", slug)
                 .eq("status", 1)
                 .single();
@@ -136,6 +144,7 @@ export const useConsultation = (
             if (err) throw err;
             return singleData as Consultation;
         } catch (err) {
+            console.error("Error detail fetch:", err);
             return null;
         } finally {
             setLoading(false);

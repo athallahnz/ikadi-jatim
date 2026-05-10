@@ -47,13 +47,17 @@ export interface ConsultationMatch {
 export type FilterStatus = "all" | "pending" | "answered";
 
 export interface UnifiedConsultation {
+    slug: string;
     id: string; // Bisa berupa UUID atau Angka (dari tabel lama)
     inbox_id: string | null;
+    contact_info: string;
+    email: string;
     name: string | null;
     city: string | null;
     subject: string | null;
     message: string | null;
     reply_message: string | null;
+    reply_audio_url: string | null;
     category_id: number | null;
     category_name: string | null;
     status: string;

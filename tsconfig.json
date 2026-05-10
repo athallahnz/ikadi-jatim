@@ -1,22 +1,29 @@
 {
   "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ],
   "compilerOptions": {
-    "composite": true,        // Wajib untuk Project References
-    "noEmit": true,   // ← keep here only
+    /* Menghilangkan Warning BaseUrl */
+    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
+
+    /* Path Mapping */
     "paths": {
       "@/*": ["./src/*"]
     },
-    "noImplicitAny": false,
-    "noUnusedParameters": false,
-    "skipLibCheck": true,
-    "allowJs": true,
-    "noUnusedLocals": false,
-    "strictNullChecks": false
+
+    /* Fix Error Emit pada Referenced Project */
+    "noEmit": true,
+    "composite": false,
+
+    /* Standard Modern React/Vite */
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
-  "include": ["src", "server", "types", "scripts"]
+  "include": ["src", "server", "types", "scripts"],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
 }
