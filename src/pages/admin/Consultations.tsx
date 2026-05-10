@@ -48,62 +48,78 @@ export default function Consultations() {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("all");
   const pageSize = 10;
 
-  // --- 1. Fetch Stats & Chart (Optimized) ---
   const loadStatsAndChart = useCallback(async () => {
     setStatsLoading(true);
     setChartLoading(true);
 
     try {
-      // Menarik perhitungan statis langsung dari View agar sinkron
-      const [resTotal, resPending, resAnswered, resCats, resAllData] =
+      // 1. Ambil Master Kategori terlebih dahulu
+      const { data: catData, error: catError } = await supabase
+        .from("consultation_categories")
+        .select("id, name")
+        .order("name", { ascending: true });
+
+      if (catError) throw catError;
+      const masterCategories = (catData as CategoryData[]) || [];
+
+      // 2. Fungsi pembantu untuk query count (agar sinkron dengan search)
+      const getCount = (status?: string, catId?: number) => {
+        let q = supabase
+          .from("view_merged_consultations")
+          .select("*", { count: "exact", head: true });
+
+        if (status) q = q.eq("status", status);
+        if (catId) q = q.eq("category_id", catId);
+
+        if (search.trim()) {
+          q = q.or(
+            `name.ilike.%${search.trim()}%,subject.ilike.%${search.trim()}%`,
+          );
+        }
+        return q;
+      };
+
+      // 3. Tarik Stats Utama & Count per Kategori secara Paralel
+      // Ini tidak akan terkena limit 1000 baris karena kita hanya mengambil angka 'count'
+      const [resTotal, resPending, resAnswered, ...resCategoryCounts] =
         await Promise.all([
-          supabase
-            .from("view_merged_consultations")
-            .select("*", { count: "exact", head: true }),
-          supabase
-            .from("view_merged_consultations")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "pending"),
-          supabase
-            .from("view_merged_consultations")
-            .select("*", { count: "exact", head: true })
-            .eq("status", "answered"),
-          supabase.from("consultation_categories").select("id, name"),
-          // Tarik data category_id saja untuk dihitung di sisi client (menghindari N+1 Query)
-          supabase.from("view_merged_consultations").select("category_id"),
+          getCount(), // Total global
+          getCount("pending"), // Total pending
+          getCount("answered"), // Total answered
+          // Tarik count untuk setiap kategori yang ada di master
+          ...masterCategories.map((cat) => getCount(undefined, cat.id)),
         ]);
 
+      // Update Stat Cards
       setStats({
         total: resTotal.count ?? 0,
         pending: resPending.count ?? 0,
         answered: resAnswered.count ?? 0,
       });
 
-      const masterCategories = (resCats.data as CategoryData[]) || [];
-      const rawConsultations = resAllData.data || [];
-
-      // Menghitung total per kategori di client-side untuk performa lebih cepat
-      const counts: ChartItem[] = masterCategories.map((cat) => {
-        const total = rawConsultations.filter(
-          (c) => c.category_id === cat.id,
-        ).length;
-        return { name: cat.name, total };
-      });
-
-      const cleanedChart = counts
-        .filter((c) => c.total > 0)
+      // 4. Mapping hasil count ke format Chart
+      const cleanedChart: ChartItem[] = masterCategories
+        .map((cat, index) => {
+          // resCategoryCounts dimulai dari index ke-0 setelah resAnswered
+          const count = resCategoryCounts[index].count ?? 0;
+          return {
+            name: cat.name,
+            total: count,
+          };
+        })
+        .filter((c) => c.total > 0) // Sembunyikan kategori yang kosong
         .sort((a, b) => b.total - a.total);
 
       setCategoryChart(cleanedChart);
     } catch (err: unknown) {
       const errMsg =
         err instanceof Error ? err.message : "Gagal memuat statistik";
-      console.error(errMsg);
+      console.error("Error stats:", errMsg);
     } finally {
       setStatsLoading(false);
       setChartLoading(false);
     }
-  }, []);
+  }, [search]);
 
   // --- 2. Fetch Data Table ---
   const loadTableData = useCallback(async () => {
@@ -152,8 +168,6 @@ export default function Consultations() {
 
   // --- 3. Smart Deletion WITH LOGGING ---
   const deleteConsultation = async (id: string): Promise<void> => {
-    console.log("🚀 [DELETE START] ID Target:", id);
-
     const result = await Swal.fire({
       title: "Hapus Konsultasi?",
       text: "Data akan dihapus permanen dari sistem.",
@@ -166,13 +180,10 @@ export default function Consultations() {
     });
 
     if (!result.isConfirmed) {
-      console.log("❌ [DELETE CANCELLED] Dibatalkan oleh user.");
       return;
     }
 
     try {
-      // STEP 1: Ambil data target dari View
-      console.log("🔎 [STEP 1] Mencari target di view_merged_consultations...");
       const { data: target, error: fetchError } = await supabase
         .from("view_merged_consultations")
         .select("id, inbox_id")
@@ -180,84 +191,47 @@ export default function Consultations() {
         .maybeSingle();
 
       if (fetchError) {
-        console.error("❌ [ERROR STEP 1] Fetching target failed:", fetchError);
         throw fetchError as SupabaseError;
       }
 
       if (!target) {
-        console.warn("⚠️ [WARN STEP 1] Data tidak ditemukan di View.");
         throw new Error("Data tidak ditemukan di View.");
       }
 
       const item = target as UnifiedConsultation;
-      console.log("✅ [STEP 1 RESULT] Data ditemukan:", item);
 
-      // STEP 2: Eksekusi Penghapusan
       if (item.inbox_id) {
-        console.log(
-          "🔥 [STEP 2] Memproses Data Baru (Has Inbox ID):",
-          item.inbox_id,
-        );
-
-        // A. Hapus di Tabel Consultations (Publik)
-        console.log("🗑️ [STEP 2A] Menghapus dari tabel 'consultations'...");
-        const { error: errPublic, data: resPublic } = await supabase
+        const { error: errPublic } = await supabase
           .from("consultations")
           .delete()
           .eq("inbox_id", item.inbox_id)
-          .select(); // Menggunakan .select() untuk melihat apa yang dihapus
+          .select();
 
         if (errPublic) {
-          console.error(
-            "❌ [ERROR STEP 2A] Gagal hapus di 'consultations':",
-            errPublic,
-          );
           throw errPublic as SupabaseError;
         }
-        console.log("✅ [STEP 2A RESULT] Consultations terhapus:", resPublic);
 
-        // B. Hapus di Tabel Inbox_Consultations (Master)
-        console.log(
-          "🗑️ [STEP 2B] Menghapus dari tabel 'inbox_consultations'...",
-        );
-        const { error: errInbox, data: resInbox } = await supabase
+        const { error: errInbox } = await supabase
           .from("inbox_consultations")
           .delete()
           .eq("id", item.inbox_id)
           .select();
 
         if (errInbox) {
-          console.error(
-            "❌ [ERROR STEP 2B] Gagal hapus di 'inbox_consultations':",
-            errInbox,
-          );
           throw errInbox as SupabaseError;
         }
-        console.log(
-          "✅ [STEP 2B RESULT] Inbox_consultations terhapus:",
-          resInbox,
-        );
       } else {
-        console.log("🔥 [STEP 2] Memproses Data Lama (No Inbox ID)");
-
-        console.log(
-          "🗑️ [STEP 2C] Menghapus langsung dari tabel 'consultations'...",
-        );
-        const { error: errOld, data: resOld } = await supabase
+        const { error: errOld } = await supabase
           .from("consultations")
           .delete()
           .eq("id", item.id)
           .select();
 
         if (errOld) {
-          console.error("❌ [ERROR STEP 2C] Gagal hapus data lama:", errOld);
           throw errOld as SupabaseError;
         }
-        console.log("✅ [STEP 2C RESULT] Data lama terhapus:", resOld);
       }
 
-      // STEP 3: Feedback & Refresh
-      console.log("✨ [DELETE SUCCESS] Semua proses database selesai.");
       Swal.fire({
         icon: "success",
         title: "Terhapus",
@@ -266,11 +240,9 @@ export default function Consultations() {
         showConfirmButton: false,
       });
 
-      console.log("🔄 [REFRESH] Mengupdate Table & Stats...");
       loadTableData();
       loadStatsAndChart();
     } catch (err: unknown) {
-      console.error("🚨 [CRITICAL ERROR] Delete Flow Broken:", err);
       let msg = "Terjadi kesalahan sistem.";
       if (err instanceof Error) msg = err.message;
       else if (typeof err === "object" && err !== null && "message" in err) {
@@ -300,7 +272,8 @@ export default function Consultations() {
             Dashboard Consultation
           </h1>
           <p className="text-emerald-600/80 dark:text-emerald-400/80 text-sm font-medium">
-            Realtime Consultation Dashboard untuk memantau dan mengelola pertanyaan masyarakat dengan efisien.
+            Realtime Consultation Dashboard untuk memantau dan merespon
+            pertanyaan masyarakat dengan cepat.
           </p>
         </div>
       </div>
@@ -412,8 +385,6 @@ function StatCard({
   value,
   loading,
   icon,
-  color,
-  bg,
 }: {
   label: string;
   value: number;
@@ -423,15 +394,35 @@ function StatCard({
   bg: string;
 }) {
   return (
-    <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-      <div className={`p-3 rounded-xl ${bg} ${color}`}>{icon}</div>
-      <div>
-        <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+<div className="group relative border rounded-[1.5rem] p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800">
+      {/* Baris Atas */}
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 opacity-80">
           {label}
         </p>
-        <h3 className="text-2xl font-bold">
-          {loading ? "..." : value.toLocaleString("id-ID")}
+        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 transition-colors group-hover:bg-emerald-600 group-hover:text-white">
+          {icon}
+        </div>
+      </div>
+
+      {/* Baris Angka */}
+      <div className="flex items-baseline gap-1">
+        <h3 className="text-3xl font-black text-emerald-950 dark:text-emerald-50 leading-none">
+          {loading ? (
+            <span className="flex gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce" />
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce [animation-delay:0.2s]" />
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce [animation-delay:0.4s]" />
+            </span>
+          ) : (
+            value.toLocaleString("id-ID")
+          )}
         </h3>
+        {!loading && (
+          <span className="text-[10px] font-bold text-emerald-500/50 ml-2 uppercase tracking-tight">
+            DATA
+          </span>
+        )}
       </div>
     </div>
   );

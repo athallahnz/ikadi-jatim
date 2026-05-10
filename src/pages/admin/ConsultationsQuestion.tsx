@@ -12,6 +12,7 @@ import {
   Inbox,
   Clock,
   CheckCircle,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -24,6 +25,11 @@ import { Virtuoso } from "react-virtuoso";
 
 type TicketStatus = "pending" | "answered" | "closed" | "trashed";
 
+// Tambahan Interface Kategori
+interface ConsultationCategory {
+  id: number;
+  name: string;
+}
 interface ConsultationTicket {
   id: string;
   name: string | null;
@@ -61,9 +67,11 @@ const AdminConsultations = () => {
   // ======================================================
   // STATES & REFS
   // ======================================================
-
+  const [categories, setCategories] = useState<ConsultationCategory[]>([]);
+  const [filterCategory, setFilterCategory] = useState<number | "all">("all");
   const [tickets, setTickets] = useState<ConsultationTicket[]>([]);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState<boolean>(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [search, setSearch] = useState("");
@@ -90,6 +98,23 @@ const AdminConsultations = () => {
     }, 400);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // ======================================================
+  // LOAD CATEGORIES
+  // ======================================================
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("consultation_categories")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (err) {
+      console.error("Error loading categories:", err);
+    }
+  }, []);
 
   // ======================================================
   // ACTIVE CHAT
@@ -131,6 +156,8 @@ const AdminConsultations = () => {
       });
     } catch (err) {
       console.error(err);
+    } finally {
+      setStatsLoading(false);
     }
   }, []);
 
@@ -158,6 +185,12 @@ const AdminConsultations = () => {
           );
 
         if (filter !== "all") query = query.eq("status", filter);
+
+        // ======================================================
+        // APPLY CATEGORY FILTER
+        // ======================================================
+        if (filterCategory !== "all")
+          query = query.eq("category_id", filterCategory);
 
         if (debouncedSearch.trim()) {
           const keyword = debouncedSearch.trim();
@@ -188,7 +221,7 @@ const AdminConsultations = () => {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filter, debouncedSearch],
+    [filter, filterCategory, debouncedSearch],
   );
 
   // ======================================================
@@ -196,10 +229,14 @@ const AdminConsultations = () => {
   // ======================================================
 
   useEffect(() => {
+    loadCategories(); // Load categories once
+  }, [loadCategories]);
+
+  useEffect(() => {
     fetchTickets(true);
     loadCounters();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, debouncedSearch]);
+  }, [filter, filterCategory, debouncedSearch]);
 
   // ======================================================
   // REALTIME
@@ -225,7 +262,7 @@ const AdminConsultations = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [loadCounters, filter]);
+  }, [loadCounters, filter, filterCategory]);
 
   // ======================================================
   // ACTIONS
@@ -319,9 +356,9 @@ const AdminConsultations = () => {
 
   return (
     <AdminLayout>
-      <div className="h-[calc(100vh-120px)] flex flex-col bg-emerald-50/20 dark:bg-emerald-950/10">
-        {/* TOPBAR */}
-        <div className="flex flex-col gap-4 mb-5">
+      <div className="flex flex-col h-[150dvh] lg:h-[calc(100vh-110px)] bg-emerald-50/20 dark:bg-emerald-950/10 overflow-hidden">
+        {/* 1. HEADER & STATS (Scrollable) */}
+        <div className="flex flex-col gap-4 mb-3">
           <div className="flex justify-between items-end">
             <div>
               <h1 className="text-3xl font-black text-emerald-950 dark:text-emerald-50">
@@ -343,47 +380,99 @@ const AdminConsultations = () => {
             <StatCard
               title="All"
               value={counters.all}
+              loading={statsLoading}
               icon={<Inbox size={18} />}
               color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200"
             />
             <StatCard
               title="Pending"
               value={counters.pending}
+              loading={statsLoading}
               icon={<Clock size={18} />}
               color="bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200"
             />
             <StatCard
               title="Answered"
               value={counters.answered}
+              loading={statsLoading}
               icon={<CheckCircle size={18} />}
-              color="bg-emerald-600 text-white dark:bg-emerald-700 dark:text-emerald-50"
+              color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200"
             />
             <StatCard
               title="Trash"
               value={counters.trashed}
+              loading={statsLoading}
               icon={<Trash2 size={18} />}
               color="bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-200"
             />
           </div>
+        </div>
 
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 w-full p-1">
-            {/* Search Input - Luas di mobile, tetap proporsional di desktop */}
-            <div className="relative w-full lg:max-w-sm shrink-0">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500/50 dark:text-emerald-400/40"
-                size={18}
-              />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, subject..."
-                className="h-11 pl-10 pr-4 rounded-xl border border-emerald-100 dark:border-emerald-800 bg-white dark:bg-emerald-900/20 w-full focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm shadow-sm"
-              />
+        {/* 2. SEARCH & FILTER (Sticky on Mobile) */}
+        <div className="sticky top-0 z-30 backdrop-blur-md -mx-4 px-4 py-3 border-emerald-100 dark:border-emerald-800 lg:relative lg:top-auto lg:mx-0 lg:px-0 lg:py-4 lg:border-none lg:bg-transparent lg:backdrop-blur-none mb-2 transition-all">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between w-full">
+            {/* Group 1: Search & Category (Baris pertama di Mobile, Samping-sampingan di Desktop) */}
+            <div className="flex items-center gap-2 w-full lg:w-auto flex-1 lg:max-w-xl">
+              {/* Search Input - Mengambil sisa ruang (flex-1) */}
+              <div className="relative flex-1">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500/50 dark:text-emerald-400/40"
+                  size={16}
+                />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Cari jamaah..."
+                  className="h-10 pl-10 pr-4 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-emerald-900/40 w-full focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm shadow-sm"
+                />
+              </div>
+
+              {/* Category Dropdown - Tetap di samping search */}
+              <div className="relative shrink-0">
+                <Tag
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400"
+                  size={12}
+                />
+                <select
+                  value={filterCategory}
+                  onChange={(e) =>
+                    setFilterCategory(
+                      e.target.value === "all" ? "all" : Number(e.target.value),
+                    )
+                  }
+                  className="h-10 pl-8 pr-8 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-emerald-900 text-[10px] font-black text-emerald-700 dark:text-emerald-100 outline-none focus:ring-2 focus:ring-emerald-500 appearance-none cursor-pointer shadow-sm uppercase tracking-tight"
+                >
+                  <option value="all">KATEGORI</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                {/* Panah custom untuk select agar lebih rapi */}
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                  <svg
+                    width="10"
+                    height="6"
+                    viewBox="0 0 10 6"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M1 1L5 5L9 1"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
 
-            {/* Filter Slider Container */}
+            {/* Group 2: Status Slider (Baris kedua di Mobile) */}
             <div className="w-full lg:w-auto overflow-hidden">
-              <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-2 bg-emerald-100/30 dark:bg-emerald-900/20 p-1.5 rounded-2xl border border-emerald-100 dark:border-emerald-800 scroll-smooth">
+              <div className="flex flex-nowrap overflow-x-auto no-scrollbar gap-1.5 p-1 bg-emerald-100/30 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/50 scroll-smooth">
                 {(["all", "pending", "answered", "trashed"] as const).map(
                   (x) => {
                     const countValue = x === "all" ? counters.all : counters[x];
@@ -393,18 +482,18 @@ const AdminConsultations = () => {
                         key={x}
                         variant={filter === x ? "default" : "ghost"}
                         onClick={() => setFilter(x)}
-                        className={`shrink-0 rounded-xl capitalize px-4 py-2 h-9 flex items-center gap-2 transition-all border border-transparent ${
+                        className={`shrink-0 rounded-lg capitalize px-3 py-1 h-8 flex items-center gap-1.5 transition-all ${
                           filter === x
-                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-200 dark:shadow-none"
-                            : "text-emerald-700 dark:text-emerald-300 hover:bg-white dark:hover:bg-emerald-800/50 hover:border-emerald-100 dark:hover:border-emerald-700"
+                            ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                            : "text-emerald-700 dark:text-emerald-300 hover:bg-white dark:hover:bg-emerald-800/50 text-[10px]"
                         }`}
                       >
-                        <span className="font-bold text-xs tracking-tight">
-                          {x}
+                        <span className="font-black text-[10px] tracking-tight">
+                          {x.toUpperCase()}
                         </span>
 
                         <span
-                          className={`text-[10px] min-w-[20px] h-5 flex items-center justify-center px-1.5 rounded-lg font-black ${
+                          className={`text-[9px] min-w-[18px] h-4 flex items-center justify-center px-1 rounded font-black ${
                             filter === x
                               ? "bg-white/20 text-white"
                               : "bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200"
@@ -422,11 +511,26 @@ const AdminConsultations = () => {
         </div>
 
         {/* MAIN BOX */}
-        <div className="flex-1 border border-emerald-100 dark:border-emerald-800 rounded-[1rem] overflow-hidden flex bg-white dark:bg-emerald-950/40 backdrop-blur-sm shadow-sm">
+        <div className="flex-1 flex overflow-hidden mt-3 lg:mt-2 border border-emerald-100 dark:border-emerald-800 rounded-[1rem] bg-white dark:bg-emerald-950/40 backdrop-blur-sm shadow-sm">
+          {" "}
           {/* SIDEBAR */}
           <div
             className={`${showSidebar ? "flex" : "hidden lg:flex"} w-full lg:w-[400px] border-r border-emerald-100 dark:border-emerald-800 flex-col bg-emerald-50/10`}
           >
+            {/* SIDEBAR HEADER - Dibuat identik dengan Chat View Header */}
+            <div className="p-5 border-b border-emerald-100 dark:border-emerald-800 flex items-center gap-4 bg-white/50 dark:bg-emerald-950/50 shrink-0">
+              <div className="h-12 w-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shadow-inner shrink-0">
+                <Inbox size={24} />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-bold text-emerald-950 dark:text-emerald-50 truncate text-lg leading-tight">
+                  Daftar Konsultasi
+                </h2>
+                <p className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 truncate font-black uppercase tracking-widest mt-0.5">
+                  Status: {filter} • {tickets.length} Pesan Dimuat
+                </p>
+              </div>
+            </div>
             <Virtuoso
               data={tickets}
               endReached={() => {
@@ -447,7 +551,6 @@ const AdminConsultations = () => {
               )}
             />
           </div>
-
           {/* CHAT VIEW */}
           <div
             className={`${showSidebar ? "hidden lg:flex" : "flex"} flex-1 flex-col`}
@@ -575,26 +678,45 @@ const StatCard = ({
   title,
   value,
   icon,
-  color,
+  loading,
 }: {
   title: string;
   value: number;
   icon?: React.ReactNode;
   color?: string;
+  loading?: boolean;
 }) => {
   return (
-    <div
-      className={`border rounded-[1rem] p-5 shadow-sm transition-all hover:scale-[1.02] ${color || "bg-card border-emerald-100 dark:border-emerald-800"}`}
-    >
-      <div className="flex justify-between items-start">
-        <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">
+    <div className="group relative border rounded-[1.5rem] p-5 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md bg-white dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-800">
+      {/* Baris Atas */}
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 opacity-80">
           {title}
         </p>
-        <span className="opacity-50">{icon}</span>
+        <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 transition-colors group-hover:bg-emerald-600 group-hover:text-white">
+          {icon}
+        </div>
       </div>
-      <h3 className="text-3xl font-black mt-2 leading-none">
-        {value.toLocaleString()}
-      </h3>
+
+      {/* Baris Angka */}
+      <div className="flex items-baseline gap-1">
+        <h3 className="text-3xl font-black text-emerald-950 dark:text-emerald-50 leading-none">
+          {loading ? (
+            <span className="flex gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce" />
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce [animation-delay:0.2s]" />
+              <span className="w-2 h-2 rounded-full bg-emerald-200 animate-bounce [animation-delay:0.4s]" />
+            </span>
+          ) : (
+            value.toLocaleString("id-ID")
+          )}
+        </h3>
+        {!loading && (
+          <span className="text-[10px] font-bold text-emerald-500/50 ml-2 uppercase tracking-tight">
+            DATA
+          </span>
+        )}
+      </div>
     </div>
   );
 };
@@ -644,7 +766,7 @@ const TicketCard = ({
           </div>
 
           {/* Waktu Pojok Kanan Atas - Sangat Ringkas */}
-          <span className="text-[11px] font-bold opacity-40 uppercase whitespace-nowrap shrink-0 mt-0.5 tracking-tighter">
+          <span className="text-[11px] font-bold uppercase whitespace-nowrap shrink-0 mt-0.5 tracking-tighter">
             {new Date(ticket.created_at).toLocaleString("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
@@ -661,7 +783,7 @@ const TicketCard = ({
 
         {/* Baris Bawah: Isi Pesan (Dipotong 1 baris agar lebih clean) */}
         <div className="pr-8">
-          <p className="text-[11px] line-clamp-1 text-muted-foreground/80 leading-snug">
+          <p className="text-[12px] line-clamp-1 text-muted-foreground/80 leading-snug">
             {ticket.message}
           </p>
         </div>
