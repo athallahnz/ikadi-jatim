@@ -374,14 +374,14 @@ const AdminConsultations = () => {
       const adminId = authData.user.id;
 
       // 🚀 1. CEK DATA LAMA (Agar Teks & Audio bisa digabung)
-      const { data: existingRecord } = (await supabase
+      const { data: existingRecord, error: existingError } =
+      await supabase
         .from("consultations")
         .select("id, answer, reply_audio_url, slug")
         .eq("inbox_id", activeChat.id)
-        .maybeSingle()) as {
-        data: ConsultationRow | null;
-        error: PostgrestError | null;
-      };
+        .maybeSingle();
+
+      if (existingError) throw existingError;};
 
       // 🚀 2. TENTUKAN ISI JAWABAN (Merging Logic)
       // Jika kirim teks baru, pakai teks itu. Jika tidak, pakai yang lama dari DB.
@@ -433,7 +433,9 @@ const AdminConsultations = () => {
       // Upsert ke Consultations (Publik)
       const { error: errPublic } = await supabase
         .from("consultations")
-        .upsert(publicPayload); // Tanpa onConflict karena sudah bawa ID (PK)
+        .upsert(publicPayload, {
+          onConflict: "id",
+      });
 
       if (errPublic) throw errPublic;
 
