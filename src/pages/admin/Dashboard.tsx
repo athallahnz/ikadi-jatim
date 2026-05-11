@@ -337,38 +337,59 @@ ACTIVITIES
       setActivities([...articleActivities, ...consultationActivities]);
 
       /*
-      ========================================
-      ANALYTICS MOCK DATA
-      ========================================
-      */
+========================================
+ANALYTICS REAL DATA
+========================================
+*/
 
-      setAnalytics([
-        {
-          month: "Jan",
-          articles: 12,
-          consultations: 30,
-        },
-        {
-          month: "Feb",
-          articles: 18,
-          consultations: 42,
-        },
-        {
-          month: "Mar",
-          articles: 25,
-          consultations: 50,
-        },
-        {
-          month: "Apr",
-          articles: 32,
-          consultations: 66,
-        },
-        {
-          month: "May",
-          articles: 40,
-          consultations: 81,
-        },
-      ]);
+      const currentYear = new Date().getFullYear();
+
+      const { data: articlesAnalytics } = await supabase
+        .from("articles")
+        .select("created_at");
+
+      const { data: consultationsAnalytics } = await supabase
+        .from("view_merged_consultations")
+        .select("created_at");
+
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+
+      const analyticsMap = monthNames.map((month, index) => ({
+        month,
+        articles: 0,
+        consultations: 0,
+      }));
+
+      articlesAnalytics?.forEach((item) => {
+        const date = new Date(item.created_at);
+
+        if (date.getFullYear() === currentYear) {
+          analyticsMap[date.getMonth()].articles += 1;
+        }
+      });
+
+      consultationsAnalytics?.forEach((item) => {
+        const date = new Date(item.created_at);
+
+        if (date.getFullYear() === currentYear) {
+          analyticsMap[date.getMonth()].consultations += 1;
+        }
+      });
+
+      setAnalytics(analyticsMap);
     } catch (error) {
       console.error("Dashboard fetch error:", error);
     } finally {

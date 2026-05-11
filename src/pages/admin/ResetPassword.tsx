@@ -1,17 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import { supabase } from "@/lib/supabase";
-import { Lock, Loader2 } from "lucide-react";
+
+import { Lock, Loader2, Eye, EyeOff, ShieldCheck } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
+
 import Swal from "sweetalert2";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
+  /* =======================================================
+     UPDATE PASSWORD
+  ======================================================= */
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setLoading(true);
 
     const { error } = await supabase.auth.updateUser({
@@ -23,11 +35,14 @@ export default function ResetPassword() {
         icon: "error",
         title: "Gagal reset password",
         text: error.message,
+        confirmButtonColor: "#ef4444",
       });
     } else {
       Swal.fire({
         icon: "success",
         title: "Password berhasil diperbarui",
+        text: "Silakan login menggunakan password baru Anda.",
+        confirmButtonColor: "#10b981",
       });
 
       navigate("/admin/login");
@@ -35,69 +50,314 @@ export default function ResetPassword() {
 
     setLoading(false);
   };
+  
+  useEffect(() => {
+    const hash = window.location.hash;
+
+    if (hash.includes("type=recovery")) {
+      supabase.auth.getSession();
+    }
+  }, []);
+  /* =======================================================
+     UI
+  ======================================================= */
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background islamic-pattern px-4">
-      <div className="w-full max-w-md bg-card backdrop-blur shadow-2xl p-8 rounded-2xl border border-border">
-        {/* HEADER */}
+    <div className="relative min-h-screen overflow-hidden bg-[#06110f]">
+      {/* ===================================================
+          BACKGROUND
+      =================================================== */}
 
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <Lock className="text-primary w-8 h-8" />
-          </div>
+      {/* Base Gradient */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_35%),radial-gradient(circle_at_bottom_right,_rgba(234,179,8,0.12),_transparent_30%),linear-gradient(to_bottom_right,#06110f,#081815,#0b1f1b)]" />
 
-          <h1 className="text-2xl font-display font-bold text-foreground">
-            Buat Password Baru
-          </h1>
+      {/* Islamic Pattern */}
+      <div className="absolute inset-0 islamic-pattern opacity-[0.035]" />
 
-          <p className="text-muted-foreground text-sm mt-2">
-            Masukkan password baru untuk akun Anda
-          </p>
-        </div>
+      {/* Glow Orb 1 */}
+      <div
+        className="
+          absolute
+          -top-32
+          -left-32
+          w-[420px]
+          h-[420px]
+          rounded-full
+          bg-emerald-500/10
+          blur-3xl
+          animate-pulse
+        "
+      />
 
-        {/* FORM */}
+      {/* Glow Orb 2 */}
+      <div
+        className="
+          absolute
+          bottom-0
+          right-0
+          w-[500px]
+          h-[500px]
+          rounded-full
+          bg-yellow-500/10
+          blur-3xl
+        "
+      />
 
-        <form onSubmit={handleUpdate} className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">
-              Password Baru
-            </label>
+      {/* Grid Overlay */}
+      <div
+        className="
+          absolute inset-0
+          opacity-[0.03]
+          [background-image:linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)]
+          [background-size:60px_60px]
+        "
+      />
 
-            <div className="relative group">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition" />
+      {/* ===================================================
+          CONTENT
+      =================================================== */}
 
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-background border border-border focus:ring-2 focus:ring-primary/30 outline-none"
-              />
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-10 items-center">
+          {/* =================================================
+              LEFT SIDE
+          ================================================= */}
+
+          <div className="hidden lg:flex flex-col justify-center">
+            {/* Badge */}
+
+            <div
+              className="
+                inline-flex items-center gap-2
+                px-4 py-2
+                rounded-full
+                border border-emerald-400/20
+                bg-emerald-500/10
+                backdrop-blur-xl
+                text-emerald-300
+                text-sm
+                font-medium
+                w-fit
+                mb-6
+              "
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Secure Password Recovery
+            </div>
+
+            {/* Title */}
+
+            <h1
+              className="
+                text-5xl xl:text-6xl
+                font-display
+                font-bold
+                text-white
+                leading-tight
+                mb-6
+              "
+            >
+              Reset
+              <span className="block text-gold">Password Anda</span>
+            </h1>
+
+            {/* Subtitle */}
+
+            <p
+              className="
+                text-lg
+                text-white/70
+                leading-relaxed
+                max-w-xl
+                mb-10
+              "
+            >
+              Buat password baru yang aman untuk melindungi akses dashboard
+              administrasi IKADI Jawa Timur.
+            </p>
+
+            {/* Security Features */}
+
+            <div className="space-y-4">
+              {[
+                "Encrypted Authentication System",
+                "Secure Password Update",
+                "Realtime Account Protection",
+                "Cloud Integrated Security",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3">
+                  <div
+                    className="
+                      w-10 h-10
+                      rounded-xl
+                      bg-white/5
+                      border border-white/10
+                      flex items-center justify-center
+                      backdrop-blur
+                    "
+                  >
+                    <div className="w-2 h-2 rounded-full bg-gold" />
+                  </div>
+
+                  <span className="text-white/80">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* BUTTON */}
+          {/* =================================================
+              RESET CARD
+          ================================================= */}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-lg hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              "Update Password"
-            )}
-          </button>
-        </form>
+          <div className="w-full flex justify-center">
+            <div
+              className="
+                relative
+                w-full
+                max-w-md
+                overflow-hidden
+                rounded-3xl
+                border border-white/10
+                bg-white/[0.04]
+                backdrop-blur-2xl
+                shadow-[0_20px_80px_rgba(0,0,0,0.45)]
+              "
+            >
+              {/* Glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-transparent to-transparent pointer-events-none" />
 
-        {/* FOOTER */}
+              {/* Accent */}
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
 
-        <div className="mt-8 pt-6 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground">
-            © 2026 PW IKADI Jawa Timur
-          </p>
+              <div className="relative z-10 p-8 md:p-10">
+                {/* HEADER */}
+
+                <div className="text-center mb-8">
+                  <div
+                    className="
+                      inline-flex items-center justify-center
+                      w-20 h-20
+                      rounded-2xl
+                      bg-gradient-to-br
+                      from-emerald-400/20
+                      to-yellow-400/20
+                      border border-white/10
+                      shadow-lg
+                      mb-5
+                    "
+                  >
+                    <Lock className="text-gold w-9 h-9" />
+                  </div>
+
+                  <h1 className="text-3xl font-display font-bold text-white">
+                    Reset Password
+                  </h1>
+
+                  <p className="text-white/60 text-sm mt-3">
+                    Masukkan password baru untuk akun Anda
+                  </p>
+                </div>
+
+                {/* FORM */}
+
+                <form onSubmit={handleUpdate} className="space-y-6">
+                  {/* PASSWORD */}
+
+                  <div className="space-y-2">
+                    <label className="text-sm text-white/70">
+                      Password Baru
+                    </label>
+
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 group-focus-within:text-emerald-300 transition" />
+
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="
+                          w-full
+                          pl-11 pr-12 py-3
+                          rounded-xl
+                          border border-white/10
+                          bg-white/[0.03]
+                          text-white
+                          placeholder:text-white/30
+                          outline-none
+                          transition-all
+                          focus:border-emerald-400/40
+                          focus:ring-4
+                          focus:ring-emerald-400/10
+                          backdrop-blur
+                        "
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition"
+                      >
+                        {showPassword ? (
+                          <EyeOff size={18} />
+                        ) : (
+                          <Eye size={18} />
+                        )}
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-white/40 leading-relaxed pt-1">
+                      Gunakan minimal 8 karakter dengan kombinasi huruf besar,
+                      angka, dan simbol untuk keamanan maksimal.
+                    </p>
+                  </div>
+
+                  {/* BUTTON */}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="
+                      w-full
+                      h-12
+                      rounded-xl
+                      bg-gradient-to-r
+                      from-emerald-500
+                      to-emerald-600
+                      hover:from-emerald-400
+                      hover:to-emerald-500
+                      text-white
+                      font-semibold
+                      transition-all
+                      duration-300
+                      shadow-lg
+                      shadow-emerald-500/20
+                      flex items-center justify-center gap-2
+                      disabled:opacity-60
+                    "
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Memproses...
+                      </>
+                    ) : (
+                      "Update Password"
+                    )}
+                  </button>
+                </form>
+
+                {/* FOOTER */}
+
+                <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                  <p className="text-xs text-white/40">
+                    © 2026 PW IKADI Jawa Timur
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

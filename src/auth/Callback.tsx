@@ -8,12 +8,20 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handle = async () => {
-      const { data } = await supabase.auth.getSession();
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      if (data.session) {
-        navigate("/admin");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        navigate("/admin", {
+          replace: true,
+        });
       } else {
-        navigate("/admin/login");
+        navigate("/admin/login", {
+          replace: true,
+        });
       }
     };
 
@@ -21,5 +29,4 @@ export default function AuthCallback() {
   }, [navigate]);
 
   return <LoadingSpinner />;
-  ;
 }
