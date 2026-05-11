@@ -14,12 +14,34 @@ export default function AuthCallback() {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (session) {
-        navigate("/admin", {
+      if (!session?.user) {
+        navigate("/admin/login", {
+          replace: true,
+        });
+
+        return;
+      }
+
+      /**
+       * GET ADMIN DATA
+       */
+
+      const { data: admin } = await supabase
+        .from("admins")
+        .select("role")
+        .eq("email", session.user.email)
+        .single();
+
+      /**
+       * ROLE BASED REDIRECT
+       */
+
+      if (admin?.role === "konsultan") {
+        navigate("/admin/consultations", {
           replace: true,
         });
       } else {
-        navigate("/admin/login", {
+        navigate("/admin", {
           replace: true,
         });
       }
