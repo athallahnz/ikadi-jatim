@@ -33,7 +33,7 @@ type StepType = "form" | "donation" | "qris" | "success";
 
 const PRESET_DONATIONS: number[] = [10000, 25000, 50000, 100000];
 const TEMP_STATIC_QRIS =
-  "00020101021126570011ID.DANA.WWW011893600915302435873202090243587320303UMI51440014ID.CO.QRIS.WWW0215ID10265155141430303UMI5204737253033605802ID5913AnzArt Studio6013Kab. Ponorogo6105634136304BD34";
+  "00020101021126640017ID.CO.BANKBSI.WWW0118936004510000675485021000002500130303UMI51440014ID.CO.QRIS.WWW0215ID10265171913790303UMI5204869953033605802ID5922ORGANISASI IKADI JATIM6008SURABAYA6105602356304935E";
 
 const generateDynamicQRIS = (staticData: string, amount: number): string => {
   let qrisData = staticData.substring(0, staticData.length - 4);
@@ -466,9 +466,10 @@ const ConsultationForm: React.FC<ConsultationFormProps> = ({
 
                 <div className="space-y-6">
                   {/* Caption dipertegas */}
-                  <p className="text-[11px] text-emerald-950 dark:text-emerald-400/50 px-6 font-black italic leading-relaxed uppercase tracking-wider">
+                  <p className="text-[9px] text-emerald-950 dark:text-emerald-400/50 px-6 font-black italic leading-relaxed uppercase tracking-wider">
                     Sistem otomatis menghasilkan QR khusus sesuai nominal
-                    pilihan Anda. Pastikan nama "Ikadi Jawa Timur" tertera saat
+                    pilihan Anda.
+                    <br></br> Pastikan nama "ORGANISASI IKADI JATIM" tertera saat
                     scan.
                   </p>
                   <div className="space-y-3">

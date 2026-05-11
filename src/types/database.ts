@@ -69,3 +69,80 @@ export interface UnifiedConsultation {
 
 // Tambahkan ini HANYA JIKA Anda mendapatkan error 'Tables is not exported' di komponen lain
 export type Tables = unknown;
+
+import { Variants } from "framer-motion";
+
+export interface DashboardCounts {
+    articles: number;
+    events: number;
+    galleries: number;
+    consultations: number;
+}
+
+export interface ActivityTimelineItem {
+    id: string;
+    user: string;
+    action: string;
+    target: string;
+    time: string;
+    status: "success" | "warning";
+}
+
+export interface AnalyticsData {
+    month: string;
+    articles: number;
+    consultations: number;
+}
+
+export interface AnalyticsRow {
+    month: string;
+    month_number: number;
+    year_number: number;
+    total_articles: number;
+    total_consultations: number;
+}
+
+export interface AIInsight {
+    id: string;
+    title: string;
+    description: string;
+    insight_type: string;
+    priority: "high" | "medium" | "low";
+    related_topic?: string;
+    total_related_items?: number;
+}
+
+export interface LatestArticle {
+    id: string;
+    title: string;
+    slug: string;
+    category: string;
+
+    created_at: string;
+    published: boolean;
+
+    admins?: {
+        name: string;
+    };
+}
+
+export interface WorkflowCardProps {
+    title: string;
+    count: number;
+    icon: React.ElementType;
+    description: string;
+    cta: string;
+}
+
+export interface StatCardProps {
+    title: string;
+    count: number;
+    icon: React.ElementType;
+    trend: string;
+    description: string;
+    colorClass: string;
+}
+
+export interface MotionVariantProps {
+    itemVariants: Variants;
+}
