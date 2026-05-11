@@ -7,12 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = {
   scope?: string;
-  compactTitle?: boolean; // ✅ tambahkan ini
+  compactTitle?: boolean;
+  events?: EventItem[];
+  isLoading?: boolean;
 };
 
 type TimeFilter = "all" | "today" | "week" | "month";
 
-type EventItem = {
+export type EventItem = {
   id: string;
   title: string;
   excerpt: string | null;
@@ -25,36 +27,13 @@ type EventItem = {
   daerah_slug: string | null;
 };
 
-const EventsSection = ({ scope, compactTitle }: Props) => {
-  const [allEvents, setAllEvents] = useState<EventItem[]>([]);
+const EventsSection = ({
+  scope,
+  compactTitle,
+  events: incomingEvents = [],
+  isLoading = false,
+}: Props) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
-  const [isLoading, setIsLoading] = useState(true);
-
-  /* ================= FETCH SUPABASE ================= */
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setIsLoading(true); // Mulai loading
-        let query = supabase
-          .from("events")
-          .select(
-            "id,title,excerpt,cover,date,display_date,slug,scope,daerah,daerah_slug,publish_at",
-          )
-          .eq("published", true)
-          .order("publish_at", { ascending: false });
-
-        if (scope === "jatim") query = query.eq("scope", "jatim");
-        if (scope === "daerah") query = query.eq("scope", "daerah");
-
-        const { data } = await query;
-        setAllEvents((data as EventItem[]) || []);
-      } finally {
-        setIsLoading(false); // Selesai loading
-      }
-    };
-
-    load();
-  }, [scope]);
 
   /* ================= TIME FILTER ================= */
   const filterLabel =
@@ -67,8 +46,7 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
           : "";
 
   const now = new Date();
-
-  const events = allEvents.filter((e) => {
+  const events = incomingEvents.filter((e) => {
     if (timeFilter === "all") return true;
     if (!e.date) return false;
 
@@ -153,7 +131,9 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
   };
 
   const cardWidth = 100 / visible;
-  const translate = -index * cardWidth + (dragOffset / window.innerWidth) * 100;
+  const screenWidth = typeof window !== "undefined" ? window.innerWidth : 1;
+
+  const translate = -index * cardWidth + (dragOffset / screenWidth) * 100;
 
   const EventSkeleton = ({ cardWidth }: { cardWidth: number }) => (
     <div className="flex-shrink-0 px-4 my-4" style={{ width: `${cardWidth}%` }}>
@@ -223,10 +203,98 @@ const EventsSection = ({ scope, compactTitle }: Props) => {
           </div>
         ) : events.length === 0 ? (
           /* EMPTY STATE */
-          <div className="text-center py-24">
-            <div className="inline-flex flex-col items-center gap-3 text-muted-foreground">
-              <CalendarDays className="h-8 w-8 opacity-40" />
-              <p className="text-sm">Tidak ada konten {filterLabel}</p>
+          <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-card to-muted/30 py-24 px-6">
+            {/* Background Decoration */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_top_right,_var(--primary)_0%,_transparent_35%)]" />
+
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-primary/5 blur-3xl" />
+
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-gold/10 blur-3xl" />
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center text-center max-w-xl mx-auto">
+              {/* Icon */}
+              <div
+                className="
+        mb-6
+        flex items-center justify-center
+        w-20 h-20
+        rounded-full
+        border border-border
+        bg-background/80
+        shadow-sm
+        backdrop-blur
+      "
+              >
+                <CalendarDays className="h-10 w-10 text-gold opacity-90" />
+              </div>
+
+              {/* Title */}
+              <h3
+                className="
+        text-2xl md:text-3xl
+        font-display font-bold
+        text-foreground
+        mb-3
+      "
+              >
+                Belum Ada Kegiatan
+              </h3>
+
+              {/* Description */}
+              <p
+                className="
+        text-sm md:text-base
+        text-muted-foreground
+        leading-relaxed
+        max-w-md
+        mb-8
+      "
+              >
+                {filterLabel
+                  ? `Saat ini belum ada agenda atau kegiatan untuk ${filterLabel}.`
+                  : "Saat ini belum ada agenda atau kegiatan yang tersedia."}{" "}
+                Silakan cek kembali dalam waktu dekat untuk update terbaru dari
+                IKADI.
+              </p>
+
+              {/* CTA */}
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button
+                  onClick={() => setTimeFilter("all")}
+                  className="
+          inline-flex items-center
+          px-5 py-2.5
+          rounded-full
+          bg-primary
+          text-primary-foreground
+          text-sm font-medium
+          hover:opacity-90
+          transition-all
+          shadow-sm
+        "
+                >
+                  Lihat Semua Agenda
+                </button>
+
+                <a
+                  href="#artikel"
+                  className="
+          inline-flex items-center
+          px-5 py-2.5
+          rounded-full
+          border border-border
+          bg-background/70
+          text-sm font-medium
+          text-muted-foreground
+          hover:bg-muted
+          hover:text-foreground
+          transition-all
+        "
+                >
+                  Baca Artikel Dakwah
+                </a>
+              </div>
             </div>
           </div>
         ) : (
