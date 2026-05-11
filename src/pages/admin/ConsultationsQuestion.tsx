@@ -375,13 +375,13 @@ const AdminConsultations = () => {
 
       // 🚀 1. CEK DATA LAMA (Agar Teks & Audio bisa digabung)
       const { data: existingRecord, error: existingError } =
-      await supabase
-        .from("consultations")
-        .select("id, answer, reply_audio_url, slug")
-        .eq("inbox_id", activeChat.id)
-        .maybeSingle();
-
-      if (existingError) throw existingError;};
+        await supabase
+          .from("consultations")
+          .select("id, answer, reply_audio_url, slug")
+          .eq("inbox_id", activeChat.id)
+          .maybeSingle();
+      
+      if (existingError) throw existingError;
 
       // 🚀 2. TENTUKAN ISI JAWABAN (Merging Logic)
       // Jika kirim teks baru, pakai teks itu. Jika tidak, pakai yang lama dari DB.
