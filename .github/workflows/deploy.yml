@@ -34,7 +34,6 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ./ 
-          dangerous-clean-slate: false
-          # Melewatkan verifikasi SSL jika server FTP Jagoan Hosting bermasalah dengan cert
+          server-dir: ./
+          dangerous-clean-slate: true
           protocol: ftp
