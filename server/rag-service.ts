@@ -2,28 +2,42 @@
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import * as dotenv from "dotenv";
-import ws from "ws";
 
 import type { ConsultationMatch } from "../src/types/database";
 import type { AskUstadzResponse, ReferenceSource } from "../src/types/api";
 
 dotenv.config();
 
+if (!process.env.SUPABASE_URL) {
+    throw new Error("SUPABASE_URL missing");
+}
+
+if (!process.env.SUPABASE_SERVICE_KEY) {
+    throw new Error("SUPABASE_SERVICE_KEY missing");
+}
+
+if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY missing");
+}
+
 const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;
 const openaiApiKey = process.env.OPENAI_API_KEY!;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    realtime: {
-        // @ts-expect-error: WebSocket types mismatch
-        transport: ws,
+const supabase = createClient(
+    supabaseUrl,
+    supabaseServiceKey,
+    {
+        auth: {
+            persistSession: false,
+        },
     },
-    auth: {
-        persistSession: false,
-    },
-});
+);
 
-const openai = new OpenAI({ apiKey: openaiApiKey });
+const openai = new OpenAI({
+    apiKey: openaiApiKey,
+    timeout: 30000,
+});
 
 const SYSTEM_PROMPT = `Anda adalah Asisten Virtual IKADI yang bijak dan natural.
 
@@ -123,6 +137,12 @@ export async function generateUstadzResponse(
         };
     } catch (err: unknown) {
         console.error("[ERROR] RAG Service failure:", err);
+
+        if (err instanceof Error) {
+            console.error("MESSAGE:", err.message);
+            console.error("STACK:", err.stack);
+        }
+
         throw err;
     }
 }

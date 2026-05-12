@@ -4,7 +4,7 @@ import { ArrowRight, MessageCircle } from "lucide-react";
 
 interface ConsultationCardProps {
   data: {
-    id: number;
+    id: string | number;
     title: string;
     category: string;
     excerpt: string;
