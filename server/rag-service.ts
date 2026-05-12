@@ -52,8 +52,20 @@ FORMAT JAWABAN:
 3. Gunakan **teks tebal** untuk istilah penting.
 
 ATURAN REFERENSI:
-- Di akhir jawaban, sertakan link rujukan: "Baca selengkapnya: [/konsultasi/[slug]](/konsultasi/[slug])"
-- Tambahkan ID rujukan: "Ref: #[ID]"`;
+- HANYA tampilkan referensi jika jawaban berasal dari data konsultasi yang memiliki slug dan ID valid.
+- Jika jawaban berupa rangkuman umum, penjelasan tambahan AI, atau tidak memiliki referensi spesifik, JANGAN tampilkan bagian:
+  "Baca selengkapnya"
+  maupun
+  "Ref: #[ID]"
+
+- Format referensi valid:
+  Baca selengkapnya: [/konsultasi/[slug]](/konsultasi/[slug])
+  Ref: #[ID]
+
+ATURAN KONSULTASI LANJUTAN:
+- Jika jawaban dirasa belum cukup kuat, belum spesifik, atau membutuhkan pendampingan lebih lanjut, sarankan user untuk konsultasi langsung dengan ustadz.
+- Gunakan kalimat natural seperti:
+  "Untuk pembahasan lebih detail, Anda dapat melanjutkan konsultasi langsung dengan ustadz kami."`;
 
 export async function generateUstadzResponse(
     userMessage: string,

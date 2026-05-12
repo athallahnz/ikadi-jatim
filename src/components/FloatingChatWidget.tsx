@@ -144,6 +144,19 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
     }
   };
 
+  const shouldShowConsultButton = (content: string) => {
+    const text = content.toLowerCase();
+
+    return (
+      text.includes("belum menemukan referensi") ||
+      text.includes("silakan konsultasi") ||
+      text.includes("hubungi ustadz") ||
+      text.includes("ustadz") ||
+      text.includes("konsultasi langsung") ||
+      text.includes("admin ikadi")
+    );
+  };
+
   return (
     <aside className="fixed bottom-5 right-5 z-[100] font-sans flex flex-col items-end">
       {isChatOpen ? (
@@ -261,8 +274,7 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
                 {msg.role === "assistant" &&
                   index === messages.length - 1 &&
-                  (msg.content.toLowerCase().includes("admin ikadi") ||
-                    msg.content.toLowerCase().includes("ustadz ikadi")) && (
+                  shouldShowConsultButton(msg.content) && (
                     <div className="flex flex-col items-start gap-3 animate-in fade-in slide-in-from-left-4 duration-700 ml-1">
                       <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold px-1">
                         Belum menemukan jawaban?
@@ -320,9 +332,9 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               </Button>
             </div>
             <div className="mt-2 text-[10px] md:text-[11px] text-emerald-600 dark:text-emerald-400 italic font-medium text-center leading-snug">
-              Al Assistant kami menggunakan teknologi <strong>RAG</strong> (Retrieval-Augmented
-              Generation) untuk memberikan jawaban yang lebih akurat dan relevan
-              berdasarkan data syariah terkini.
+              Al Assistant kami menggunakan teknologi <strong>RAG</strong>{" "}
+              (Retrieval-Augmented Generation) untuk memberikan jawaban yang
+              lebih akurat dan relevan berdasarkan data syariah terkini.
             </div>
           </footer>
         </div>
