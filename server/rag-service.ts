@@ -59,22 +59,35 @@ export async function generateUstadzResponse(
     userMessage: string,
 ): Promise<AskUstadzResponse> {
     try {
-        // 2. Embedding query user
+        console.log("[RAG] Incoming message:", userMessage);
+
+        // 1. Embedding
+        console.log("[RAG] Creating embedding...");
+
         const embeddingResponse = await openai.embeddings.create({
             model: "text-embedding-3-small",
             input: userMessage,
         });
+
+        console.log("[RAG] Embedding success");
+
         const queryVector = embeddingResponse.data[0].embedding;
 
-        // 3. Pencarian Vektor dengan Threshold yang lebih fleksibel
+        // 2. RPC Search
+        console.log("[RAG] Starting RPC search...");
+
         const { data: matches, error: searchError } = await supabase.rpc(
             "match_consultations",
             {
                 query_embedding: queryVector,
-                match_threshold: 0.35, // Diturunkan sedikit agar lebih banyak konteks tertangkap
+                match_threshold: 0.35,
                 match_count: 3,
             },
         );
+
+        console.log("[RAG] RPC finished");
+        console.log("[RAG] RPC matches:", matches);
+        console.log("[RAG] RPC error:", searchError);
 
         if (searchError) {
             throw new Error(`Supabase search error: ${searchError.message}`);
@@ -83,21 +96,27 @@ export async function generateUstadzResponse(
         const relevantDocs =
             (matches || []) as (ConsultationMatch & { slug: string })[];
 
-        // 4. Penanganan Out of Scope
+        console.log("[RAG] Relevant docs count:", relevantDocs.length);
+
+        // 3. Out of scope
         if (relevantDocs.length === 0) {
+            console.log("[RAG] No relevant docs found");
+
             return {
                 answer:
-                    "Terkait pertanyaan tersebut, saya belum menemukan referensi fatwa yang spesifik di database kami. Ada baiknya hal ini dikonsultasikan langsung dengan Ustadz kami melalui layanan chat admin.",
+                    "Terkait pertanyaan tersebut, saya belum menemukan referensi fatwa yang spesifik di database kami.",
                 sources: [],
                 isOutOfScope: true,
             };
         }
 
-        // 5. Menyusun Konteks yang menyertakan ID dan Slug untuk AI
+        // 4. Build Context
+        console.log("[RAG] Building context string...");
+
         const contextString = relevantDocs
             .map((doc) => {
-                // Fallback jika slug tidak ada agar tidak muncul 'undefined' di link
                 const safeSlug = doc.slug || "artikel-tidak-ditemukan";
+
                 return `[ID: ${doc.id}]
                 [Slug: ${safeSlug}]
                 Judul: ${doc.title}
@@ -106,41 +125,49 @@ export async function generateUstadzResponse(
             })
             .join("\n\n---\n\n");
 
-        // 6. Chat Completion dengan instruksi manusiawi
+        console.log("[RAG] Context ready");
+
+        // 5. Chat Completion
+        console.log("[RAG] Starting OpenAI chat completion...");
+
         const chatResponse = await openai.chat.completions.create({
             model: "gpt-4o-mini",
-            temperature: 0.5, // Sedikit dinaikkan dari 0.2 agar bahasa lebih luwes tapi tetap terkontrol
-            presence_penalty: 0.6, // Mendorong AI untuk menggunakan variasi kata baru
+            temperature: 0.5,
+            presence_penalty: 0.6,
             messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "system",
                     content:
-                        `Berikut adalah database referensi yang bisa Anda gunakan:\n\n${contextString}\n\nIngat: Jawablah dengan gaya bahasa yang mengayomi. Jika ada rujukan, cantumkan Ref ID atau link slug di akhir jawaban.`,
+                        `Berikut adalah database referensi:\n\n${contextString}`,
                 },
                 { role: "user", content: userMessage },
             ],
         });
 
+        console.log("[RAG] Chat completion success");
+
         const sources: ReferenceSource[] = relevantDocs.map((doc) => ({
             id: doc.id,
             title: doc.title,
             similarity_score: doc.similarity_score,
-            slug: doc.slug, // Pastikan interface ReferenceSource sudah mendukung slug
+            slug: doc.slug,
         }));
+
+        console.log("[RAG] Returning final response");
 
         return {
             answer: chatResponse.choices[0].message.content ||
-                "Maaf, saya kesulitan menyusun kalimat saat ini.",
-            sources: sources,
+                "Maaf, saya kesulitan menyusun jawaban.",
+            sources,
             isOutOfScope: false,
         };
     } catch (err: unknown) {
         console.error("[ERROR] RAG Service failure:", err);
 
         if (err instanceof Error) {
-            console.error("MESSAGE:", err.message);
-            console.error("STACK:", err.stack);
+            console.error("[ERROR MESSAGE]:", err.message);
+            console.error("[ERROR STACK]:", err.stack);
         }
 
         throw err;
