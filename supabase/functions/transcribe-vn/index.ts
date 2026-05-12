@@ -1,4 +1,3 @@
-// supabase/functions/transcribe-vn/index.ts
 // deno-lint-ignore no-import-prefix
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -11,28 +10,85 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS
+  // =========================
+  // HANDLE CORS
+  // =========================
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      headers: corsHeaders,
+    });
   }
 
   try {
-    const { audioUrl } = await req.json();
+    console.log("=== TRANSCRIBE FUNCTION START ===");
+
+    // =========================
+    // CHECK OPENAI KEY
+    // =========================
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is missing");
+    }
+
+    // =========================
+    // PARSE REQUEST BODY
+    // =========================
+    const body = await req.json();
+
+    console.log("REQUEST BODY:", body);
+
+    const { audioUrl } = body;
 
     if (!audioUrl) {
       throw new Error("Audio URL is required");
     }
 
-    // 1. Download file audio dari Supabase Storage
+    console.log("AUDIO URL:", audioUrl);
+
+    // =========================
+    // DOWNLOAD AUDIO FILE
+    // =========================
     const audioResponse = await fetch(audioUrl);
+
+    console.log(
+      "AUDIO FETCH STATUS:",
+      audioResponse.status,
+    );
+
+    if (!audioResponse.ok) {
+      throw new Error(
+        `Failed to fetch audio file: ${audioResponse.status}`,
+      );
+    }
+
+    // =========================
+    // CONVERT TO BLOB
+    // =========================
     const blob = await audioResponse.blob();
 
-    // 2. Siapkan FormData untuk OpenAI Whisper
-    const formData = new FormData();
-    formData.append("file", blob, "recording.webm");
-    formData.append("model", "whisper-1");
-    formData.append("language", "id"); // Paksa ke Bahasa Indonesia agar lebih akurat
+    console.log("AUDIO SIZE:", blob.size);
 
+    if (blob.size === 0) {
+      throw new Error("Audio blob is empty");
+    }
+
+    // =========================
+    // PREPARE FOR OPENAI
+    // =========================
+    const formData = new FormData();
+
+    formData.append(
+      "file",
+      blob,
+      "recording.webm",
+    );
+
+    formData.append("model", "whisper-1");
+
+    formData.append("language", "id");
+
+    // =========================
+    // RELIGIOUS CONTEXT PROMPT
+    // =========================
     const categories = [
       "Al-Qur'an",
       "Hadits",
@@ -54,46 +110,108 @@ serve(async (req) => {
     ];
 
     const religiousPrompt = `
-  Konteks: Konsultasi Agama Islam Ikadi Jatim.
-  Istilah: ${
-      categories.join(", ")
-    }, Assalamu'alaikum, ustadz, Bismillahirrohmanirrohim, 
-  بسم الله الرحمن الرحيم, Alhamdulillah, الحمد لله, Masya Allah, ماشاء الله, 
-  Insha Allah, إن شاء الله, jazakallahu khairan, جزاك الله خيرا.
+Konteks: Konsultasi Agama Islam IKADI Jatim.
+
+Istilah:
+${categories.join(", ")}
+
+Ucapan umum:
+Assalamu'alaikum,
+ustadz,
+Bismillahirrahmanirrahim,
+Alhamdulillah,
+Masya Allah,
+Insya Allah,
+jazakallahu khairan.
+
+Tulisan Arab:
+بسم الله الرحمن الرحيم
+الحمد لله
+ما شاء الله
+إن شاء الله
+جزاك الله خيرا
 `;
 
     formData.append("prompt", religiousPrompt);
-    
-    // 3. Panggil API OpenAI
+
+    console.log("CALLING OPENAI WHISPER API...");
+
+    // =========================
+    // CALL OPENAI WHISPER
+    // =========================
     const whisperResponse = await fetch(
       "https://api.openai.com/v1/audio/transcriptions",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
         },
         body: formData,
       },
     );
 
+    console.log(
+      "WHISPER STATUS:",
+      whisperResponse.status,
+    );
+
     const data = await whisperResponse.json();
 
-    if (data.error) throw new Error(data.error.message);
+    console.log("WHISPER RESPONSE:", data);
 
+    // =========================
+    // HANDLE OPENAI ERROR
+    // =========================
+    if (!whisperResponse.ok) {
+      throw new Error(
+        data?.error?.message ||
+          "Whisper transcription failed",
+      );
+    }
+
+    if (!data.text) {
+      throw new Error(
+        "Whisper returned empty transcription",
+      );
+    }
+
+    console.log("=== TRANSCRIBE SUCCESS ===");
+
+    // =========================
+    // SUCCESS RESPONSE
+    // =========================
     return new Response(
-      JSON.stringify({ text: data.text }),
+      JSON.stringify({
+        success: true,
+        text: data.text,
+      }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       },
     );
   } catch (error: unknown) {
+    console.error(
+      "=== TRANSCRIBE ERROR ===",
+      error,
+    );
+
     const err = error as Error;
+
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({
+        success: false,
+        error: err.message,
+      }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       },
     );
   }
